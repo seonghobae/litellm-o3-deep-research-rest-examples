@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+.env
+
+# Java / Maven
+target/
+*.class
+
+# IDEs / editors
+.idea/
+.vscode/
+*.iml
+
+# macOS
+.DS_Store

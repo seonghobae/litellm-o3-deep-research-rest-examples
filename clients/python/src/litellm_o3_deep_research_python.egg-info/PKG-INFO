@@ -1,0 +1,9 @@
+Metadata-Version: 2.4
+Name: litellm-o3-deep-research-python
+Version: 0.1.0
+Summary: Minimal Python example client for calling LiteLLM o3-deep-research via REST
+Requires-Python: >=3.10
+Requires-Dist: certifi>=2026.0.0
+Requires-Dist: python-dotenv<2,>=1
+Provides-Extra: dev
+Requires-Dist: pytest<9,>=8; extra == "dev"

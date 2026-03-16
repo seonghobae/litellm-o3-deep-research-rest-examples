@@ -1,0 +1,5 @@
+certifi>=2026.0.0
+python-dotenv<2,>=1
+
+[dev]
+pytest<9,>=8
