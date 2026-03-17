@@ -1,8 +1,8 @@
 ## LiteLLM o3-deep-research REST examples
 
 This repository contains minimal Python and Java example clients that call a
-LiteLLM-compatible REST API using OpenAI-style chat completions to reach the
-`o3-deep-research` model.
+LiteLLM-compatible REST API using the OpenAI-compatible `chat/completions` and
+`responses` endpoints to reach the `o3-deep-research` model.
 
 Both clients are configured via environment variables and an optional
 `~/.env` file:
@@ -33,6 +33,7 @@ cd clients/python
 uv sync --all-extras --dev
 uv run pytest
 uv run python -m litellm_example "Reply with exactly: OK"
+uv run python -m litellm_example --api responses "Reply with exactly: OK"
 ```
 
 ### Java
@@ -41,6 +42,7 @@ uv run python -m litellm_example "Reply with exactly: OK"
 cd clients/java
 mvn test
 mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="Reply with exactly: OK"
+mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--api responses Reply with exactly: OK"
 ```
 
 ## Environment setup

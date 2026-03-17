@@ -12,6 +12,12 @@ def main(argv: list[str] | None = None) -> int:
         description="Call a LiteLLM o3-deep-research model via REST.",
     )
     parser.add_argument(
+        "--api",
+        choices=("chat", "responses"),
+        default="chat",
+        help="Which OpenAI-compatible endpoint to use.",
+    )
+    parser.add_argument(
         "prompt",
         nargs="?",
         default="Explain what the o3-deep-research model is useful for.",
@@ -23,7 +29,10 @@ def main(argv: list[str] | None = None) -> int:
     try:
         settings = load_settings()
         client = LiteLLMClient(settings.base_url, settings.api_key, settings.model)
-        content = client.create_chat_completion(args.prompt)
+        if args.api == "responses":
+            content = client.create_response(args.prompt)
+        else:
+            content = client.create_chat_completion(args.prompt)
     except (RuntimeError, ValueError, LiteLLMError) as exc:
         # Never print secrets; rely on the exception message only.
         print(f"Error: {exc}", file=sys.stderr)

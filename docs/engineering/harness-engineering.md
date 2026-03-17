@@ -3,11 +3,11 @@
 This repository uses lightweight local harnesses instead of external test services.
 
 ## Python
-- Tests stub `urllib.request.urlopen` so request construction and response parsing can be verified without a live server.
+- Tests stub `urllib.request.urlopen` so request construction and response parsing can be verified without a live server for both `chat/completions` and `responses`.
 - Live verification is done separately by running the CLI against the configured LiteLLM endpoint.
 
 ## Java
-- Tests use JDK `HttpServer` to emulate `POST /v1/chat/completions` with success and error payloads.
+- Tests use JDK `HttpServer` to emulate `POST /v1/chat/completions` and `POST /v1/responses` with success and error payloads.
 - Live verification is done separately by invoking the `Main` class via Maven.
 
 ## Safety rules

@@ -5,7 +5,11 @@ import json
 
 import pytest
 
-from litellm_example.client import LiteLLMClient, LiteLLMError, _normalize_base_url
+from litellm_example.client import (
+    LiteLLMClient,
+    LiteLLMError,
+    _normalize_base_url,
+)
 
 
 class FakeResponse:
@@ -75,6 +79,48 @@ def test_client_builds_expected_request(monkeypatch: pytest.MonkeyPatch) -> None
     assert captured["url"] == "https://example.com/v1/chat/completions"
     assert captured["headers"]["authorization"].startswith("Bearer ")
     assert "application/json" in captured["headers"]["content-type"]
+
+
+def test_responses_api_uses_expected_url_and_body(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_urlopen(req, timeout=None, context=None):  # type: ignore[override]
+        captured["url"] = req.full_url
+        captured["headers"] = {key.lower(): value for key, value in req.header_items()}
+        captured["body"] = json.loads(req.data.decode("utf-8"))  # type: ignore[attr-defined]
+        body = json.dumps(
+            {
+                "output": [
+                    {
+                        "content": [
+                            {
+                                "type": "output_text",
+                                "text": {"value": "ok from responses"},
+                            }
+                        ]
+                    }
+                ]
+            }
+        ).encode("utf-8")
+        return FakeResponse(body, status=200)
+
+    from litellm_example import client as client_module
+
+    monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
+
+    c = LiteLLMClient("https://example.com", "sk-test", model="o3-deep-research")
+
+    text = c.create_response("Hi via responses")  # type: ignore[attr-defined]
+
+    assert text == "ok from responses"
+    assert captured["url"] == "https://example.com/v1/responses"
+    assert captured["headers"]["authorization"].startswith("Bearer ")  # type: ignore[index]
+    assert captured["body"] == {  # type: ignore[index]
+        "model": "o3-deep-research",
+        "input": "Hi via responses",
+    }
 
 
 def test_client_raises_on_error_response(monkeypatch: pytest.MonkeyPatch) -> None:

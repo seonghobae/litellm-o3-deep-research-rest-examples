@@ -86,6 +86,9 @@ class LiteLLMClient:
     def _chat_url(self) -> str:
         return self._base_url.rstrip("/") + "/chat/completions"
 
+    def _responses_url(self) -> str:
+        return self._base_url.rstrip("/") + "/responses"
+
     def _ssl_context(self) -> ssl.SSLContext:
         return ssl.create_default_context(cafile=certifi.where())
 
@@ -105,9 +108,28 @@ class LiteLLMClient:
             ],
         }
 
+        parsed = self._post_json(self._chat_url(), payload)
+        return self._extract_content(parsed)
+
+    def create_response(self, prompt: str) -> str:
+        """Send a minimal OpenAI-compatible responses API request.
+
+        This uses ``POST /v1/responses`` with a small payload that LiteLLM can
+        proxy for the configured model. The first usable text output is returned.
+        """
+
+        payload = {
+            "model": self._model,
+            "input": prompt,
+        }
+
+        parsed = self._post_json(self._responses_url(), payload)
+        return self._extract_response_content(parsed)
+
+    def _post_json(self, url: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         data = json.dumps(payload).encode("utf-8")
         req = request.Request(
-            self._chat_url(),
+            url,
             data=data,
             method="POST",
             headers={
@@ -145,7 +167,12 @@ class LiteLLMClient:
         except json.JSONDecodeError:
             raise LiteLLMError(status, "LiteLLM responded with invalid JSON.", text)
 
-        return self._extract_content(parsed)
+        if not isinstance(parsed, dict):
+            raise LiteLLMError(
+                status, "LiteLLM responded with an unexpected JSON shape.", text
+            )
+
+        return parsed
 
     @staticmethod
     def _extract_error_message(text: str) -> str:
@@ -201,5 +228,46 @@ class LiteLLMClient:
         raise LiteLLMError(
             200,
             "Response did not include a usable assistant message.",
+            json.dumps(payload),
+        )
+
+    @staticmethod
+    def _extract_response_content(payload: Dict[str, Any]) -> str:
+        output_text = payload.get("output_text")
+        if isinstance(output_text, str) and output_text.strip():
+            return output_text
+
+        output = payload.get("output") or []
+        if not isinstance(output, list) or not output:
+            raise LiteLLMError(
+                200, "Response did not include any output items.", json.dumps(payload)
+            )
+
+        parts: list[str] = []
+        for item in output:
+            if not isinstance(item, dict):
+                continue
+            content = item.get("content") or []
+            if not isinstance(content, list):
+                continue
+            for block in content:
+                if not isinstance(block, dict):
+                    continue
+                if block.get("type") not in {"output_text", "text"}:
+                    continue
+                text = block.get("text")
+                if isinstance(text, str) and text:
+                    parts.append(text)
+                elif isinstance(text, dict):
+                    value = text.get("value")
+                    if isinstance(value, str) and value:
+                        parts.append(value)
+
+        if parts:
+            return "".join(parts)
+
+        raise LiteLLMError(
+            200,
+            "Response did not include a usable text output.",
             json.dumps(payload),
         )

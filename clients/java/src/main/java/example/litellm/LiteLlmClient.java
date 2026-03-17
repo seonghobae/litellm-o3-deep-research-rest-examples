@@ -13,6 +13,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public final class LiteLlmClient {
     private static final ObjectMapper MAPPER = new ObjectMapper()
@@ -59,12 +60,27 @@ public final class LiteLlmClient {
     }
 
     public String createChatCompletion(String prompt) {
-        URI target = baseUrl.resolve("chat/completions");
+        JsonNode payload = postJson(
+                baseUrl.resolve("chat/completions"),
+                Map.of(
+                        "model", model,
+                        "messages", List.of(Map.of("role", "user", "content", prompt))));
+        return extractAssistantText(payload);
+    }
+
+    public String createResponse(String prompt) {
+        JsonNode payload = postJson(
+                baseUrl.resolve("responses"),
+                Map.of(
+                        "model", model,
+                        "input", prompt));
+        return extractResponseText(payload);
+    }
+
+    private JsonNode postJson(URI target, Map<String, Object> payload) {
         String body;
         try {
-            body = MAPPER.writeValueAsString(Map.of(
-                    "model", model,
-                    "messages", List.of(Map.of("role", "user", "content", prompt))));
+            body = MAPPER.writeValueAsString(payload);
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to serialize request payload.", exception);
         }
@@ -92,8 +108,7 @@ public final class LiteLlmClient {
         }
 
         try {
-            JsonNode payload = MAPPER.readTree(response.body());
-            return extractAssistantText(payload);
+            return MAPPER.readTree(response.body());
         } catch (JsonProcessingException exception) {
             throw new ApiException(response.statusCode(), "LiteLLM responded with invalid JSON.", response.body());
         }
@@ -139,5 +154,50 @@ public final class LiteLlmClient {
         }
 
         throw new ApiException(200, "Response did not include a usable assistant message.", payload.toString());
+    }
+
+    private static String extractResponseText(JsonNode payload) {
+        JsonNode outputText = payload.get("output_text");
+        if (outputText != null && outputText.isTextual() && !outputText.asText().isBlank()) {
+            return outputText.asText();
+        }
+
+        JsonNode output = payload.path("output");
+        if (!output.isArray() || output.isEmpty()) {
+            throw new ApiException(200, "Response did not include any output items.", payload.toString());
+        }
+
+        StringBuilder builder = new StringBuilder();
+        for (JsonNode item : output) {
+            JsonNode content = item.path("content");
+            if (!content.isArray()) {
+                continue;
+            }
+            for (JsonNode block : content) {
+                JsonNode type = block.get("type");
+                if (type != null && type.isTextual() && !Set.of("output_text", "text").contains(type.asText())) {
+                    continue;
+                }
+
+                JsonNode text = block.get("text");
+                if (text == null) {
+                    continue;
+                }
+                if (text.isTextual()) {
+                    builder.append(text.asText());
+                } else if (text.isObject()) {
+                    JsonNode value = text.get("value");
+                    if (value != null && value.isTextual()) {
+                        builder.append(value.asText());
+                    }
+                }
+            }
+        }
+
+        if (!builder.isEmpty()) {
+            return builder.toString();
+        }
+
+        throw new ApiException(200, "Response did not include a usable text output.", payload.toString());
     }
 }

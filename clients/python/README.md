@@ -1,8 +1,8 @@
 ## Python client
 
 This directory contains a small Python client that calls a LiteLLM-compatible
-REST API using the OpenAI chat completions format to reach the
-`o3-deep-research` model.
+REST API using the OpenAI-compatible `chat/completions` and `responses`
+endpoints to reach the `o3-deep-research` model.
 
 Configuration is read from environment variables, with an optional
 `~/.env` file as a fallback:
@@ -26,4 +26,5 @@ Run the example CLI (requires valid environment variables):
 ```bash
 cd clients/python
 uv run python -m litellm_example "Summarize the purpose of the o3-deep-research model."
+uv run python -m litellm_example --api responses "Summarize the purpose of the o3-deep-research model."
 ```

@@ -83,6 +83,27 @@ class LiteLlmClientTest {
     }
 
     @Test
+    void sendsResponsesApiRequestAndParsesText() throws Exception {
+        AtomicReference<String> authHeader = new AtomicReference<>();
+        AtomicReference<String> requestBody = new AtomicReference<>();
+
+        server.createContext("/v1/responses", exchange -> {
+            authHeader.set(exchange.getRequestHeaders().getFirst("Authorization"));
+            requestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            writeJson(exchange, 200, """
+                    {"output":[{"content":[{"type":"output_text","text":{"value":"hello from responses"}}]}]}
+                    """);
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "sk-java", "o3-deep-research");
+        String result = client.createResponse("Hello via responses");
+
+        assertEquals("hello from responses", result);
+        assertEquals("Bearer sk-java", authHeader.get());
+        assertEquals(true, requestBody.get().contains("\"input\":\"Hello via responses\""));
+    }
+
+    @Test
     void ioExceptionDoesNotInterruptCallingThread() {
         AtomicBoolean called = new AtomicBoolean(false);
         HttpClientStub stub = new HttpClientStub(() -> {
