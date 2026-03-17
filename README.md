@@ -57,3 +57,7 @@ LITELLM_MODEL=o3-deep-research
 
 The clients accept either a proxy root URL such as `https://localhost:4000` or
 an explicit `/v1` root such as `https://localhost:4000/v1`.
+
+## Korean manual
+
+- 한국어 매뉴얼: `docs/ko/manual.md`
