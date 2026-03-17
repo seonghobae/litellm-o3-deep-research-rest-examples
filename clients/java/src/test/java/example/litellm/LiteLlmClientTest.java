@@ -104,6 +104,25 @@ class LiteLlmClientTest {
     }
 
     @Test
+    void sendsBackgroundResponsesRequestAndReturnsRawMetadata() throws Exception {
+        AtomicReference<String> requestBody = new AtomicReference<>();
+
+        server.createContext("/v1/responses", exchange -> {
+            requestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            writeJson(exchange, 200, """
+                    {"id":"resp_background_123","object":"response","status":"queued","background":true}
+                    """);
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "sk-java", "o3-deep-research");
+        String result = client.createResponse("Hello via background responses", true);
+
+        assertEquals(true, requestBody.get().contains("\"background\":true"));
+        assertEquals(true, result.contains("\"id\":\"resp_background_123\""));
+        assertEquals(true, result.contains("\"status\":\"queued\""));
+    }
+
+    @Test
     void ioExceptionDoesNotInterruptCallingThread() {
         AtomicBoolean called = new AtomicBoolean(false);
         HttpClientStub stub = new HttpClientStub(() -> {

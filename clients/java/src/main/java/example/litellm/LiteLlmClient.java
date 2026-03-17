@@ -69,11 +69,29 @@ public final class LiteLlmClient {
     }
 
     public String createResponse(String prompt) {
+        return createResponse(prompt, false);
+    }
+
+    public String createResponse(String prompt, boolean background) {
+        Map<String, Object> requestPayload = new java.util.LinkedHashMap<>();
+        requestPayload.put("model", model);
+        requestPayload.put("input", prompt);
+        if (background) {
+            requestPayload.put("background", true);
+        }
+
         JsonNode payload = postJson(
                 baseUrl.resolve("responses"),
-                Map.of(
-                        "model", model,
-                        "input", prompt));
+                requestPayload);
+
+        if (background) {
+            try {
+                return MAPPER.writeValueAsString(payload);
+            } catch (JsonProcessingException exception) {
+                throw new IllegalStateException("Failed to serialize background response metadata.", exception);
+            }
+        }
+
         return extractResponseText(payload);
     }
 

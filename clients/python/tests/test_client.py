@@ -123,6 +123,43 @@ def test_responses_api_uses_expected_url_and_body(
     }
 
 
+def test_background_responses_includes_flag_and_returns_raw_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_urlopen(req, timeout=None, context=None):  # type: ignore[override]
+        captured["body"] = json.loads(req.data.decode("utf-8"))  # type: ignore[attr-defined]
+        body = json.dumps(
+            {
+                "id": "resp_background_123",
+                "object": "response",
+                "status": "queued",
+                "background": True,
+            }
+        ).encode("utf-8")
+        return FakeResponse(body, status=200)
+
+    from litellm_example import client as client_module
+
+    monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
+
+    c = LiteLLMClient("https://example.com", "sk-test", model="o3-deep-research")
+    text = c.create_response("Queue this in background", background=True)  # type: ignore[call-arg]
+
+    assert captured["body"] == {  # type: ignore[index]
+        "model": "o3-deep-research",
+        "input": "Queue this in background",
+        "background": True,
+    }
+    assert json.loads(text) == {
+        "id": "resp_background_123",
+        "object": "response",
+        "status": "queued",
+        "background": True,
+    }
+
+
 def test_client_raises_on_error_response(monkeypatch: pytest.MonkeyPatch) -> None:
     def fake_urlopen(req, timeout=None, context=None):  # type: ignore[override]
         body = json.dumps(

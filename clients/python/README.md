@@ -27,4 +27,9 @@ Run the example CLI (requires valid environment variables):
 cd clients/python
 uv run python -m litellm_example "Summarize the purpose of the o3-deep-research model."
 uv run python -m litellm_example --api responses "Summarize the purpose of the o3-deep-research model."
+uv run python -m litellm_example --api responses --background "Summarize the purpose of the o3-deep-research model."
 ```
+
+When `--background` is used with `--api responses`, the CLI submits a
+server-side background response request and prints the raw JSON response so you
+can inspect fields such as `id` and `status`.

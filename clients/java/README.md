@@ -20,4 +20,9 @@ Run the example CLI (requires valid environment variables):
 cd clients/java
 mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="Explain what o3-deep-research is useful for"
 mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--api responses Explain what o3-deep-research is useful for"
+mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--api responses --background Explain what o3-deep-research is useful for"
 ```
+
+When `--background` is combined with `--api responses`, the CLI asks LiteLLM to
+run the response generation in background mode and prints the raw JSON response
+metadata so you can inspect `id` and `status`.

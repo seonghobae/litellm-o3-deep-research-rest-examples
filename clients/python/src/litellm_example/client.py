@@ -111,19 +111,25 @@ class LiteLLMClient:
         parsed = self._post_json(self._chat_url(), payload)
         return self._extract_content(parsed)
 
-    def create_response(self, prompt: str) -> str:
+    def create_response(self, prompt: str, background: bool = False) -> str:
         """Send a minimal OpenAI-compatible responses API request.
 
         This uses ``POST /v1/responses`` with a small payload that LiteLLM can
-        proxy for the configured model. The first usable text output is returned.
+        proxy for the configured model. The first usable text output is returned
+        for foreground execution. When ``background=True`` is set, the raw JSON
+        response is returned so callers can inspect identifiers and status.
         """
 
         payload = {
             "model": self._model,
             "input": prompt,
         }
+        if background:
+            payload["background"] = True
 
         parsed = self._post_json(self._responses_url(), payload)
+        if background:
+            return json.dumps(parsed, ensure_ascii=False)
         return self._extract_response_content(parsed)
 
     def _post_json(self, url: str, payload: Dict[str, Any]) -> Dict[str, Any]:

@@ -10,6 +10,8 @@ This repository is intentionally small and split by language under `clients/`.
 
 ## Design choices
 - Both clients support the OpenAI-compatible `POST /v1/chat/completions` and `POST /v1/responses` endpoints.
+- Both clients also support submitting `POST /v1/responses` requests with `background: true` so LiteLLM can enqueue server-side background work while the local CLI remains a foreground one-shot process.
 - Both clients accept `LITELLM_BASE_URL` as either the proxy root or `/v1`, and normalise it to a predictable `/v1/` API base.
 - Both clients load `LITELLM_API_KEY` and `LITELLM_BASE_URL` from the process environment, with `~/.env` as an optional fallback for local development.
-- The examples focus on synchronous text-generation paths and explicit error handling; streaming and tool-calling are intentionally out of scope.
+- Foreground `responses` calls extract text output for convenience, while background `responses` calls return raw JSON metadata so callers can inspect response identifiers and status.
+- Streaming and tool-calling are intentionally out of scope.

@@ -18,6 +18,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Which OpenAI-compatible endpoint to use.",
     )
     parser.add_argument(
+        "--background",
+        action="store_true",
+        help="Request server-side background processing for the responses API.",
+    )
+    parser.add_argument(
         "prompt",
         nargs="?",
         default="Explain what the o3-deep-research model is useful for.",
@@ -27,10 +32,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
+        if args.background and args.api != "responses":
+            raise ValueError("--background can only be used with --api responses.")
+
         settings = load_settings()
         client = LiteLLMClient(settings.base_url, settings.api_key, settings.model)
         if args.api == "responses":
-            content = client.create_response(args.prompt)
+            content = client.create_response(args.prompt, background=args.background)
         else:
             content = client.create_chat_completion(args.prompt)
     except (RuntimeError, ValueError, LiteLLMError) as exc:

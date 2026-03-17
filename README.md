@@ -34,6 +34,7 @@ uv sync --all-extras --dev
 uv run pytest
 uv run python -m litellm_example "Reply with exactly: OK"
 uv run python -m litellm_example --api responses "Reply with exactly: OK"
+uv run python -m litellm_example --api responses --background "Reply with exactly: OK"
 ```
 
 ### Java
@@ -43,6 +44,7 @@ cd clients/java
 mvn test
 mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="Reply with exactly: OK"
 mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--api responses Reply with exactly: OK"
+mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--api responses --background Reply with exactly: OK"
 ```
 
 ## Environment setup
