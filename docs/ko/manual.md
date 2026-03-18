@@ -289,3 +289,27 @@ mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--api respon
 - 설정은 `~/.env` 또는 환경변수로 주입합니다.
 - 현재 구현은 **요청 1회 실행 후 종료되는 CLI 도구**이며, 상시 background 서비스는 아닙니다.
 - 다만 `responses` 호출은 서버 측 background 작업으로 제출할 수 있습니다.
+
+## 8. 중계 예제(계획)
+
+현재 저장소에는 직접 호출용 Python 예제와 Java 예제가 구현되어 있고,
+세 번째 예제로 **LiteLLM SDK + FastAPI + Hypercorn 중계 예제**를 추가하는 구현 계획이
+정리되어 있습니다.
+
+- 계획 문서: `docs/ko/relay-toolcalling-plan.md`
+
+이 중계 예제의 목적은 Java가 upstream LiteLLM Proxy를 직접 호출하는 대신,
+relay에 **tool calling처럼 구조화된 요청**을 보내도록 만드는 것입니다.
+
+예를 들어 relay는 다음과 같은 형식의 계약을 공개하게 됩니다.
+
+- `tool_name`
+- `research_question`
+- `context`
+- `constraints`
+- `deliverable_format`
+- `background`
+- `stream`
+
+즉, relay 외부에서는 raw `input` 문자열을 직접 다루지 않고,
+relay 내부에서만 LiteLLM SDK 형식으로 번역합니다.

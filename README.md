@@ -63,6 +63,7 @@ an explicit `/v1` root such as `https://localhost:4000/v1`.
 ## Korean manual
 
 - 한국어 매뉴얼: `docs/ko/manual.md`
+- 중계 예제 구현 계획(한국어): `docs/ko/relay-toolcalling-plan.md`
 
 ## Planned relay example
 
