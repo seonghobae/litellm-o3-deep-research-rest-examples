@@ -33,19 +33,39 @@ mvn test
 mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="Reply with exactly: OK"
 ```
 
-## 4. base URL 규칙
+## 4. Relay 예제 시작
+
+터미널 A:
+
+```bash
+cd relay
+uv sync --all-extras --dev
+uv run pytest
+uv run python -m litellm_relay
+```
+
+터미널 B:
+
+```bash
+cd clients/java
+RELAY_BASE_URL=http://127.0.0.1:8080 \
+mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--target relay Summarize relay architecture"
+```
+
+## 5. base URL 규칙
 
 다음 두 형태를 지원합니다.
 
 - `https://localhost:4000`
 - `https://localhost:4000/v1`
 
-내부적으로는 `/v1/` 루트로 정규화합니다.
+direct Python/Java 예제는 내부적으로 `/v1/` 루트로 정규화합니다. relay 예제는 같은 값을 LiteLLM SDK의 `api_base`로 그대로 사용하므로, upstream LiteLLM Proxy가 허용하는 root URL 또는 `/v1` URL을 넣으면 됩니다.
 
-## 5. 무엇이 이미 구현되어 있나
+## 6. 무엇이 이미 구현되어 있나
 
 - Python 직접 호출 예제
 - Java 직접 호출 예제
+- LiteLLM SDK + FastAPI + Hypercorn relay 예제
 - `responses` + `background: true` 지원
+- relay의 structured tool invocation + status/wait/events API
 - 한국어 매뉴얼 및 GitHub Pages 문서 구조
-- relay 예제는 현재 **구현 계획 문서**까지 완료

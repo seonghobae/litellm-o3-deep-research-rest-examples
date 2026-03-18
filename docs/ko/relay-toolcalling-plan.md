@@ -1,4 +1,6 @@
-# LiteLLM SDK + FastAPI + Hypercorn 중계 예제 구현 계획
+# LiteLLM SDK + FastAPI + Hypercorn 중계 예제 구현 계획 (보관용)
+
+> 이 문서는 relay 예제를 구현하기 전에 작성한 계획 기록입니다. 현재 `main`에는 `relay/` 예제가 이미 구현되어 있으며, 최신 사용법은 `docs/ko/relay-example.md`를 따릅니다.
 
 ## 목표
 
@@ -31,7 +33,7 @@ relay 내부에서만 이 구조를 LiteLLM SDK 요청 형식으로 번역합니
 - 두 예제 모두 `chat/completions`, `responses`, `background: true`를 지원합니다.
 - 문서 작성 시점 snapshot에서는 open issue 0, open PR 0, milestone 0, project item 0 이었습니다.
 - 문서 작성 시점 snapshot에서 최근 CI는 성공 상태였습니다.
-- 아직 `relay/` 예제는 구현되어 있지 않습니다.
+- 이 계획 문서가 작성되던 시점에는 `relay/` 예제가 아직 구현되어 있지 않았습니다.
 
 따라서 현재 repository에서 가장 먼저 닫아야 할 canonical task는:
 
@@ -392,7 +394,7 @@ relay caller가 구현되면 다음 형태의 검증을 수행합니다.
 
 ```bash
 cd clients/java
-mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--target relay --tool deep_research --question 'relay architecture를 설명해줘'"
+mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--target relay relay architecture를 설명해줘"
 ```
 
 ---

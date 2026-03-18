@@ -40,3 +40,4 @@ mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--api respon
 - Java도 Python과 같은 API 흐름을 지원합니다.
 - background 모드에서는 원본 JSON 메타데이터를 반환합니다.
 - 현재 Java 예제 역시 상시 서비스가 아니라 1회성 CLI입니다.
+- relay를 호출하려면 `--target relay`를 사용하고, 자세한 내용은 [Relay 중계 예제](relay-example.md)를 참고하세요.

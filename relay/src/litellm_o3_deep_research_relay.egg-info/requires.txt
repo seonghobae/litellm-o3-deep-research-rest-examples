@@ -1,0 +1,9 @@
+fastapi<1,>=0.128
+hypercorn<1,>=0.18
+litellm<2,>=1.81.13
+python-dotenv<2,>=1
+
+[dev]
+httpx<1,>=0.28
+pytest<9,>=8
+pytest-asyncio<1,>=0.23

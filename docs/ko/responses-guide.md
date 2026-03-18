@@ -1,4 +1,4 @@
-# Responses / Background / 중계 계획의 스트리밍 정리
+# Responses / Background / Relay 스트리밍 정리
 
 ## 1. `responses` 와 `chat/completions` 차이
 
@@ -29,15 +29,15 @@
 - background `responses`
 
 하지만 **직접 예제 자체가 stream 이벤트를 소비하는 고급 예제까지 포함하는 것은 아닙니다.**
-streaming 수명주기와 relay 기반 구조는 relay 예제 계획 문서에서 별도로 다룹니다.
+stream 이벤트 수명주기는 relay 예제에서 구현되어 있으며, relay의 `GET /api/v1/tool-invocations/{id}/events`가 text-only SSE를 제공합니다.
 
-## 5. relay 계획과의 연결
+## 5. relay 예제와의 연결
 
-relay 예제 계획에서는 다음 lifecycle을 정식으로 다룹니다.
+relay 예제는 다음 lifecycle을 정식으로 다룹니다.
 
 - foreground invocation
 - background invocation
 - polling / wait
 - SSE event stream
 
-자세한 내용은 [중계 예제 구현 계획](relay-toolcalling-plan.md)에서 확인할 수 있습니다.
+자세한 내용은 [Relay 중계 예제](relay-example.md)에서 확인할 수 있고, 구현 전 설계 판단은 [중계 예제 구현 계획(보관)](relay-toolcalling-plan.md)에서 볼 수 있습니다.
