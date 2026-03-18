@@ -1,0 +1,61 @@
+site_name: LiteLLM o3-deep-research 예제 문서
+site_description: LiteLLM Proxy, Python, Java, relay 예제를 위한 한국어 문서 사이트
+site_url: https://seonghobae.github.io/litellm-o3-deep-research-rest-examples/
+repo_url: https://github.com/seonghobae/litellm-o3-deep-research-rest-examples
+repo_name: seonghobae/litellm-o3-deep-research-rest-examples
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  language: ko
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.suggest
+    - search.highlight
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: teal
+
+nav:
+  - 홈: index.md
+  - 시작하기: ko/quickstart.md
+  - 예제:
+      - Python 직접 호출: ko/python-example.md
+      - Java 직접 호출: ko/java-example.md
+      - Responses / Background / 중계 계획의 스트리밍: ko/responses-guide.md
+      - 중계 예제 구현 계획: ko/relay-toolcalling-plan.md
+  - 참고:
+      - 통합 매뉴얼: ko/manual.md
+      - FAQ: ko/faq.md
+      - 배포 런북: operations/deploy-runbook.md
+
+exclude_docs: |
+  agents/README.md
+  coderabbit/review-commands.md
+  engineering/acceptance-criteria.md
+  engineering/harness-engineering.md
+  plans/2026-03-17-relay-toolcalling-example.md
+  security/api-security-checklist.md
+  workflow/one-day-delivery-plan.md
+  workflow/pr-continuity.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+extra_css:
+  - stylesheets/extra.css

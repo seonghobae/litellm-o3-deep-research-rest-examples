@@ -1,0 +1,31 @@
+:root {
+  --md-primary-fg-color: #243b7b;
+  --md-accent-fg-color: #0f9d8a;
+}
+
+.md-header {
+  backdrop-filter: blur(10px);
+}
+
+.md-main__inner {
+  max-width: 1200px;
+}
+
+.md-typeset h1 {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.md-typeset h2,
+.md-typeset h3 {
+  font-weight: 700;
+}
+
+.md-typeset code {
+  border-radius: 0.4rem;
+}
+
+.md-typeset .admonition,
+.md-typeset details {
+  border-radius: 0.8rem;
+}

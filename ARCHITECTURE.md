@@ -5,8 +5,9 @@ This repository is intentionally small and split by language under `clients/`.
 ## Structure
 - `clients/python/`: Python example package, CLI entrypoint, and pytest suite.
 - `clients/java/`: Java 21 example application, Maven build, and JUnit suite.
-- `docs/`: repository-specific contributor guidance, acceptance criteria, and workflow notes.
-- `.github/workflows/`: CI that verifies both example clients.
+- `docs/`: repository-specific contributor guidance, acceptance criteria, workflow notes, and Korean user-facing manuals.
+- `.github/workflows/`: CI that verifies both example clients and the docs site build.
+- `mkdocs.yml`: GitHub Pages publication entrypoint for the Korean docs site.
 
 ## Design choices
 - Both clients support the OpenAI-compatible `POST /v1/chat/completions` and `POST /v1/responses` endpoints.
@@ -14,4 +15,5 @@ This repository is intentionally small and split by language under `clients/`.
 - Both clients accept `LITELLM_BASE_URL` as either the proxy root or `/v1`, and normalise it to a predictable `/v1/` API base.
 - Both clients load `LITELLM_API_KEY` and `LITELLM_BASE_URL` from the process environment, with `~/.env` as an optional fallback for local development.
 - Foreground `responses` calls extract text output for convenience, while background `responses` calls return raw JSON metadata so callers can inspect response identifiers and status.
-- Streaming and tool-calling are intentionally out of scope.
+- A Korean GitHub Pages documentation site is built from `docs/` with MkDocs Material.
+- Streaming and tool-calling are intentionally out of scope for the currently implemented direct clients; relay-oriented tool-calling is documented as a separate plan.

@@ -16,3 +16,6 @@ target/
 
 # macOS
 .DS_Store
+
+# Docs build output
+site/
