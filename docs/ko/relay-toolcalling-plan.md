@@ -29,8 +29,8 @@ relay 내부에서만 이 구조를 LiteLLM SDK 요청 형식으로 번역합니
 
 - 현재 `main`에는 직접 호출용 Python/Java 예제가 이미 존재합니다.
 - 두 예제 모두 `chat/completions`, `responses`, `background: true`를 지원합니다.
-- 현재 GitHub 상태는 open issue 0, open PR 0, milestone 0, project item 0 입니다.
-- 최근 CI는 성공 상태입니다.
+- 문서 작성 시점 snapshot에서는 open issue 0, open PR 0, milestone 0, project item 0 이었습니다.
+- 문서 작성 시점 snapshot에서 최근 CI는 성공 상태였습니다.
 - 아직 `relay/` 예제는 구현되어 있지 않습니다.
 
 따라서 현재 repository에서 가장 먼저 닫아야 할 canonical task는:
