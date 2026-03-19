@@ -433,6 +433,50 @@
   <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
+        핵심 고급 기능
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relay-apiv1chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relay /api/v1/chat 요약
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relay 환경 변수
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        라이브 검증 현황
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
         저장소 링크
       
     </span>
@@ -908,6 +952,50 @@
   <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
+        핵심 고급 기능
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relay-apiv1chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relay /api/v1/chat 요약
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relay 환경 변수
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        라이브 검증 현황
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
         저장소 링크
       
     </span>
@@ -948,6 +1036,11 @@
 <li><code>chat/completions</code> 와 <code>responses</code> API 비교</li>
 <li><code>background: true</code> 제출 방식 이해</li>
 <li>Java 호출자를 위한 relay/tool-calling 구조 확인</li>
+<li><code>web_search_preview</code>로 일반 모델에 실시간 웹 검색 추가</li>
+<li><code>system_prompt</code>로 deep research 단계의 페르소나/출력 언어 제어</li>
+<li><code>text_format</code>으로 JSON 출력 강제 (<code>json_object</code>, <code>json_schema</code>)</li>
+<li>client-side <code>--auto-tool-call</code> 과 relay-side <code>POST /api/v1/chat</code> 비교</li>
+<li>relay의 chat timeout / research timeout 분리 구조 확인</li>
 </ul>
 <h2 id="_2">문서 읽는 순서<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
 <p>처음 보는 사용자에게는 다음 순서를 권장합니다.</p>
@@ -957,14 +1050,59 @@
 <li><a href="ko/java-example/">Java 직접 호출</a></li>
 <li><a href="ko/relay-example/">Relay 중계 예제</a></li>
 <li><a href="ko/responses-guide/">Responses / Background / Relay 스트리밍</a></li>
+<li><a href="ko/auto-toolcalling/">자동 Tool Calling</a></li>
 <li><a href="ko/relay-toolcalling-plan/">중계 예제 구현 계획(보관)</a></li>
 </ol>
 <h2 id="_3">빠른 사실 확인<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
 <ul>
-<li>현재 구현 완료: Python 직접 호출, Java 직접 호출, relay 중계 예제</li>
-<li>현재 문서 사이트: GitHub Pages 배포 가능 구조</li>
+<li>현재 구현 완료: Python direct, Java direct, relay 중계 예제</li>
+<li>현재 고급 기능: <code>--web-search</code>, <code>--auto-tool-call</code>, relay <code>/api/v1/chat</code>, <code>system_prompt</code>, <code>text_format</code></li>
+<li>현재 검증 상태: Python/Java/relay 테스트, docs build, GitHub Pages 배포, 라이브 검증 결과까지 문서화</li>
 </ul>
-<h2 id="_4">저장소 링크<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h2>
+<h2 id="_4">핵심 고급 기능<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>web_search_preview</code>: Python / Java direct client에서 <code>--api responses --web-search</code></li>
+<li><code>system_prompt</code>: relay <code>deep_research</code> wrapper에서 Responses API <code>instructions</code>로 전달</li>
+<li><code>text_format</code>: relay <code>deep_research</code> wrapper에서 JSON 출력 강제 지원</li>
+<li>자동 tool calling: client-side <code>--auto-tool-call</code> 과 relay-side <code>POST /api/v1/chat</code> 둘 다 구현</li>
+</ul>
+<h2 id="relay-apiv1chat">Relay <code>/api/v1/chat</code> 요약<a class="headerlink" href="#relay-apiv1chat" title="Permanent link">&para;</a></h2>
+<p>이 저장소의 relay는 일반 대화 요청을 받아 모델이 스스로 <code>deep_research</code>를 호출할지 결정하는 <code>POST /api/v1/chat</code> 엔드포인트를 제공합니다.</p>
+<p>요청 필드:</p>
+<ul>
+<li><code>message</code></li>
+<li><code>context</code></li>
+<li><code>auto_tool_call</code></li>
+<li><code>system_prompt</code></li>
+<li><code>deliverable_format</code></li>
+</ul>
+<p>응답 필드:</p>
+<ul>
+<li><code>content</code></li>
+<li><code>tool_called</code></li>
+<li><code>tool_name</code></li>
+<li><code>research_summary</code></li>
+</ul>
+<p>자세한 내용은 <a href="ko/auto-toolcalling/">자동 Tool Calling</a>과 <a href="ko/relay-example/">Relay 중계 예제</a>를 참고하세요.</p>
+<h2 id="relay">Relay 환경 변수<a class="headerlink" href="#relay" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>RELAY_HOST</code> — 기본 <code>127.0.0.1</code></li>
+<li><code>RELAY_PORT</code> — 기본 <code>8080</code></li>
+<li><code>RELAY_TIMEOUT_SECONDS</code> — Chat Completions orchestration timeout (기본 <code>30</code>)</li>
+<li><code>RELAY_RESEARCH_TIMEOUT_SECONDS</code> — deep_research execution timeout (기본 <code>300</code>)</li>
+<li><code>LITELLM_CHAT_MODEL</code> — relay auto tool calling orchestration 모델 (기본 <code>gpt-4o</code>)</li>
+</ul>
+<h2 id="_5">라이브 검증 현황<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h2>
+<ul>
+<li>direct <code>chat</code> / <code>responses</code> / <code>background</code></li>
+<li>relay <code>tool-invocations</code> foreground / background / stream</li>
+<li>relay <code>/api/v1/chat</code> tool/no-tool</li>
+<li><code>--web-search</code></li>
+<li><code>--auto-tool-call</code></li>
+<li><code>system_prompt</code>, <code>deliverable_format</code></li>
+</ul>
+<p>실제 실행 예시와 결과는 <a href="ko/manual/">통합 매뉴얼</a>에서 확인할 수 있습니다.</p>
+<h2 id="_6">저장소 링크<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h2>
 <ul>
 <li>GitHub 저장소: <a href="https://github.com/seonghobae/litellm-o3-deep-research-rest-examples">https://github.com/seonghobae/litellm-o3-deep-research-rest-examples</a></li>
 </ul>
