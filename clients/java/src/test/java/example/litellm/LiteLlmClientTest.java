@@ -342,6 +342,24 @@ class LiteLlmClientTest {
         assertEquals(false, Thread.currentThread().isInterrupted());
     }
 
+    // ---- custom timeout constructor ------------------------------------------
+
+    @Test
+    void customTimeoutConstructorIsUsedForRequests() throws Exception {
+        server.createContext("/v1/chat/completions", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200,
+                    "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"timeout path\"}}]}");
+        });
+
+        // Use the public Duration constructor to verify it wires through correctly.
+        LiteLlmClient client = new LiteLlmClient(
+                baseUrl, "sk-test", "o3-deep-research",
+                java.time.Duration.ofSeconds(120));
+        String result = client.createChatCompletion("custom timeout question");
+        assertEquals("timeout path", result);
+    }
+
     // ---- extractResponseText: blank top-level output_text falls through --------
 
     @Test

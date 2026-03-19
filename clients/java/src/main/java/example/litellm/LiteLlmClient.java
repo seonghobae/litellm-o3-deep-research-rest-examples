@@ -19,19 +19,31 @@ public final class LiteLlmClient {
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
+    private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
+
     private final URI baseUrl;
     private final String apiKey;
     private final String model;
+    private final Duration requestTimeout;
     private final HttpClient httpClient;
 
     public LiteLlmClient(String baseUrl, String apiKey, String model) {
-        this(normalizeBaseUrl(baseUrl), apiKey, model, HttpClient.newHttpClient());
+        this(normalizeBaseUrl(baseUrl), apiKey, model, DEFAULT_TIMEOUT, HttpClient.newHttpClient());
+    }
+
+    public LiteLlmClient(String baseUrl, String apiKey, String model, Duration timeout) {
+        this(normalizeBaseUrl(baseUrl), apiKey, model, timeout, HttpClient.newHttpClient());
     }
 
     LiteLlmClient(URI baseUrl, String apiKey, String model, HttpClient httpClient) {
+        this(baseUrl, apiKey, model, DEFAULT_TIMEOUT, httpClient);
+    }
+
+    LiteLlmClient(URI baseUrl, String apiKey, String model, Duration timeout, HttpClient httpClient) {
         this.baseUrl = baseUrl;
         this.apiKey = apiKey;
         this.model = model;
+        this.requestTimeout = timeout;
         this.httpClient = httpClient;
     }
 
@@ -104,7 +116,7 @@ public final class LiteLlmClient {
         }
 
         HttpRequest request = HttpRequest.newBuilder(target)
-                .timeout(Duration.ofSeconds(30))
+                .timeout(requestTimeout)
                 .header("Authorization", "Bearer " + apiKey)
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json")

@@ -78,6 +78,16 @@ class MainTest {
                 () -> Main.main(new String[] {"--background", "my question"}));
     }
 
+    @Test
+    void timeoutFlagWithoutValueFailsFast() {
+        assertThrows(IllegalArgumentException.class,
+                () -> Main.main(new String[] {"--timeout"}));
+    }
+
+    private void writeDotenv(String content) throws java.io.IOException {
+        java.nio.file.Files.writeString(tempDir.resolve(".env"), content, StandardCharsets.UTF_8);
+    }
+
     // ---------- routing integration tests ------------------------------------
     //
     // Main.main() calls EnvConfig.loadDefault() which reads System.getenv().

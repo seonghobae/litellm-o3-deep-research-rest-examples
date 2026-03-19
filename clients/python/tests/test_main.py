@@ -148,3 +148,37 @@ def test_main_returns_1_when_settings_load_fails(
     exit_code = main(["prompt"])
 
     assert exit_code == 1
+
+
+def test_main_passes_custom_timeout_to_client(monkeypatch: pytest.MonkeyPatch) -> None:
+    """--timeout is forwarded to LiteLLMClient as the timeout parameter."""
+    captured: dict[str, object] = {}
+
+    original_init = LiteLLMClient.__init__
+
+    def fake_init(
+        self: LiteLLMClient,
+        base_url: str,
+        api_key: str,
+        model: str,
+        timeout: float = 30.0,
+    ) -> None:
+        captured["timeout"] = timeout
+        original_init(self, base_url, api_key, model, timeout=timeout)
+
+    def fake_create_chat_completion(self: LiteLLMClient, prompt: str) -> str:
+        return "ok"
+
+    monkeypatch.setattr(
+        "litellm_example.__main__.load_settings",
+        lambda dotenv_path=None: _make_settings(),
+    )
+    monkeypatch.setattr(LiteLLMClient, "__init__", fake_init)
+    monkeypatch.setattr(
+        LiteLLMClient, "create_chat_completion", fake_create_chat_completion
+    )
+
+    exit_code = main(["--timeout", "120", "my prompt"])
+
+    assert exit_code == 0
+    assert captured["timeout"] == 120.0

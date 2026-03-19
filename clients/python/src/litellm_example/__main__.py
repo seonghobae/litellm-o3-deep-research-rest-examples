@@ -23,6 +23,13 @@ def main(argv: list[str] | None = None) -> int:
         help="Request server-side background processing for the responses API.",
     )
     parser.add_argument(
+        "--timeout",
+        type=float,
+        default=30.0,
+        help="Request timeout in seconds (default: 30).  "
+        "Increase for long-running models like o3-deep-research.",
+    )
+    parser.add_argument(
         "prompt",
         nargs="?",
         default="Explain what the o3-deep-research model is useful for.",
@@ -36,7 +43,12 @@ def main(argv: list[str] | None = None) -> int:
             raise ValueError("--background can only be used with --api responses.")
 
         settings = load_settings()
-        client = LiteLLMClient(settings.base_url, settings.api_key, settings.model)
+        client = LiteLLMClient(
+            settings.base_url,
+            settings.api_key,
+            settings.model,
+            timeout=args.timeout,
+        )
         if args.api == "responses":
             content = client.create_response(args.prompt, background=args.background)
         else:

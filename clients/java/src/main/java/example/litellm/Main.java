@@ -1,6 +1,7 @@
 package example.litellm;
 
 import example.litellm.relay.RelayClient;
+import java.time.Duration;
 
 public final class Main {
     private Main() {}
@@ -11,6 +12,7 @@ public final class Main {
         boolean background = false;
         boolean stream = false;
         String deliverableFormat = "markdown_brief";
+        Duration timeout = Duration.ofSeconds(30);
 
         java.util.List<String> promptParts = new java.util.ArrayList<>();
         for (int i = 0; i < args.length; i++) {
@@ -20,6 +22,7 @@ public final class Main {
                 case "--background" -> background = true;
                 case "--stream" -> stream = true;
                 case "--deliverable-format" -> deliverableFormat = requireOptionValue(args, ++i, "--deliverable-format");
+                case "--timeout" -> timeout = Duration.ofSeconds(Long.parseLong(requireOptionValue(args, ++i, "--timeout")));
                 default -> promptParts.add(args[i]);
             }
         }
@@ -45,7 +48,7 @@ public final class Main {
             }
 
             EnvConfig config = EnvConfig.loadDefault();
-            LiteLlmClient client = new LiteLlmClient(config.baseUrl(), config.apiKey(), config.model());
+            LiteLlmClient client = new LiteLlmClient(config.baseUrl(), config.apiKey(), config.model(), timeout);
             content = "responses".equals(api)
                     ? client.createResponse(prompt, background)
                     : client.createChatCompletion(prompt);
