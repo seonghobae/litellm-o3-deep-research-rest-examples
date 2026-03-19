@@ -81,11 +81,54 @@ mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
 
 direct Python/Java 예제는 내부적으로 `/v1/` 루트로 정규화합니다. relay 예제는 같은 값을 LiteLLM SDK의 `api_base`로 그대로 사용하므로, upstream LiteLLM Proxy가 허용하는 root URL 또는 `/v1` URL을 넣으면 됩니다.
 
-## 6. 무엇이 이미 구현되어 있나
+## 6. 구현된 기능 전체 목록
 
-- Python 직접 호출 예제
-- Java 직접 호출 예제
-- LiteLLM SDK + FastAPI + Hypercorn relay 예제
-- `responses` + `background: true` 지원
-- relay의 structured tool invocation + status/wait/events API
-- 한국어 매뉴얼 및 GitHub Pages 문서 구조
+### 직접 호출 클라이언트 (Python / Java)
+
+| 기능 | Python | Java | 플래그 |
+|------|--------|------|--------|
+| Chat Completions | ✅ | ✅ | 기본값 |
+| Responses API | ✅ | ✅ | `--api responses` |
+| Background 제출 | ✅ | ✅ | `--background` |
+| 타임아웃 조정 | ✅ | ✅ | `--timeout <초>` |
+| Web 검색 | ✅ | ✅ | `--web-search` (requires `--api responses`) |
+| 자동 Tool Calling | ✅ | ✅ | `--auto-tool-call` (relay 서버 필요) |
+
+### Relay 서버 (FastAPI + Hypercorn)
+
+| 기능 | 엔드포인트 / 환경변수 |
+|------|---------------------|
+| 구조화된 tool invocation | `POST /api/v1/tool-invocations` |
+| 상태 조회 | `GET /api/v1/tool-invocations/{id}` |
+| 동기 대기 | `GET /api/v1/tool-invocations/{id}/wait` |
+| SSE 스트리밍 | `GET /api/v1/tool-invocations/{id}/events` |
+| 자동 tool calling chat | `POST /api/v1/chat` |
+| System prompt | `arguments.system_prompt` |
+| JSON 강제 출력 | `arguments.text_format` |
+| Background 제출 | `arguments.background: true` |
+
+### Relay 환경변수
+
+| 변수 | 기본값 | 설명 |
+|------|--------|------|
+| `RELAY_HOST` | `127.0.0.1` | 서버 바인딩 주소 |
+| `RELAY_PORT` | `8080` | 서버 포트 |
+| `RELAY_TIMEOUT_SECONDS` | `30` | Chat Completions 타임아웃 |
+| `RELAY_RESEARCH_TIMEOUT_SECONDS` | `300` | deep_research 실행 타임아웃 |
+| `LITELLM_CHAT_MODEL` | `gpt-4o` | auto tool calling orchestration 모델 |
+
+### Java relay 클라이언트 모드
+
+```bash
+# foreground
+RELAY_BASE_URL=http://127.0.0.1:8080 mvn -q exec:java ... -Dexec.args="--target relay ..."
+
+# background
+... -Dexec.args="--target relay --background ..."
+
+# stream
+... -Dexec.args="--target relay --stream ..."
+
+# auto tool calling (relay-side orchestration)
+LITELLM_MODEL=gpt-4o RELAY_BASE_URL=http://127.0.0.1:8080 mvn -q exec:java ... -Dexec.args="--auto-tool-call ..."
+```
