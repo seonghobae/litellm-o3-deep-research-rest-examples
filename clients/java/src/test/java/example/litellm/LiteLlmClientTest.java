@@ -138,6 +138,188 @@ class LiteLlmClientTest {
         assertEquals("top-level answer", text);
     }
 
+    // ---- normalizeBaseUrl: URISyntaxException path ---------------------------
+
+    @Test
+    void normalizeBaseUrlRejectsHardlyValidUri() {
+        // Force the URISyntaxException catch path by supplying a URI string that
+        // parses but has no scheme/host component so we take the IAE branch.
+        assertThrows(IllegalArgumentException.class,
+                () -> LiteLlmClient.normalizeBaseUrl("not a uri at all :// ??? "));
+    }
+
+    // ---- invalid JSON response -----------------------------------------------
+
+    @Test
+    void raisesApiExceptionWhenResponseBodyIsNotJson() throws Exception {
+        server.createContext("/v1/chat/completions", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            byte[] body = "not valid json".getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "text/plain");
+            exchange.sendResponseHeaders(200, body.length);
+            try (OutputStream out = exchange.getResponseBody()) { out.write(body); }
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "sk-test", "o3-deep-research");
+        ApiException ex = assertThrows(ApiException.class,
+                () -> client.createChatCompletion("bad json"));
+        assertEquals(true, ex.getMessage().contains("invalid JSON"));
+    }
+
+    // ---- extractErrorMessage: non-JSON body fallback -------------------------
+
+    @Test
+    void surfacesGenericMessageWhenErrorBodyIsNotJson() throws Exception {
+        server.createContext("/v1/chat/completions", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 500, "not json at all");
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "sk-test", "o3-deep-research");
+        ApiException ex = assertThrows(ApiException.class,
+                () -> client.createChatCompletion("trigger 500"));
+        assertEquals(500, ex.statusCode());
+        // generic fallback message when JSON parse fails
+        assertEquals(true, ex.getMessage().toLowerCase().contains("error"));
+    }
+
+    @Test
+    void surfacesGenericMessageWhenErrorObjectHasNoMessageKey() throws Exception {
+        server.createContext("/v1/chat/completions", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 503, "{\"error\":{\"code\":503}}");
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "sk-test", "o3-deep-research");
+        ApiException ex = assertThrows(ApiException.class,
+                () -> client.createChatCompletion("trigger 503"));
+        assertEquals(503, ex.statusCode());
+        assertEquals(true, ex.getMessage().toLowerCase().contains("error"));
+    }
+
+    // ---- extractAssistantText: no choices / list-of-blocks / final raise ----
+
+    @Test
+    void raisesApiExceptionWhenResponseHasNoChoices() throws Exception {
+        server.createContext("/v1/chat/completions", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200, "{\"choices\":[]}");
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "sk-test", "o3-deep-research");
+        ApiException ex = assertThrows(ApiException.class,
+                () -> client.createChatCompletion("no choices"));
+        assertEquals(true, ex.getMessage().contains("choices"));
+    }
+
+    @Test
+    void parsesListOfContentBlocksFromChatCompletion() throws Exception {
+        server.createContext("/v1/chat/completions", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200,
+                    "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"block-\"},{\"type\":\"text\",\"text\":\"reply\"}]}}]}");
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "sk-test", "o3-deep-research");
+        String result = client.createChatCompletion("block content");
+        assertEquals("block-reply", result);
+    }
+
+    @Test
+    void raisesApiExceptionWhenNoUsableAssistantMessage() throws Exception {
+        server.createContext("/v1/chat/completions", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200, "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"\"}}]}");
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "sk-test", "o3-deep-research");
+        ApiException ex = assertThrows(ApiException.class,
+                () -> client.createChatCompletion("empty content"));
+        assertEquals(true, ex.getMessage().toLowerCase().contains("usable"));
+    }
+
+    // ---- extractResponseText: edge cases ------------------------------------
+
+    @Test
+    void raisesApiExceptionWhenResponseHasNoOutputItems() throws Exception {
+        server.createContext("/v1/responses", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200, "{\"output\":[]}");
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "sk-test", "o3-deep-research");
+        ApiException ex = assertThrows(ApiException.class,
+                () -> client.createResponse("no output"));
+        assertEquals(true, ex.getMessage().toLowerCase().contains("output"));
+    }
+
+    @Test
+    void skipsOutputItemsWithNonArrayContent() throws Exception {
+        // content is not an array → skip; second item has valid content → use it
+        server.createContext("/v1/responses", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200,
+                    "{\"output\":[{\"content\":\"not an array\"},{\"content\":[{\"type\":\"output_text\",\"text\":\"good\"}]}]}");
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "sk-test", "o3-deep-research");
+        String result = client.createResponse("non-array content");
+        assertEquals("good", result);
+    }
+
+    @Test
+    void skipsBlocksWithUnrecognisedTypeInOutputArray() throws Exception {
+        server.createContext("/v1/responses", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200,
+                    "{\"output\":[{\"content\":[{\"type\":\"reasoning\",\"text\":\"skip\"},{\"type\":\"output_text\",\"text\":\"keep\"}]}]}");
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "sk-test", "o3-deep-research");
+        String result = client.createResponse("skip reasoning type");
+        assertEquals("keep", result);
+    }
+
+    @Test
+    void skipsBlocksWithNullTextField() throws Exception {
+        server.createContext("/v1/responses", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200,
+                    "{\"output\":[{\"content\":[{\"type\":\"output_text\"},{\"type\":\"output_text\",\"text\":\"real\"}]}]}");
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "sk-test", "o3-deep-research");
+        String result = client.createResponse("null text field");
+        assertEquals("real", result);
+    }
+
+    @Test
+    void collectsPlainStringTextField() throws Exception {
+        server.createContext("/v1/responses", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200,
+                    "{\"output\":[{\"content\":[{\"type\":\"output_text\",\"text\":\"plain string\"}]}]}");
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "sk-test", "o3-deep-research");
+        String result = client.createResponse("plain text field");
+        assertEquals("plain string", result);
+    }
+
+    @Test
+    void raisesApiExceptionWhenAllBlocksAreSkipped() throws Exception {
+        server.createContext("/v1/responses", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200,
+                    "{\"output\":[{\"content\":[{\"type\":\"reasoning\",\"text\":\"skip me\"}]}]}");
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "sk-test", "o3-deep-research");
+        ApiException ex = assertThrows(ApiException.class,
+                () -> client.createResponse("all skipped"));
+        assertEquals(true, ex.getMessage().toLowerCase().contains("usable"));
+    }
+
     @Test
     void ioExceptionDoesNotInterruptCallingThread() {
         AtomicBoolean called = new AtomicBoolean(false);
