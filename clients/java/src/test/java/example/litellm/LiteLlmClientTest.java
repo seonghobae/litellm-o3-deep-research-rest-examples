@@ -342,6 +342,86 @@ class LiteLlmClientTest {
         assertEquals(false, Thread.currentThread().isInterrupted());
     }
 
+    // ---- extractResponseText: blank top-level output_text falls through --------
+
+    @Test
+    void fallsThroughWhenTopLevelOutputTextIsBlank() throws Exception {
+        // outputText.isBlank() → falls through to output[] traversal
+        server.createContext("/v1/responses", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200,
+                    "{\"output_text\":\"   \","
+                            + "\"output\":[{\"content\":[{\"type\":\"output_text\",\"text\":\"fallback\"}]}]}");
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "sk-test", "o3-deep-research");
+        String result = client.createResponse("blank top-level");
+        assertEquals("fallback", result);
+    }
+
+    @Test
+    void skipsBlocksWithObjectTextAndNullValue() throws Exception {
+        // text.isObject() but value == null → skip; next block is valid
+        server.createContext("/v1/responses", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200,
+                    "{\"output\":[{\"content\":["
+                            + "{\"type\":\"output_text\",\"text\":{\"value\":null}},"
+                            + "{\"type\":\"output_text\",\"text\":\"real\"}"
+                            + "]}]}");
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "sk-test", "o3-deep-research");
+        String result = client.createResponse("null object value");
+        assertEquals("real", result);
+    }
+
+    @Test
+    void extractErrorMessageFallsBackWhenErrorFieldIsNotObject() throws Exception {
+        // error field exists but is a string, not an object → fallback generic
+        server.createContext("/v1/chat/completions", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 400, "{\"error\":\"just a string\"}");
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "sk-test", "o3-deep-research");
+        ApiException ex = assertThrows(ApiException.class,
+                () -> client.createChatCompletion("string error field"));
+        assertEquals(400, ex.statusCode());
+        assertEquals(true, ex.getMessage().toLowerCase().contains("error"));
+    }
+
+    @Test
+    void extractAssistantTextRaisesWhenListOfBlocksIsEmpty() throws Exception {
+        // content.isArray() but no blocks with text → raises usable message error
+        server.createContext("/v1/chat/completions", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200,
+                    "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":[]}}]}");
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "sk-test", "o3-deep-research");
+        ApiException ex = assertThrows(ApiException.class,
+                () -> client.createChatCompletion("empty array content"));
+        assertEquals(true, ex.getMessage().toLowerCase().contains("usable"));
+    }
+
+    @Test
+    void extractAssistantTextRaisesWhenBlocksHaveNoTextField() throws Exception {
+        // content.isArray() with blocks but no "text" key → raises
+        server.createContext("/v1/chat/completions", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200,
+                    "{\"choices\":[{\"message\":{\"role\":\"assistant\","
+                            + "\"content\":[{\"type\":\"image_url\",\"image_url\":\"http://img.example\"}]}}]}");
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "sk-test", "o3-deep-research");
+        ApiException ex = assertThrows(ApiException.class,
+                () -> client.createChatCompletion("no text in blocks"));
+        assertEquals(true, ex.getMessage().toLowerCase().contains("usable"));
+    }
+
     private static void writeJson(HttpExchange exchange, int status, String payload) throws IOException {
         byte[] bytes = payload.getBytes(StandardCharsets.UTF_8);
         exchange.getResponseHeaders().set("Content-Type", "application/json");

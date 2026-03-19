@@ -406,3 +406,37 @@ def test_render_input_omits_context_and_constraints_sections_when_empty() -> Non
 
     assert "Context:" not in rendered
     assert "Constraints:" not in rendered
+
+
+def test_render_input_shows_no_when_require_citations_is_false() -> None:
+    """Cover the ``False`` branch of ``require_citations`` in _render_input."""
+    args = DeepResearchArguments(
+        research_question="No citations needed",
+        deliverable_format="markdown_brief",
+        require_citations=False,
+    )
+    rendered = LiteLLMRelayGateway._render_input(args)
+
+    assert "Require citations: no" in rendered
+
+
+def test_render_input_includes_correct_deliverable_format_markdown_report() -> None:
+    """Cover ``markdown_report`` deliverable format in _render_input."""
+    args = DeepResearchArguments(
+        research_question="Report format question",
+        deliverable_format="markdown_report",
+    )
+    rendered = LiteLLMRelayGateway._render_input(args)
+
+    assert "Deliverable format: markdown_report" in rendered
+
+
+def test_render_input_includes_correct_deliverable_format_json_outline() -> None:
+    """Cover ``json_outline`` deliverable format in _render_input."""
+    args = DeepResearchArguments(
+        research_question="JSON outline question",
+        deliverable_format="json_outline",
+    )
+    rendered = LiteLLMRelayGateway._render_input(args)
+
+    assert "Deliverable format: json_outline" in rendered

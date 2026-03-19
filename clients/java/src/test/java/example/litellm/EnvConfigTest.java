@@ -144,6 +144,34 @@ class EnvConfigTest {
     }
 
     @Test
+    void stripsDoubleQuotesFromValues() throws Exception {
+        // cover the double-quote branch in the quote-stripping block
+        Path dotenv = tempDir.resolve("double-quotes.env");
+        Files.writeString(dotenv,
+                "LITELLM_BASE_URL=\"https://double-quoted.example\"\n"
+                        + "LITELLM_API_KEY=\"sk-double\"\n",
+                java.nio.charset.StandardCharsets.UTF_8);
+
+        EnvConfig config = EnvConfig.load(dotenv, Map.of());
+        assertEquals("https://double-quoted.example", config.baseUrl());
+        assertEquals("sk-double", config.apiKey());
+    }
+
+    @Test
+    void fallsBackToDefaultModelWhenModelIsBlank() throws Exception {
+        // isBlank(model) → uses "o3-deep-research" as default
+        Path dotenv = tempDir.resolve("blank-model.env");
+        Files.writeString(dotenv,
+                "LITELLM_BASE_URL=https://example.com\n"
+                        + "LITELLM_API_KEY=sk-test\n"
+                        + "LITELLM_MODEL=\n",
+                java.nio.charset.StandardCharsets.UTF_8);
+
+        EnvConfig config = EnvConfig.load(dotenv, Map.of());
+        assertEquals("o3-deep-research", config.model());
+    }
+
+    @Test
     void loadDefaultUsesHomeDirectoryDotenv() throws Exception {
         // loadDefault() reads Path.of(user.home, ".env") + System.getenv().
         // Write a .env in tempDir, redirect user.home there, and override the

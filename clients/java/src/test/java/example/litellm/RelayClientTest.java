@@ -320,6 +320,116 @@ class RelayClientTest {
         assertEquals("array answer", result);
     }
 
+    // extractOutputText: blank top-level output_text falls through to nested/array -
+
+    @Test
+    void wait_endpoint_falls_through_when_top_level_output_text_is_blank() throws Exception {
+        // outputText.isBlank() → falls through to nested response.output_text check
+        server.createContext("/api/v1/tool-invocations/inv_blank_top/wait", exchange ->
+                writeJson(exchange, 200,
+                        "{\"invocation_id\":\"inv_blank_top\",\"mode\":\"background\","
+                                + "\"status\":\"completed\",\"deliverable_format\":\"markdown_brief\","
+                                + "\"output_text\":\"   \","
+                                + "\"output\":[{\"content\":[{\"type\":\"output_text\",\"text\":\"fallback answer\"}]}]}"));
+
+        example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
+        String result = client.waitForInvocation("inv_blank_top");
+        assertEquals("fallback answer", result);
+    }
+
+    @Test
+    void wait_endpoint_falls_through_when_nested_output_text_is_blank() throws Exception {
+        // nestedOutputText.isBlank() → falls through to output[] array traversal
+        server.createContext("/api/v1/tool-invocations/inv_blank_nested/wait", exchange ->
+                writeJson(exchange, 200,
+                        "{\"invocation_id\":\"inv_blank_nested\",\"mode\":\"background\","
+                                + "\"status\":\"completed\",\"deliverable_format\":\"markdown_brief\","
+                                + "\"response\":{\"output_text\":\"\"},"
+                                + "\"output\":[{\"content\":[{\"type\":\"output_text\",\"text\":\"from output array\"}]}]}"));
+
+        example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
+        String result = client.waitForInvocation("inv_blank_nested");
+        assertEquals("from output array", result);
+    }
+
+    @Test
+    void wait_endpoint_reads_text_with_null_value_in_object_skips_and_uses_other_block() throws Exception {
+        // text.isObject() but value is null → skips; next block has valid text
+        server.createContext("/api/v1/tool-invocations/inv_null_value/wait", exchange ->
+                writeJson(exchange, 200,
+                        "{\"invocation_id\":\"inv_null_value\",\"mode\":\"background\","
+                                + "\"status\":\"completed\",\"deliverable_format\":\"markdown_brief\","
+                                + "\"output\":[{\"content\":["
+                                + "{\"type\":\"output_text\",\"text\":{\"value\":null}},"
+                                + "{\"type\":\"output_text\",\"text\":\"real value\"}"
+                                + "]}]}"));
+
+        example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
+        String result = client.waitForInvocation("inv_null_value");
+        assertEquals("real value", result);
+    }
+
+    // streamInvocation: SSE frame parsing branches --------------------------------
+
+    @Test
+    void streams_text_skips_empty_sse_frames() throws Exception {
+        // Body has an empty frame between two valid frames — trimmed.isEmpty() branch
+        server.createContext("/api/v1/tool-invocations", exchange -> writeJson(exchange, 202,
+                "{\"invocation_id\":\"inv_empty_frame\",\"mode\":\"stream\",\"status\":\"pending\",\"deliverable_format\":\"markdown_brief\"}"));
+        server.createContext("/api/v1/tool-invocations/inv_empty_frame/events", exchange ->
+                writeText(exchange, 200, "text/event-stream",
+                        "event: output_text\n"
+                                + "data: {\"invocation_id\":\"inv_empty_frame\",\"type\":\"output_text\",\"status\":\"running\",\"data\":{\"text\":\"first\"}}\n"
+                                + "\n"
+                                + "\n"  // extra blank line → empty frame
+                                + "event: output_text\n"
+                                + "data: {\"invocation_id\":\"inv_empty_frame\",\"type\":\"output_text\",\"status\":\"running\",\"data\":{\"text\":\" second\"}}\n"
+                                + "\n"
+                                + "event: completed\n"
+                                + "data: {\"invocation_id\":\"inv_empty_frame\",\"type\":\"completed\",\"status\":\"completed\",\"data\":{\"output_text\":\"first second\"}}\n"
+                                + "\n"));
+
+        example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
+        String result = client.invokeDeepResearch("empty frame test", "markdown_brief", false, true);
+        assertEquals("first second", result);
+    }
+
+    @Test
+    void streams_text_skips_non_data_lines_in_sse_frame() throws Exception {
+        // Lines not starting with "data:" (e.g. "event:", "id:", ":comment") are skipped
+        server.createContext("/api/v1/tool-invocations", exchange -> writeJson(exchange, 202,
+                "{\"invocation_id\":\"inv_non_data\",\"mode\":\"stream\",\"status\":\"pending\",\"deliverable_format\":\"markdown_brief\"}"));
+        server.createContext("/api/v1/tool-invocations/inv_non_data/events", exchange ->
+                writeText(exchange, 200, "text/event-stream",
+                        "event: output_text\n"
+                                + ": this is a comment line\n"
+                                + "id: 1\n"
+                                + "data: {\"invocation_id\":\"inv_non_data\",\"type\":\"output_text\",\"status\":\"running\",\"data\":{\"text\":\"only this\"}}\n"
+                                + "\n"
+                                + "event: completed\n"
+                                + "data: {\"invocation_id\":\"inv_non_data\",\"type\":\"completed\",\"status\":\"completed\",\"data\":{\"output_text\":\"only this\"}}\n"
+                                + "\n"));
+
+        example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
+        String result = client.invokeDeepResearch("non-data line test", "markdown_brief", false, true);
+        assertEquals("only this", result);
+    }
+
+    // requiredText: blank field value → raises ApiException ----------------------
+
+    @Test
+    void foreground_result_with_blank_invocation_id_raises_api_exception() throws Exception {
+        server.createContext("/api/v1/tool-invocations", exchange ->
+                writeJson(exchange, 202,
+                        "{\"invocation_id\":\"   \",\"mode\":\"stream\","
+                                + "\"status\":\"pending\",\"deliverable_format\":\"markdown_brief\"}"));
+
+        example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
+        ApiException ex = assertThrows(ApiException.class,
+                () -> client.invokeDeepResearch("blank id", "markdown_brief", false, true));
+        assertEquals(true, ex.getMessage().toLowerCase().contains("invocation_id"));
+    }
+
     private static void writeJson(HttpExchange exchange, int status, String payload) throws IOException {
         writeText(exchange, status, "application/json", payload);
     }
