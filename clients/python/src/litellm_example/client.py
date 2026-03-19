@@ -10,6 +10,35 @@ from urllib.parse import urlparse
 import certifi
 
 
+DEEP_RESEARCH_FUNCTION_TOOL: Dict[str, Any] = {
+    "type": "function",
+    "function": {
+        "name": "deep_research",
+        "description": (
+            "Conduct in-depth research on a topic and return a detailed report. "
+            "Use this when the user asks for detailed factual information, history, "
+            "analysis, or comprehensive explanations that require research beyond "
+            "general knowledge."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "research_question": {
+                    "type": "string",
+                    "description": "The specific research question or topic to investigate",
+                },
+                "deliverable_format": {
+                    "type": "string",
+                    "enum": ["markdown_brief", "markdown_report", "json_outline"],
+                    "description": "Format of the research output",
+                },
+            },
+            "required": ["research_question", "deliverable_format"],
+        },
+    },
+}
+
+
 class LiteLLMError(Exception):
     """Represents an error response or network failure when talking to LiteLLM."""
 
@@ -145,6 +174,121 @@ class LiteLLMClient:
         if background:
             return json.dumps(parsed, ensure_ascii=False)
         return self._extract_response_content(parsed)
+
+    def create_chat_with_tool_calling(
+        self,
+        prompt: str,
+        relay_base_url: str | None = None,
+    ) -> tuple[str, bool]:
+        """Send a chat completions request with the deep_research function tool.
+
+        Returns ``(answer_text, tool_was_called)``.
+
+        When the model decides to call deep_research, this method:
+
+        1. Sends the first Chat Completions turn with the ``deep_research``
+           function tool attached.
+        2. If the model returns ``finish_reason == "tool_calls"`` for
+           ``deep_research``, calls the relay ``POST /api/v1/chat`` endpoint to
+           execute the research (the relay handles actual deep research internally).
+        3. Sends a second Chat Completions turn that includes the tool result so
+           the model can synthesise a final natural-language answer.
+        4. Returns ``(final_answer, True)``.
+
+        When the model answers directly (no tool call), returns
+        ``(answer, False)``.
+
+        Parameters
+        ----------
+        prompt:
+            The user message.
+        relay_base_url:
+            Base URL of the relay server (e.g. ``http://127.0.0.1:8080``).
+            Defaults to ``http://127.0.0.1:8080`` when not provided.
+        """
+        # First turn: chat completions with tool schema
+        payload: Dict[str, Any] = {
+            "model": self._model,
+            "messages": [{"role": "user", "content": prompt}],
+            "tools": [DEEP_RESEARCH_FUNCTION_TOOL],
+        }
+        first_response = self._post_json(self._chat_url(), payload)
+
+        choices = first_response.get("choices") or []
+        if not choices:
+            raise LiteLLMError(
+                200, "No choices in response.", json.dumps(first_response)
+            )
+
+        first_choice = choices[0]
+        if not isinstance(first_choice, dict):
+            raise LiteLLMError(
+                200, "Unexpected choice format.", json.dumps(first_response)
+            )
+
+        finish_reason = first_choice.get("finish_reason", "stop")
+        first_message = first_choice.get("message") or {}
+        tool_calls = first_message.get("tool_calls") or []
+
+        # Find the deep_research tool call (if any)
+        deep_research_call = next(
+            (
+                tc
+                for tc in tool_calls
+                if isinstance(tc, dict)
+                and tc.get("type") == "function"
+                and (tc.get("function") or {}).get("name") == "deep_research"
+            ),
+            None,
+        )
+
+        if finish_reason != "tool_calls" or deep_research_call is None:
+            # No tool call — return the direct assistant answer
+            content = first_message.get("content") or ""
+            return content, False
+
+        # Extract tool call metadata
+        raw_args = (deep_research_call.get("function") or {}).get("arguments", "{}")
+        try:
+            tool_args = json.loads(raw_args)
+        except json.JSONDecodeError:
+            tool_args = {}
+
+        research_question = tool_args.get("research_question", prompt)
+        tool_call_id = deep_research_call.get("id", "call_0")
+
+        # Call relay /api/v1/chat to execute the deep research
+        relay_url = (relay_base_url or "http://127.0.0.1:8080").rstrip("/")
+        relay_chat_url = relay_url + "/api/v1/chat"
+        relay_payload: Dict[str, Any] = {
+            "message": research_question,
+            "auto_tool_call": True,
+        }
+        relay_response = self._post_json(relay_chat_url, relay_payload)
+        research_summary = (
+            relay_response.get("research_summary")
+            or relay_response.get("content")
+            or ""
+        )
+
+        # Second turn: synthesise final answer with tool result
+        messages_with_result: list[Dict[str, Any]] = [
+            {"role": "user", "content": prompt},
+            {"role": "assistant", "content": None, "tool_calls": [deep_research_call]},
+            {"role": "tool", "tool_call_id": tool_call_id, "content": research_summary},
+        ]
+        second_payload: Dict[str, Any] = {
+            "model": self._model,
+            "messages": messages_with_result,
+        }
+        second_response = self._post_json(self._chat_url(), second_payload)
+        second_choices = second_response.get("choices") or []
+        if not second_choices:
+            # Fallback: return research summary if second turn produces no choices
+            return research_summary, True
+        second_message = (second_choices[0] or {}).get("message") or {}
+        final_content = second_message.get("content") or research_summary
+        return final_content, True
 
     def _post_json(self, url: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         """POST *payload* as JSON to *url* and return the parsed response dict."""

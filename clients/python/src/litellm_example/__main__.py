@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 
 from .config import load_settings
@@ -33,6 +34,17 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
+        "--auto-tool-call",
+        action="store_true",
+        dest="auto_tool_call",
+        help=(
+            "Use function-calling with the deep_research tool. "
+            "When the model decides to call deep_research, the relay server "
+            "executes the research automatically. "
+            "Cannot be combined with --target relay."
+        ),
+    )
+    parser.add_argument(
         "--timeout",
         type=float,
         default=30.0,
@@ -61,7 +73,16 @@ def main(argv: list[str] | None = None) -> int:
             settings.model,
             timeout=args.timeout,
         )
-        if args.api == "responses":
+        if args.auto_tool_call:
+            relay_url = os.environ.get("RELAY_BASE_URL", "http://127.0.0.1:8080")
+            answer, tool_called = client.create_chat_with_tool_calling(
+                args.prompt, relay_base_url=relay_url
+            )
+            print(answer)
+            if tool_called:
+                print("[deep_research was called automatically]", file=sys.stderr)
+            return 0
+        elif args.api == "responses":
             tools = [{"type": "web_search_preview"}] if args.web_search else None
             content = client.create_response(
                 args.prompt, background=args.background, tools=tools

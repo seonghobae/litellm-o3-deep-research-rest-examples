@@ -232,3 +232,147 @@ def test_main_rejects_web_search_without_responses_api(
     exit_code = main(["--web-search", "some prompt"])
 
     assert exit_code == 1
+
+
+# --------------------------------------------------------------------------- #
+# --auto-tool-call flag tests                                                  #
+# --------------------------------------------------------------------------- #
+
+
+def test_main_auto_tool_call_calls_create_chat_with_tool_calling(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """--auto-tool-call invokes create_chat_with_tool_calling on the client."""
+    captured: dict[str, object] = {}
+
+    def fake_create_chat_with_tool_calling(
+        self: LiteLLMClient, prompt: str, relay_base_url: str | None = None
+    ) -> tuple[str, bool]:
+        captured["prompt"] = prompt
+        captured["relay_base_url"] = relay_base_url
+        return "tool answer", False
+
+    monkeypatch.setattr(
+        "litellm_example.__main__.load_settings",
+        lambda dotenv_path=None: _make_settings(),
+    )
+    monkeypatch.setattr(
+        LiteLLMClient,
+        "create_chat_with_tool_calling",
+        fake_create_chat_with_tool_calling,
+    )
+
+    exit_code = main(["--auto-tool-call", "my research question"])
+
+    assert exit_code == 0
+    assert captured["prompt"] == "my research question"
+
+
+def test_main_auto_tool_call_prints_stderr_when_tool_called(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """When tool_called=True, prints [deep_research was called automatically] to stderr."""
+
+    def fake_create_chat_with_tool_calling(
+        self: LiteLLMClient, prompt: str, relay_base_url: str | None = None
+    ) -> tuple[str, bool]:
+        return "research result", True
+
+    monkeypatch.setattr(
+        "litellm_example.__main__.load_settings",
+        lambda dotenv_path=None: _make_settings(),
+    )
+    monkeypatch.setattr(
+        LiteLLMClient,
+        "create_chat_with_tool_calling",
+        fake_create_chat_with_tool_calling,
+    )
+
+    exit_code = main(["--auto-tool-call", "what is the history of jjajangmyeon"])
+
+    assert exit_code == 0
+    captured = capsys.readouterr()
+    assert "research result" in captured.out
+    assert "[deep_research was called automatically]" in captured.err
+
+
+def test_main_auto_tool_call_no_stderr_when_tool_not_called(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """When tool_called=False, does NOT print to stderr."""
+
+    def fake_create_chat_with_tool_calling(
+        self: LiteLLMClient, prompt: str, relay_base_url: str | None = None
+    ) -> tuple[str, bool]:
+        return "direct answer", False
+
+    monkeypatch.setattr(
+        "litellm_example.__main__.load_settings",
+        lambda dotenv_path=None: _make_settings(),
+    )
+    monkeypatch.setattr(
+        LiteLLMClient,
+        "create_chat_with_tool_calling",
+        fake_create_chat_with_tool_calling,
+    )
+
+    exit_code = main(["--auto-tool-call", "simple question"])
+
+    assert exit_code == 0
+    captured = capsys.readouterr()
+    assert "direct answer" in captured.out
+    assert "[deep_research was called automatically]" not in captured.err
+
+
+def test_main_auto_tool_call_uses_relay_base_url_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """RELAY_BASE_URL env var is passed as relay_base_url to create_chat_with_tool_calling."""
+    captured: dict[str, object] = {}
+
+    def fake_create_chat_with_tool_calling(
+        self: LiteLLMClient, prompt: str, relay_base_url: str | None = None
+    ) -> tuple[str, bool]:
+        captured["relay_base_url"] = relay_base_url
+        return "ok", False
+
+    monkeypatch.setattr(
+        "litellm_example.__main__.load_settings",
+        lambda dotenv_path=None: _make_settings(),
+    )
+    monkeypatch.setattr(
+        LiteLLMClient,
+        "create_chat_with_tool_calling",
+        fake_create_chat_with_tool_calling,
+    )
+    monkeypatch.setenv("RELAY_BASE_URL", "http://relay.internal:9090")
+
+    exit_code = main(["--auto-tool-call", "query"])
+
+    assert exit_code == 0
+    assert captured["relay_base_url"] == "http://relay.internal:9090"
+
+
+def test_main_auto_tool_call_returns_1_on_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """--auto-tool-call returns exit code 1 when create_chat_with_tool_calling raises."""
+
+    def fake_create_chat_with_tool_calling(
+        self: LiteLLMClient, prompt: str, relay_base_url: str | None = None
+    ) -> tuple[str, bool]:
+        raise LiteLLMError(500, "relay error")
+
+    monkeypatch.setattr(
+        "litellm_example.__main__.load_settings",
+        lambda dotenv_path=None: _make_settings(),
+    )
+    monkeypatch.setattr(
+        LiteLLMClient,
+        "create_chat_with_tool_calling",
+        fake_create_chat_with_tool_calling,
+    )
+
+    exit_code = main(["--auto-tool-call", "some query"])
+
+    assert exit_code == 1
