@@ -66,6 +66,17 @@ class ChatOrchestrator:
     :class:`~litellm_relay.contracts.ChatResponse` with ``tool_called=True``
     and an ``error_detail`` payload in ``research_summary`` so callers receive
     a structured response rather than a bare HTTP 500.
+
+    system_prompt and deliverable_format passthrough
+    ------------------------------------------------
+    ``ChatRequest.system_prompt`` is forwarded to ``DeepResearchArguments``
+    when the model triggers the deep_research tool call.  It maps to the
+    Responses API ``instructions`` field so the research step can be given
+    a persona, output language, or format constraint.
+
+    ``ChatRequest.deliverable_format`` is used as the *fallback* when the
+    Chat Completions model does not specify a format in its tool-call
+    arguments.  The model's chosen format always takes precedence.
     """
 
     def __init__(
@@ -131,13 +142,17 @@ class ChatOrchestrator:
             tool_args = {}
 
         research_question = tool_args.get("research_question", request.message)
-        deliverable_format = tool_args.get("deliverable_format", "markdown_brief")
+        # Use the model-chosen format, falling back to the caller's preferred format.
+        deliverable_format = tool_args.get(
+            "deliverable_format", request.deliverable_format
+        )
 
         try:
             research_result = await self._invoke_deep_research(
                 DeepResearchArguments(
                     research_question=research_question,
                     deliverable_format=deliverable_format,
+                    system_prompt=request.system_prompt,
                 )
             )
             research_summary = research_result.output_text or ""
