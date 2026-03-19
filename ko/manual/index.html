@@ -1,0 +1,3289 @@
+
+<!doctype html>
+<html lang="ko" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="LiteLLM Proxy, Python, Java, relay 예제를 위한 한국어 문서 사이트">
+      
+      
+      
+        <link rel="canonical" href="https://seonghobae.github.io/litellm-o3-deep-research-rest-examples/ko/manual/">
+      
+      
+        <link rel="prev" href="../auto-toolcalling/">
+      
+      
+        <link rel="next" href="../faq/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+    
+    
+      
+        <title>통합 매뉴얼 - LiteLLM o3-deep-research 예제 문서</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="teal">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#litellm-o3-deep-research" class="md-skip">
+          콘텐츠로 이동
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="상단/헤더">
+    <a href="../.." title="LiteLLM o3-deep-research 예제 문서" class="md-header__button md-logo" aria-label="LiteLLM o3-deep-research 예제 문서" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            LiteLLM o3-deep-research 예제 문서
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              통합 매뉴얼
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="teal"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="검색" placeholder="검색" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="검색">
+        
+        <button type="reset" class="md-search__icon md-icon" title="지우기" aria-label="지우기" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            검색 초기화
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/seonghobae/litellm-o3-deep-research-rest-examples" title="저장소로 이동" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    seonghobae/litellm-o3-deep-research-rest-examples
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="탭" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  홈
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  시작하기
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../python-example/" class="md-tabs__link">
+          
+  
+  
+  예제
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  참고
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="네비게이션" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="LiteLLM o3-deep-research 예제 문서" class="md-nav__button md-logo" aria-label="LiteLLM o3-deep-research 예제 문서" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    LiteLLM o3-deep-research 예제 문서
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/seonghobae/litellm-o3-deep-research-rest-examples" title="저장소로 이동" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    seonghobae/litellm-o3-deep-research-rest-examples
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    홈
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    시작하기
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    예제
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    예제
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../python-example/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python 직접 호출
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../java-example/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java 직접 호출
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../relay-example/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Relay 중계 예제
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../responses-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Responses / Background / Relay 스트리밍
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../auto-toolcalling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    자동 Tool Calling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    참고
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    참고
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    통합 매뉴얼
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    통합 매뉴얼
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="목차">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      목차
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 저장소 개요
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 공통 사전 준비
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. 공통 사전 준비">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#litellm_base_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LITELLM_BASE_URL 규칙
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Python 직접 호출 예제
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Python 직접 호출 예제">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        의존성 설치 및 테스트
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chatcompletions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        chat/completions 호출
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#responses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        responses 호출
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#responses-background" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        responses background 제출
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#-timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        타임아웃 조정 (--timeout)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-java" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Java 예제
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Java 예제">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        빌드 및 테스트
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-1-direct-chatcompletions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-1. direct chat/completions 호출
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-2-direct-responses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-2. direct responses 호출
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-3-direct-responses-background" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-3. direct responses background 제출
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-4-relay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-4. relay 호출 모드
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-5-timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-5. 타임아웃 조정 (--timeout)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-relay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. relay 중계 예제
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. relay 중계 예제">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#relay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        relay 전용 설정
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        실행
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        공개 API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        공개 계약 예시
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-background-stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. background 와 stream 해석
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. background 와 stream 해석">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#6-1-direct-background" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6-1. direct 예제의 background
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-2-relay-stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6-2. relay 예제의 stream
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. 문제 해결
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. 문제 해결">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#litellm_api_key-is-not-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LITELLM_API_KEY is not set
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#litellm_base_url-is-not-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LITELLM_BASE_URL is not set
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relay_base_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RELAY_BASE_URL 오류
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSL / 인증서 오류
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4xx-5xx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4xx / 5xx 응답
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-web_search_preview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. web_search_preview — 일반 모델에 웹 검색 켜기
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. web_search_preview — 일반 모델에 웹 검색 켜기">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        동작 원리
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#python-web-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python — --web-search 플래그
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#java-web-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Java — --web-search 플래그
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gpt-4o-web_search_preview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        실제 호출 결과 예시 (gpt-4o + web_search_preview)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-deep_research-wrapper-prompt-system_prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. deep_research Wrapper의 Prompt 구조와 system_prompt
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. deep_research Wrapper의 Prompt 구조와 system_prompt">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#9-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9-1. 현재 구조
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9-2. 문제: 시스템 프롬프트(지시문)를 어디에 넣어야 하나?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-3-responses-api-prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9-3. Responses API의 prompt 레이어 구조
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9-4. 실제 테스트 결과
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-5-system_prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9-5. system_prompt 활용 패턴 정리
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-6-chat-completions-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9-6. Chat Completions API와의 비교
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-7-system_prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9-7. system_prompt가 없을 때와 있을 때의 흐름
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-deep_research-wrapper-json-text_format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. deep_research Wrapper에서 JSON 출력 강제 (text_format)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. deep_research Wrapper에서 JSON 출력 강제 (text_format)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#10-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10-1. 배경
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#10-2-text_format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10-2. text_format 필드
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#10-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10-3. 사용 방법
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10-3. 사용 방법">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#json_object-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        json_object 모드 (자유 형식 JSON)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#json_schema-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        json_schema 모드 (스키마 강제 JSON)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#10-4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10-4. 모델별 지원 현황과 제약
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10-4. 모델별 지원 현황과 제약">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gpt-4o" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        gpt-4o (✅ 완전 지원)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#o3-deep-research" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        o3-deep-research (❌/⚠️ 제한적)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#10-5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10-5. 내부 동작
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#10-6-deliverable_format-vs-text_format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10-6. deliverable_format vs text_format
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-5-web_search-system_prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. 작업 검증 이력 — '짜장면의 역사' 실호출 (5가지 경로 + web_search + system_prompt)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. 작업 검증 이력 — &#39;짜장면의 역사&#39; 실호출 (5가지 경로 + web_search + system_prompt)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-1-python-api-chat-gpt-4o" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11-1. Python --api chat (gpt-4o)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#11-2-python-api-responses-gpt-4o" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11-2. Python --api responses (gpt-4o)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#11-3-java-api-chat-gpt-4o" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11-3. Java --api chat (gpt-4o)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#11-4-java-api-responses-gpt-4o" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11-4. Java --api responses (gpt-4o)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#11-5-java-target-relay-gpt-4o-relay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11-5. Java --target relay (gpt-4o, relay 서버 경유)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#11-6-python-api-responses-web-search-gpt-4o" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11-6. Python --api responses --web-search (gpt-4o + 웹 검색)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#11-7-java-api-responses-web-search-gpt-4o" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11-7. Java --api responses --web-search (gpt-4o + 웹 검색)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. 요약
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-tool-calling-deep_research" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. 자동 Tool Calling — 일반 대화 중 deep_research 자동 개입
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="13. 자동 Tool Calling — 일반 대화 중 deep_research 자동 개입">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#13-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13-1. 핵심 개념
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-2-approach-a-client-side-pythonjava" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13-2. Approach A: Client-Side (Python/Java)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-3-approach-c-relay-side-post-apiv1chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13-3. Approach C: Relay-Side (POST /api/v1/chat)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13-4. 모델 제약
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../relay-toolcalling-plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    중계 예제 구현 계획(보관)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/deploy-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    배포 런북
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="목차">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      목차
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 저장소 개요
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 공통 사전 준비
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. 공통 사전 준비">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#litellm_base_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LITELLM_BASE_URL 규칙
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Python 직접 호출 예제
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Python 직접 호출 예제">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        의존성 설치 및 테스트
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chatcompletions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        chat/completions 호출
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#responses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        responses 호출
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#responses-background" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        responses background 제출
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#-timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        타임아웃 조정 (--timeout)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-java" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Java 예제
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Java 예제">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        빌드 및 테스트
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-1-direct-chatcompletions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-1. direct chat/completions 호출
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-2-direct-responses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-2. direct responses 호출
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-3-direct-responses-background" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-3. direct responses background 제출
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-4-relay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-4. relay 호출 모드
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-5-timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-5. 타임아웃 조정 (--timeout)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-relay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. relay 중계 예제
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. relay 중계 예제">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#relay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        relay 전용 설정
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        실행
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        공개 API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        공개 계약 예시
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-background-stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. background 와 stream 해석
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. background 와 stream 해석">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#6-1-direct-background" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6-1. direct 예제의 background
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-2-relay-stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6-2. relay 예제의 stream
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. 문제 해결
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. 문제 해결">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#litellm_api_key-is-not-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LITELLM_API_KEY is not set
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#litellm_base_url-is-not-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LITELLM_BASE_URL is not set
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relay_base_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RELAY_BASE_URL 오류
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSL / 인증서 오류
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4xx-5xx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4xx / 5xx 응답
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-web_search_preview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. web_search_preview — 일반 모델에 웹 검색 켜기
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. web_search_preview — 일반 모델에 웹 검색 켜기">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        동작 원리
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#python-web-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python — --web-search 플래그
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#java-web-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Java — --web-search 플래그
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gpt-4o-web_search_preview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        실제 호출 결과 예시 (gpt-4o + web_search_preview)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-deep_research-wrapper-prompt-system_prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. deep_research Wrapper의 Prompt 구조와 system_prompt
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. deep_research Wrapper의 Prompt 구조와 system_prompt">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#9-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9-1. 현재 구조
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9-2. 문제: 시스템 프롬프트(지시문)를 어디에 넣어야 하나?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-3-responses-api-prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9-3. Responses API의 prompt 레이어 구조
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9-4. 실제 테스트 결과
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-5-system_prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9-5. system_prompt 활용 패턴 정리
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-6-chat-completions-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9-6. Chat Completions API와의 비교
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-7-system_prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9-7. system_prompt가 없을 때와 있을 때의 흐름
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-deep_research-wrapper-json-text_format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. deep_research Wrapper에서 JSON 출력 강제 (text_format)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. deep_research Wrapper에서 JSON 출력 강제 (text_format)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#10-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10-1. 배경
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#10-2-text_format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10-2. text_format 필드
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#10-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10-3. 사용 방법
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10-3. 사용 방법">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#json_object-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        json_object 모드 (자유 형식 JSON)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#json_schema-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        json_schema 모드 (스키마 강제 JSON)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#10-4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10-4. 모델별 지원 현황과 제약
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10-4. 모델별 지원 현황과 제약">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gpt-4o" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        gpt-4o (✅ 완전 지원)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#o3-deep-research" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        o3-deep-research (❌/⚠️ 제한적)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#10-5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10-5. 내부 동작
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#10-6-deliverable_format-vs-text_format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10-6. deliverable_format vs text_format
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-5-web_search-system_prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. 작업 검증 이력 — '짜장면의 역사' 실호출 (5가지 경로 + web_search + system_prompt)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. 작업 검증 이력 — &#39;짜장면의 역사&#39; 실호출 (5가지 경로 + web_search + system_prompt)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-1-python-api-chat-gpt-4o" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11-1. Python --api chat (gpt-4o)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#11-2-python-api-responses-gpt-4o" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11-2. Python --api responses (gpt-4o)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#11-3-java-api-chat-gpt-4o" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11-3. Java --api chat (gpt-4o)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#11-4-java-api-responses-gpt-4o" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11-4. Java --api responses (gpt-4o)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#11-5-java-target-relay-gpt-4o-relay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11-5. Java --target relay (gpt-4o, relay 서버 경유)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#11-6-python-api-responses-web-search-gpt-4o" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11-6. Python --api responses --web-search (gpt-4o + 웹 검색)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#11-7-java-api-responses-web-search-gpt-4o" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11-7. Java --api responses --web-search (gpt-4o + 웹 검색)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. 요약
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-tool-calling-deep_research" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. 자동 Tool Calling — 일반 대화 중 deep_research 자동 개입
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="13. 자동 Tool Calling — 일반 대화 중 deep_research 자동 개입">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#13-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13-1. 핵심 개념
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-2-approach-a-client-side-pythonjava" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13-2. Approach A: Client-Side (Python/Java)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-3-approach-c-relay-side-post-apiv1chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13-3. Approach C: Relay-Side (POST /api/v1/chat)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13-4. 모델 제약
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="litellm-o3-deep-research">LiteLLM o3-deep-research 한국어 매뉴얼<a class="headerlink" href="#litellm-o3-deep-research" title="Permanent link">&para;</a></h1>
+<p>이 저장소는 <code>o3-deep-research</code> 모델을 LiteLLM 호환 방식으로 호출하는 <strong>세 가지 예제</strong>를 제공합니다.</p>
+<ol>
+<li><code>clients/python/</code> — Python 직접 호출 예제</li>
+<li><code>clients/java/</code> — Java 직접 호출 + relay 호출 예제</li>
+<li><code>relay/</code> — LiteLLM Python SDK + FastAPI + Hypercorn 중계 예제</li>
+</ol>
+<p>직접 호출 예제는 OpenAI 호환 API 스타일인 다음 두 경로를 사용합니다.</p>
+<ul>
+<li><code>POST /v1/chat/completions</code></li>
+<li><code>POST /v1/responses</code></li>
+</ul>
+<p>relay 예제는 raw <code>input</code> 문자열 대신 구조화된 <strong>tool invocation 계약</strong>을 사용합니다.</p>
+<h2 id="1">1. 저장소 개요<a class="headerlink" href="#1" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Python 예제는 LiteLLM Proxy를 직접 호출합니다.</li>
+<li>Java 예제는 LiteLLM Proxy를 직접 호출할 수도 있고, relay를 호출할 수도 있습니다.</li>
+<li>relay 예제는 LiteLLM Python SDK를 내부에서 사용하고, FastAPI + Hypercorn으로 외부 API를 제공합니다.</li>
+<li>테스트는 기본적으로 mock/local harness 중심이라서 실제 서버 없이도 돌아갑니다.</li>
+<li>실제 LiteLLM Proxy가 있으면 direct/relay 둘 다 실호출 검증이 가능합니다.</li>
+</ul>
+<h2 id="2">2. 공통 사전 준비<a class="headerlink" href="#2" title="Permanent link">&para;</a></h2>
+<p>다음 값이 필요합니다.</p>
+<ul>
+<li><code>LITELLM_API_KEY</code></li>
+<li><code>LITELLM_BASE_URL</code></li>
+<li><code>LITELLM_MODEL</code> (선택 사항, 기본값 <code>o3-deep-research</code>)</li>
+</ul>
+<p>권장 방법은 홈 디렉터리의 <code>~/.env</code> 파일에 넣는 것입니다.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>LITELLM_API_KEY=sk-your-lite-llm-api-key
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>LITELLM_BASE_URL=https://localhost:4000/v1
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>LITELLM_MODEL=o3-deep-research
+</code></pre></div>
+<h3 id="litellm_base_url"><code>LITELLM_BASE_URL</code> 규칙<a class="headerlink" href="#litellm_base_url" title="Permanent link">&para;</a></h3>
+<p>다음 형태를 지원합니다.</p>
+<ul>
+<li><code>https://localhost:4000</code></li>
+<li><code>https://localhost:4000/v1</code></li>
+</ul>
+<p>direct Python/Java 예제는 내부적으로 <code>/v1/</code> API 루트로 정규화해서 사용합니다. relay 예제는 <code>LITELLM_BASE_URL</code>을 LiteLLM SDK의 <code>api_base</code>로 그대로 넘기므로, upstream LiteLLM Proxy 기준으로 root URL 또는 <code>/v1</code> URL을 사용할 수 있습니다.</p>
+<p>보안상 Python direct 예제는 원격 호스트에 대해 평문 <code>http://</code>를 허용하지 않습니다. 즉, 로컬 개발(<code>localhost</code>, <code>127.0.0.1</code>)이 아닌 경우에는 <code>https://</code>를 써야 합니다.</p>
+<h2 id="3-python">3. Python 직접 호출 예제<a class="headerlink" href="#3-python" title="Permanent link">&para;</a></h2>
+<p>경로:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">cd</span><span class="w"> </span>clients/python
+</code></pre></div>
+<h3 id="_1">의존성 설치 및 테스트<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uv<span class="w"> </span>sync<span class="w"> </span>--all-extras<span class="w"> </span>--dev
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>uv<span class="w"> </span>run<span class="w"> </span>pytest
+</code></pre></div>
+<h3 id="chatcompletions">chat/completions 호출<a class="headerlink" href="#chatcompletions" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_example<span class="w"> </span><span class="s2">&quot;Reply with exactly: OK&quot;</span>
+</code></pre></div>
+<h3 id="responses">responses 호출<a class="headerlink" href="#responses" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_example<span class="w"> </span>--api<span class="w"> </span>responses<span class="w"> </span><span class="s2">&quot;Reply with exactly: OK&quot;</span>
+</code></pre></div>
+<h3 id="responses-background">responses background 제출<a class="headerlink" href="#responses-background" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_example<span class="w"> </span>--api<span class="w"> </span>responses<span class="w"> </span>--background<span class="w"> </span><span class="s2">&quot;Reply with exactly: OK&quot;</span>
+</code></pre></div>
+<p>이 경우 최종 텍스트 대신 <code>id</code>, <code>status</code> 같은 후속 추적용 메타데이터가 담긴 원본 JSON을 출력합니다.</p>
+<h3 id="-timeout">타임아웃 조정 (--timeout)<a class="headerlink" href="#-timeout" title="Permanent link">&para;</a></h3>
+<p>기본 타임아웃은 30초입니다. <code>o3-deep-research</code>처럼 응답 시간이 긴 모델을 사용할 때는 <code>--timeout &lt;초&gt;</code>를 늘리세요.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_example<span class="w"> </span>--timeout<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="s2">&quot;짜장면의 역사를 조사해줘&quot;</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_example<span class="w"> </span>--api<span class="w"> </span>responses<span class="w"> </span>--timeout<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="s2">&quot;짜장면의 역사를 조사해줘&quot;</span>
+</code></pre></div>
+<h2 id="4-java">4. Java 예제<a class="headerlink" href="#4-java" title="Permanent link">&para;</a></h2>
+<p>경로:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nb">cd</span><span class="w"> </span>clients/java
+</code></pre></div>
+<h3 id="_2">빌드 및 테스트<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>mvn<span class="w"> </span><span class="nb">test</span>
+</code></pre></div>
+<h3 id="4-1-direct-chatcompletions">4-1. direct chat/completions 호출<a class="headerlink" href="#4-1-direct-chatcompletions" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;Reply with exactly: OK&quot;</span>
+</code></pre></div>
+<h3 id="4-2-direct-responses">4-2. direct responses 호출<a class="headerlink" href="#4-2-direct-responses" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--api responses Reply with exactly: OK&quot;</span>
+</code></pre></div>
+<h3 id="4-3-direct-responses-background">4-3. direct responses background 제출<a class="headerlink" href="#4-3-direct-responses-background" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--api responses --background Reply with exactly: OK&quot;</span>
+</code></pre></div>
+<h3 id="4-4-relay">4-4. relay 호출 모드<a class="headerlink" href="#4-4-relay" title="Permanent link">&para;</a></h3>
+<p>relay 서버가 이미 떠 있다고 가정하면 다음처럼 Java에서 relay를 호출할 수 있습니다.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--target relay Summarize relay architecture&quot;</span>
+</code></pre></div>
+<p>background 제출:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--target relay --background Summarize relay architecture&quot;</span>
+</code></pre></div>
+<p>stream:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--target relay --stream Summarize relay architecture&quot;</span>
+</code></pre></div>
+<h3 id="4-5-timeout">4-5. 타임아웃 조정 (--timeout)<a class="headerlink" href="#4-5-timeout" title="Permanent link">&para;</a></h3>
+<p>기본 타임아웃은 30초입니다. direct 및 relay 호출 모두 <code>--timeout &lt;초&gt;</code>로 조정할 수 있습니다.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># direct 호출 타임아웃 늘리기</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--timeout 300 짜장면의 역사를 조사해줘&quot;</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="c1"># relay 호출 타임아웃 늘리기</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--target relay --timeout 300 짜장면의 역사를 조사해줘&quot;</span>
+</code></pre></div>
+<h2 id="5-relay">5. relay 중계 예제<a class="headerlink" href="#5-relay" title="Permanent link">&para;</a></h2>
+<p>경로:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nb">cd</span><span class="w"> </span>relay
+</code></pre></div>
+<h3 id="relay">relay 전용 설정<a class="headerlink" href="#relay" title="Permanent link">&para;</a></h3>
+<p>relay는 공통 upstream 설정 외에도 다음 값을 쓸 수 있습니다.</p>
+<ul>
+<li><code>RELAY_HOST</code> (기본 <code>127.0.0.1</code>)</li>
+<li><code>RELAY_PORT</code> (기본 <code>8080</code>)</li>
+<li><code>RELAY_TIMEOUT_SECONDS</code> (기본 <code>30</code>)</li>
+</ul>
+<h3 id="_3">실행<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>uv<span class="w"> </span>sync<span class="w"> </span>--all-extras<span class="w"> </span>--dev
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>uv<span class="w"> </span>run<span class="w"> </span>pytest
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_relay
+</code></pre></div>
+<h3 id="api">공개 API<a class="headerlink" href="#api" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>POST /api/v1/tool-invocations</code></li>
+<li><code>GET /api/v1/tool-invocations/{invocation_id}</code></li>
+<li><code>GET /api/v1/tool-invocations/{invocation_id}/wait</code></li>
+<li><code>GET /api/v1/tool-invocations/{invocation_id}/events</code></li>
+</ul>
+<h3 id="_4">공개 계약 예시<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="p">{</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span><span class="nt">&quot;tool_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deep_research&quot;</span><span class="p">,</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">  </span><span class="nt">&quot;arguments&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="w">    </span><span class="nt">&quot;research_question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Azure OpenAI o3-deep-research relay 구조를 설명해줘&quot;</span><span class="p">,</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;Azure Landing Zone&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;LiteLLM Proxy&quot;</span><span class="p">],</span>
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="w">    </span><span class="nt">&quot;constraints&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;markdown 형식&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;보안 경계 설명&quot;</span><span class="p">],</span>
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="w">    </span><span class="nt">&quot;deliverable_format&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;markdown_brief&quot;</span><span class="p">,</span>
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="w">    </span><span class="nt">&quot;require_citations&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="w">    </span><span class="nt">&quot;background&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a><span class="w">    </span><span class="nt">&quot;stream&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a><span class="p">}</span>
+</code></pre></div>
+<p>relay 내부에서만 위 구조를 LiteLLM Responses 요청으로 변환하며, 내부 모델 이름은 <code>litellm_proxy/&lt;model&gt;</code> 형태를 사용합니다.</p>
+<h2 id="6-background-stream">6. <code>background</code> 와 <code>stream</code> 해석<a class="headerlink" href="#6-background-stream" title="Permanent link">&para;</a></h2>
+<h3 id="6-1-direct-background">6-1. direct 예제의 <code>background</code><a class="headerlink" href="#6-1-direct-background" title="Permanent link">&para;</a></h3>
+<ul>
+<li>direct Python/Java CLI는 foreground 1회성 프로세스입니다.</li>
+<li><code>--background</code>는 로컬 프로세스를 daemon으로 바꾸는 것이 아니라, 서버 측 Responses 작업을 background 모드로 제출하는 것입니다.</li>
+</ul>
+<h3 id="6-2-relay-stream">6-2. relay 예제의 <code>stream</code><a class="headerlink" href="#6-2-relay-stream" title="Permanent link">&para;</a></h3>
+<ul>
+<li>relay는 <code>POST /api/v1/tool-invocations</code>로 invocation을 만들고,</li>
+<li><code>GET /api/v1/tool-invocations/{invocation_id}/events</code>로 <code>text/event-stream</code>을 제공합니다.</li>
+<li>현재 구현은 text delta만 중계하는 <strong>text-focused SSE 예제</strong>입니다.</li>
+</ul>
+<h2 id="7">7. 문제 해결<a class="headerlink" href="#7" title="Permanent link">&para;</a></h2>
+<h3 id="litellm_api_key-is-not-set"><code>LITELLM_API_KEY is not set</code><a class="headerlink" href="#litellm_api_key-is-not-set" title="Permanent link">&para;</a></h3>
+<ul>
+<li>환경변수가 없거나</li>
+<li><code>~/.env</code> 파일이 없거나</li>
+<li>값이 비어 있을 수 있습니다.</li>
+</ul>
+<p>확인:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$LITELLM_API_KEY</span><span class="s2">&quot;</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>cat<span class="w"> </span>~/.env
+</code></pre></div>
+<h3 id="litellm_base_url-is-not-set"><code>LITELLM_BASE_URL is not set</code><a class="headerlink" href="#litellm_base_url-is-not-set" title="Permanent link">&para;</a></h3>
+<p>예시:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>LITELLM_BASE_URL=https://your-litellm-host/v1
+</code></pre></div>
+<h3 id="relay_base_url"><code>RELAY_BASE_URL</code> 오류<a class="headerlink" href="#relay_base_url" title="Permanent link">&para;</a></h3>
+<p>Java relay 모드는 <code>RELAY_BASE_URL</code>이 없으면 기본값 <code>http://127.0.0.1:8080</code>을 사용합니다. 다른 주소를 쓰고 있다면 환경변수를 맞춰야 합니다.</p>
+<h3 id="ssl">SSL / 인증서 오류<a class="headerlink" href="#ssl" title="Permanent link">&para;</a></h3>
+<p>Python direct 예제는 <code>certifi</code> CA 번들을 사용합니다. 그래도 실패하면:</p>
+<ul>
+<li>LiteLLM Proxy 인증서 체인이 정상인지 확인</li>
+<li>사설 인증서라면 신뢰 저장소 구성이 필요한지 확인</li>
+</ul>
+<h3 id="4xx-5xx">4xx / 5xx 응답<a class="headerlink" href="#4xx-5xx" title="Permanent link">&para;</a></h3>
+<p>점검 항목:</p>
+<ul>
+<li>API 키가 맞는지</li>
+<li>모델 이름(<code>o3-deep-research</code>)이 실제 LiteLLM 설정에서 허용되는지</li>
+<li>프록시가 <code>/v1/chat/completions</code> 또는 <code>/v1/responses</code>를 노출하는지</li>
+<li>relay라면 upstream Proxy와 relay의 listen 주소가 모두 맞는지</li>
+</ul>
+<h2 id="8-web_search_preview">8. web_search_preview — 일반 모델에 웹 검색 켜기<a class="headerlink" href="#8-web_search_preview" title="Permanent link">&para;</a></h2>
+<p><code>web_search_preview</code>는 OpenAI Responses API의 <strong>내장 tool</strong>로, <code>gpt-4o</code> 같은 일반 모델에도 실시간 웹 검색 능력을 부여합니다.</p>
+<h3 id="_5">동작 원리<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>요청: POST /v1/responses
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>{
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>  &quot;model&quot;: &quot;gpt-4o&quot;,
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>  &quot;input&quot;: &quot;짜장면의 역사를 웹 검색으로 정리해줘&quot;,
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>  &quot;tools&quot;: [{&quot;type&quot;: &quot;web_search_preview&quot;}]
+<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>}
+</code></pre></div>
+<ul>
+<li>모델이 필요하다고 판단하면 자동으로 웹 검색을 수행하고 결과를 응답에 반영합니다.</li>
+<li>검색 결과 URL이 출처로 인용되어 답변에 포함될 수 있습니다.</li>
+<li><code>o3-deep-research</code>는 자체적으로 심층 조사를 수행하므로 이 tool이 불필요하지만, <code>gpt-4o</code> 같은 범용 모델에서 최신 정보가 필요할 때 유용합니다.</li>
+</ul>
+<blockquote>
+<p><strong>주의:</strong> LiteLLM Proxy 설정에서 해당 모델에 대해 <code>web_search_preview</code> tool이 허용되어야 합니다.</p>
+</blockquote>
+<h3 id="python-web-search">Python — <code>--web-search</code> 플래그<a class="headerlink" href="#python-web-search" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># --api responses 와 함께 사용</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_example<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="w">  </span>--api<span class="w"> </span>responses<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="w">  </span>--web-search<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="w">  </span>--timeout<span class="w"> </span><span class="m">60</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="w">  </span><span class="s2">&quot;짜장면의 역사를 웹 검색으로 3문단 정리해줘&quot;</span>
+</code></pre></div>
+<p>코드에서 직접 사용:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">litellm_example.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">LiteLLMClient</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="n">client</span> <span class="o">=</span> <span class="n">LiteLLMClient</span><span class="p">(</span><span class="n">base_url</span><span class="p">,</span> <span class="n">api_key</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4o&quot;</span><span class="p">)</span>
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">create_response</span><span class="p">(</span>
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>    <span class="s2">&quot;짜장면의 역사를 웹 검색으로 정리해줘&quot;</span><span class="p">,</span>
+<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>    <span class="n">tools</span><span class="o">=</span><span class="p">[{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;web_search_preview&quot;</span><span class="p">}],</span>
+<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="p">)</span>
+<a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</code></pre></div>
+<blockquote>
+<p><code>--web-search</code>는 반드시 <code>--api responses</code>와 함께 사용해야 합니다. <code>--api chat</code>에는 적용되지 않습니다.</p>
+</blockquote>
+<h3 id="java-web-search">Java — <code>--web-search</code> 플래그<a class="headerlink" href="#java-web-search" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--api responses --web-search --timeout 60 짜장면의 역사를 웹 검색으로 정리해줘&quot;</span>
+</code></pre></div>
+<p>코드에서 직접 사용:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">example.litellm.LiteLlmClient</span><span class="p">;</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">java.util.List</span><span class="p">;</span>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">java.util.Map</span><span class="p">;</span>
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a>
+<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="n">LiteLlmClient</span><span class="w"> </span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">LiteLlmClient</span><span class="p">(</span><span class="n">baseUrl</span><span class="p">,</span><span class="w"> </span><span class="n">apiKey</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;gpt-4o&quot;</span><span class="p">);</span>
+<a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a><span class="n">String</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="na">createResponse</span><span class="p">(</span>
+<a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a><span class="w">        </span><span class="s">&quot;짜장면의 역사를 웹 검색으로 정리해줘&quot;</span><span class="p">,</span>
+<a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a><span class="w">        </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a><span class="w">        </span><span class="n">List</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">Map</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;type&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;web_search_preview&quot;</span><span class="p">))</span>
+<a id="__codelineno-25-10" name="__codelineno-25-10" href="#__codelineno-25-10"></a><span class="p">);</span>
+<a id="__codelineno-25-11" name="__codelineno-25-11" href="#__codelineno-25-11"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">result</span><span class="p">);</span>
+</code></pre></div>
+<h3 id="gpt-4o-web_search_preview">실제 호출 결과 예시 (gpt-4o + web_search_preview)<a class="headerlink" href="#gpt-4o-web_search_preview" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>1. **짜장면의 기원**
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>짜장면은 중국 산둥 지역의 전통 가정식인 &#39;작장면(炸酱面)&#39;에서 유래된 음식으로,
+<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>1883년 인천항 개항 이후 한국에 들어오게 되었습니다. 산둥 출신 화교들은
+<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>차이나타운 부근에서 춘장과 면을 이용해 간단히 만들어 먹기 시작했습니다.
+<a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a>[출처: 나무위키]
+<a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a>
+<a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a>2. **한국식 짜장면으로의 변화**
+<a id="__codelineno-26-8" name="__codelineno-26-8" href="#__codelineno-26-8"></a>1948년, 영화식품의 왕송산이 춘장에 캐러멜을 첨가해 단맛을 강조한 &#39;사자표 춘장&#39;을
+<a id="__codelineno-26-9" name="__codelineno-26-9" href="#__codelineno-26-9"></a>출시하며 짜장면은 한국화의 결정적 계기를 마련했습니다. [출처: 네이버 블로그]
+<a id="__codelineno-26-10" name="__codelineno-26-10" href="#__codelineno-26-10"></a>
+<a id="__codelineno-26-11" name="__codelineno-26-11" href="#__codelineno-26-11"></a>3. **현대의 짜장면**
+<a id="__codelineno-26-12" name="__codelineno-26-12" href="#__codelineno-26-12"></a>졸업식·입학식 등 특별한 날의 상징이자 배달 음식의 대명사로 자리 잡았으며,
+<a id="__codelineno-26-13" name="__codelineno-26-13" href="#__codelineno-26-13"></a>간짜장·삼선짜장 등 다양한 변주로 세분화되어 있습니다. [출처: 티스토리 블로그]
+</code></pre></div>
+<hr />
+<h2 id="9-deep_research-wrapper-prompt-system_prompt">9. deep_research Wrapper의 Prompt 구조와 system_prompt<a class="headerlink" href="#9-deep_research-wrapper-prompt-system_prompt" title="Permanent link">&para;</a></h2>
+<h3 id="9-1">9-1. 현재 구조<a class="headerlink" href="#9-1" title="Permanent link">&para;</a></h3>
+<p>relay의 <code>deep_research</code> wrapper는 모든 요청을 Responses API의 <strong>단일 <code>input</code> 문자열</strong>로 조립해서 보냅니다.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>Tool: deep_research
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>Research question: {research_question}
+<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>Deliverable format: {deliverable_format}
+<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>Require citations: yes/no
+<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a>Context:
+<a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a>- ...
+<a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a>Constraints:
+<a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a>- ...
+</code></pre></div>
+<p>이 문자열이 모델의 user turn으로 전달됩니다.</p>
+<h3 id="9-2">9-2. 문제: 시스템 프롬프트(지시문)를 어디에 넣어야 하나?<a class="headerlink" href="#9-2" title="Permanent link">&para;</a></h3>
+<p><strong>잘못된 방법</strong> — <code>research_question</code> 안에 섞기:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="p">{</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="w">  </span><span class="nt">&quot;research_question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;System: 반드시 영어로만 답하라.\n\n짜장면의 역사를 설명해줘&quot;</span>
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="p">}</span>
+</code></pre></div>
+<p>이렇게 하면 "System:"이 그냥 user 메시지의 일부로 처리되어 모델에 대한 <strong>강제력이 없습니다</strong>. 모델이 무시하거나 그대로 출력에 포함할 수 있습니다.</p>
+<p><strong>올바른 방법</strong> — <code>system_prompt</code> 필드 사용:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="p">{</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="w">  </span><span class="nt">&quot;tool_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deep_research&quot;</span><span class="p">,</span>
+<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a><span class="w">  </span><span class="nt">&quot;arguments&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a><span class="w">    </span><span class="nt">&quot;research_question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;짜장면의 역사를 설명해줘&quot;</span><span class="p">,</span>
+<a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a><span class="w">    </span><span class="nt">&quot;deliverable_format&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;markdown_brief&quot;</span><span class="p">,</span>
+<a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a><span class="w">    </span><span class="nt">&quot;system_prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;반드시 영어로만 답하라.&quot;</span>
+<a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a><span class="p">}</span>
+</code></pre></div>
+<p>relay는 <code>system_prompt</code>를 Responses API의 <strong><code>instructions</code></strong> 필드로 전달합니다. 이것이 Chat Completions의 <code>system</code> role, Responses API의 <code>developer</code> role과 동등한 <strong>모델 수준 지시문</strong>입니다.</p>
+<h3 id="9-3-responses-api-prompt">9-3. Responses API의 prompt 레이어 구조<a class="headerlink" href="#9-3-responses-api-prompt" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>┌─────────────────────────────────────────────┐
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>│  instructions (system/developer layer)      │  ← system_prompt 매핑
+<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>│  &quot;반드시 영어로만 답하라.&quot;                   │
+<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a>├─────────────────────────────────────────────┤
+<a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a>│  input (user turn)                          │  ← _render_input() 결과
+<a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a>│  &quot;Tool: deep_research                       │
+<a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a>│   Research question: 짜장면의 역사를 설명해줘│
+<a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a>│   Deliverable format: markdown_brief        │
+<a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a>│   Require citations: yes&quot;                   │
+<a id="__codelineno-30-10" name="__codelineno-30-10" href="#__codelineno-30-10"></a>└─────────────────────────────────────────────┘
+</code></pre></div>
+<ul>
+<li><strong><code>instructions</code></strong> (= <code>system_prompt</code>): 페르소나, 출력 언어, 형식 강제 등 모델 행동을 제어</li>
+<li><strong><code>input</code></strong> (= research_question + 나머지): 실제 조사 요청</li>
+</ul>
+<h3 id="9-4">9-4. 실제 테스트 결과<a class="headerlink" href="#9-4" title="Permanent link">&para;</a></h3>
+<p><strong>아무 system_prompt 없을 때 (한국어 질문 → 한국어 답변):</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8080/api/v1/tool-invocations<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a><span class="s1">    &quot;tool_name&quot;: &quot;deep_research&quot;,</span>
+<a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a><span class="s1">    &quot;arguments&quot;: {</span>
+<a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a><span class="s1">      &quot;research_question&quot;: &quot;짜장면의 역사를 한 문장으로 설명해줘&quot;,</span>
+<a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a><span class="s1">      &quot;deliverable_format&quot;: &quot;markdown_brief&quot;</span>
+<a id="__codelineno-31-8" name="__codelineno-31-8" href="#__codelineno-31-8"></a><span class="s1">    }</span>
+<a id="__codelineno-31-9" name="__codelineno-31-9" href="#__codelineno-31-9"></a><span class="s1">  }&#39;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>짜장면의 역사는 19세기 말 중국 산둥 지방 출신 이민자들이 인천
+<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>차이나타운에서 중국 요리인 &#39;작장면&#39;을 한국화하며 시작되었다.
+</code></pre></div>
+<p><strong><code>system_prompt</code>로 영어 강제:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8080/api/v1/tool-invocations<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a><span class="s1">    &quot;tool_name&quot;: &quot;deep_research&quot;,</span>
+<a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a><span class="s1">    &quot;arguments&quot;: {</span>
+<a id="__codelineno-33-6" name="__codelineno-33-6" href="#__codelineno-33-6"></a><span class="s1">      &quot;research_question&quot;: &quot;짜장면의 역사를 한 문장으로 설명해줘&quot;,</span>
+<a id="__codelineno-33-7" name="__codelineno-33-7" href="#__codelineno-33-7"></a><span class="s1">      &quot;deliverable_format&quot;: &quot;markdown_brief&quot;,</span>
+<a id="__codelineno-33-8" name="__codelineno-33-8" href="#__codelineno-33-8"></a><span class="s1">      &quot;system_prompt&quot;: &quot;You are a food historian. Always answer in English only.&quot;</span>
+<a id="__codelineno-33-9" name="__codelineno-33-9" href="#__codelineno-33-9"></a><span class="s1">    }</span>
+<a id="__codelineno-33-10" name="__codelineno-33-10" href="#__codelineno-33-10"></a><span class="s1">  }&#39;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>The history of Jajangmyeon originates from the late 19th to early 20th
+<a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>centuries, evolving from a Shandong-style Chinese noodle dish and
+<a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a>adapting to Korean tastes in Incheon&#39;s Chinese immigrant community.
+</code></pre></div>
+<p><strong><code>system_prompt</code>로 페르소나 주입 (초등학생 선생님):</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8080/api/v1/tool-invocations<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a><span class="s1">    &quot;tool_name&quot;: &quot;deep_research&quot;,</span>
+<a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a><span class="s1">    &quot;arguments&quot;: {</span>
+<a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a><span class="s1">      &quot;research_question&quot;: &quot;짜장면의 역사를 설명해줘&quot;,</span>
+<a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a><span class="s1">      &quot;deliverable_format&quot;: &quot;markdown_brief&quot;,</span>
+<a id="__codelineno-35-8" name="__codelineno-35-8" href="#__codelineno-35-8"></a><span class="s1">      &quot;system_prompt&quot;: &quot;당신은 초등학생에게 설명하는 선생님입니다. 최대 2문장으로, 쉬운 말로 설명하세요.&quot;,</span>
+<a id="__codelineno-35-9" name="__codelineno-35-9" href="#__codelineno-35-9"></a><span class="s1">      &quot;require_citations&quot;: false</span>
+<a id="__codelineno-35-10" name="__codelineno-35-10" href="#__codelineno-35-10"></a><span class="s1">    }</span>
+<a id="__codelineno-35-11" name="__codelineno-35-11" href="#__codelineno-35-11"></a><span class="s1">  }&#39;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>옛날 중국에서 먹던 &quot;작장면&quot;이라는 요리가 한국에 들어와 조금씩 바뀌며
+<a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>우리가 아는 짜장면이 되었어요. 한국에서는 1900년대 초반 인천
+<a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a>차이나타운에서 처음 만들어지며 지금까지 사랑받는 음식이 되었답니다!
+</code></pre></div>
+<h3 id="9-5-system_prompt">9-5. system_prompt 활용 패턴 정리<a class="headerlink" href="#9-5-system_prompt" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>목적</th>
+<th>system_prompt 예시</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>출력 언어 강제</td>
+<td><code>"Always answer in English only."</code></td>
+</tr>
+<tr>
+<td>페르소나 주입</td>
+<td><code>"당신은 초등학생 선생님입니다. 쉬운 말로 설명하세요."</code></td>
+</tr>
+<tr>
+<td>출력 길이 제한</td>
+<td><code>"Answer in exactly one sentence."</code></td>
+</tr>
+<tr>
+<td>형식 강제</td>
+<td><code>"Respond only with a numbered list. No prose."</code></td>
+</tr>
+<tr>
+<td>도메인 전문성</td>
+<td><code>"You are a Korean food historian. Emphasize cultural context."</code></td>
+</tr>
+<tr>
+<td>인용 스타일 제어</td>
+<td><code>"Use APA citation style for all references."</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="9-6-chat-completions-api">9-6. Chat Completions API와의 비교<a class="headerlink" href="#9-6-chat-completions-api" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Chat Completions</th>
+<th>Responses API (relay 사용 시)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>system prompt</td>
+<td><code>messages[{role:"system", content:...}]</code></td>
+<td><code>instructions</code> 필드 (= <code>system_prompt</code>)</td>
+</tr>
+<tr>
+<td>user prompt</td>
+<td><code>messages[{role:"user", content:...}]</code></td>
+<td><code>input</code> 필드 (= <code>_render_input()</code> 결과)</td>
+</tr>
+<tr>
+<td>developer prompt</td>
+<td><code>messages[{role:"developer", content:...}]</code></td>
+<td><code>instructions</code> 필드</td>
+</tr>
+<tr>
+<td>relay 외부 계약</td>
+<td>해당 없음</td>
+<td><code>arguments.system_prompt</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="9-7-system_prompt">9-7. <code>system_prompt</code>가 없을 때와 있을 때의 흐름<a class="headerlink" href="#9-7-system_prompt" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>system_prompt 없음:
+<a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>  relay → litellm.responses(input=&quot;Tool: deep_research\nResearch question: ...&quot;, ...)
+<a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a>
+<a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a>system_prompt 있음:
+<a id="__codelineno-37-5" name="__codelineno-37-5" href="#__codelineno-37-5"></a>  relay → litellm.responses(
+<a id="__codelineno-37-6" name="__codelineno-37-6" href="#__codelineno-37-6"></a>    input=&quot;Tool: deep_research\nResearch question: ...&quot;,
+<a id="__codelineno-37-7" name="__codelineno-37-7" href="#__codelineno-37-7"></a>    instructions=&quot;페르소나/언어/형식 지시&quot;,
+<a id="__codelineno-37-8" name="__codelineno-37-8" href="#__codelineno-37-8"></a>    ...
+<a id="__codelineno-37-9" name="__codelineno-37-9" href="#__codelineno-37-9"></a>  )
+</code></pre></div>
+<hr />
+<h2 id="10-deep_research-wrapper-json-text_format">10. deep_research Wrapper에서 JSON 출력 강제 (text_format)<a class="headerlink" href="#10-deep_research-wrapper-json-text_format" title="Permanent link">&para;</a></h2>
+<h3 id="10-1">10-1. 배경<a class="headerlink" href="#10-1" title="Permanent link">&para;</a></h3>
+<p>relay wrapper의 <code>_render_input()</code>은 모든 요청을 Markdown 형식의 문자열로 조립해 Responses API의 <code>input</code> 필드로 보냅니다. 모델은 기본적으로 plain text / Markdown으로 답합니다.</p>
+<p><code>deliverable_format: "json_outline"</code>을 지정해도 이것은 <strong>텍스트 힌트에 불과</strong>합니다. 모델이 무시하거나, JSON을 코드 블럭(<code>json</code>)으로 감싸서 반환할 수 있습니다.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="c1"># 현재 json_outline 동작 예</span>
+<a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>.../api/v1/tool-invocations<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;arguments&quot;:{&quot;deliverable_format&quot;:&quot;json_outline&quot;, ...}}&#39;</span>
+<a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a><span class="c1"># 결과: ```json\n{&quot;title&quot;: ...}\n```  ← 마크다운 코드 블럭, JSON.parse 불가</span>
+</code></pre></div>
+<p><strong>API 레벨에서 JSON을 강제</strong>하려면 <code>text_format</code> 필드를 사용해야 합니다.</p>
+<h3 id="10-2-text_format">10-2. text_format 필드<a class="headerlink" href="#10-2-text_format" title="Permanent link">&para;</a></h3>
+<p><code>text_format</code>은 Responses API의 <code>text.format</code> 객체에 직접 매핑됩니다.</p>
+<table>
+<thead>
+<tr>
+<th>text_format 값</th>
+<th>의미</th>
+<th>gpt-4o</th>
+<th>o3-deep-research</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>없음 (기본값)</td>
+<td>plain text / Markdown</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>{"type":"json_object"}</code></td>
+<td>유효한 JSON 객체 강제</td>
+<td>✅</td>
+<td>⚠️ queued는 됨 (결과 보장 불명확)</td>
+</tr>
+<tr>
+<td><code>{"type":"json_schema","name":"...","schema":{...},"strict":true}</code></td>
+<td>스키마 준수 JSON 강제</td>
+<td>✅</td>
+<td>❌ <strong>API 400 오류</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="10-3">10-3. 사용 방법<a class="headerlink" href="#10-3" title="Permanent link">&para;</a></h3>
+<h4 id="json_object-json">json_object 모드 (자유 형식 JSON)<a class="headerlink" href="#json_object-json" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8080/api/v1/tool-invocations<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-39-4" name="__codelineno-39-4" href="#__codelineno-39-4"></a><span class="s1">    &quot;tool_name&quot;: &quot;deep_research&quot;,</span>
+<a id="__codelineno-39-5" name="__codelineno-39-5" href="#__codelineno-39-5"></a><span class="s1">    &quot;arguments&quot;: {</span>
+<a id="__codelineno-39-6" name="__codelineno-39-6" href="#__codelineno-39-6"></a><span class="s1">      &quot;research_question&quot;: &quot;짜장면의 기원을 JSON으로: origin_country, year_introduced, main_ingredient 키 포함&quot;,</span>
+<a id="__codelineno-39-7" name="__codelineno-39-7" href="#__codelineno-39-7"></a><span class="s1">      &quot;deliverable_format&quot;: &quot;json_outline&quot;,</span>
+<a id="__codelineno-39-8" name="__codelineno-39-8" href="#__codelineno-39-8"></a><span class="s1">      &quot;text_format&quot;: {&quot;type&quot;: &quot;json_object&quot;},</span>
+<a id="__codelineno-39-9" name="__codelineno-39-9" href="#__codelineno-39-9"></a><span class="s1">      &quot;require_citations&quot;: false</span>
+<a id="__codelineno-39-10" name="__codelineno-39-10" href="#__codelineno-39-10"></a><span class="s1">    }</span>
+<a id="__codelineno-39-11" name="__codelineno-39-11" href="#__codelineno-39-11"></a><span class="s1">  }&#39;</span>
+</code></pre></div>
+<p><strong>실제 결과 (gpt-4o):</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="p">{</span>
+<a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a><span class="w">  </span><span class="nt">&quot;origin_country&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;China&quot;</span><span class="p">,</span>
+<a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a><span class="w">  </span><span class="nt">&quot;year_introduced&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Early 20th century (to Korea)&quot;</span><span class="p">,</span>
+<a id="__codelineno-40-4" name="__codelineno-40-4" href="#__codelineno-40-4"></a><span class="w">  </span><span class="nt">&quot;main_ingredient&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Fermented black soybeans, wheat noodles, pork, vegetables&quot;</span>
+<a id="__codelineno-40-5" name="__codelineno-40-5" href="#__codelineno-40-5"></a><span class="p">}</span>
+</code></pre></div>
+<h4 id="json_schema-json">json_schema 모드 (스키마 강제 JSON)<a class="headerlink" href="#json_schema-json" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8080/api/v1/tool-invocations<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-41-4" name="__codelineno-41-4" href="#__codelineno-41-4"></a><span class="s1">    &quot;tool_name&quot;: &quot;deep_research&quot;,</span>
+<a id="__codelineno-41-5" name="__codelineno-41-5" href="#__codelineno-41-5"></a><span class="s1">    &quot;arguments&quot;: {</span>
+<a id="__codelineno-41-6" name="__codelineno-41-6" href="#__codelineno-41-6"></a><span class="s1">      &quot;research_question&quot;: &quot;짜장면의 역사를 JSON으로 반환해줘&quot;,</span>
+<a id="__codelineno-41-7" name="__codelineno-41-7" href="#__codelineno-41-7"></a><span class="s1">      &quot;deliverable_format&quot;: &quot;json_outline&quot;,</span>
+<a id="__codelineno-41-8" name="__codelineno-41-8" href="#__codelineno-41-8"></a><span class="s1">      &quot;text_format&quot;: {</span>
+<a id="__codelineno-41-9" name="__codelineno-41-9" href="#__codelineno-41-9"></a><span class="s1">        &quot;type&quot;: &quot;json_schema&quot;,</span>
+<a id="__codelineno-41-10" name="__codelineno-41-10" href="#__codelineno-41-10"></a><span class="s1">        &quot;name&quot;: &quot;food_history&quot;,</span>
+<a id="__codelineno-41-11" name="__codelineno-41-11" href="#__codelineno-41-11"></a><span class="s1">        &quot;strict&quot;: true,</span>
+<a id="__codelineno-41-12" name="__codelineno-41-12" href="#__codelineno-41-12"></a><span class="s1">        &quot;schema&quot;: {</span>
+<a id="__codelineno-41-13" name="__codelineno-41-13" href="#__codelineno-41-13"></a><span class="s1">          &quot;type&quot;: &quot;object&quot;,</span>
+<a id="__codelineno-41-14" name="__codelineno-41-14" href="#__codelineno-41-14"></a><span class="s1">          &quot;properties&quot;: {</span>
+<a id="__codelineno-41-15" name="__codelineno-41-15" href="#__codelineno-41-15"></a><span class="s1">            &quot;origin_country&quot;:      {&quot;type&quot;: &quot;string&quot;},</span>
+<a id="__codelineno-41-16" name="__codelineno-41-16" href="#__codelineno-41-16"></a><span class="s1">            &quot;introduced_to_korea&quot;: {&quot;type&quot;: &quot;integer&quot;},</span>
+<a id="__codelineno-41-17" name="__codelineno-41-17" href="#__codelineno-41-17"></a><span class="s1">            &quot;key_milestone&quot;:       {&quot;type&quot;: &quot;string&quot;},</span>
+<a id="__codelineno-41-18" name="__codelineno-41-18" href="#__codelineno-41-18"></a><span class="s1">            &quot;is_fusion&quot;:           {&quot;type&quot;: &quot;boolean&quot;}</span>
+<a id="__codelineno-41-19" name="__codelineno-41-19" href="#__codelineno-41-19"></a><span class="s1">          },</span>
+<a id="__codelineno-41-20" name="__codelineno-41-20" href="#__codelineno-41-20"></a><span class="s1">          &quot;required&quot;: [&quot;origin_country&quot;,&quot;introduced_to_korea&quot;,&quot;key_milestone&quot;,&quot;is_fusion&quot;],</span>
+<a id="__codelineno-41-21" name="__codelineno-41-21" href="#__codelineno-41-21"></a><span class="s1">          &quot;additionalProperties&quot;: false</span>
+<a id="__codelineno-41-22" name="__codelineno-41-22" href="#__codelineno-41-22"></a><span class="s1">        }</span>
+<a id="__codelineno-41-23" name="__codelineno-41-23" href="#__codelineno-41-23"></a><span class="s1">      },</span>
+<a id="__codelineno-41-24" name="__codelineno-41-24" href="#__codelineno-41-24"></a><span class="s1">      &quot;require_citations&quot;: false</span>
+<a id="__codelineno-41-25" name="__codelineno-41-25" href="#__codelineno-41-25"></a><span class="s1">    }</span>
+<a id="__codelineno-41-26" name="__codelineno-41-26" href="#__codelineno-41-26"></a><span class="s1">  }&#39;</span>
+</code></pre></div>
+<p><strong>실제 결과 (gpt-4o):</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="p">{</span>
+<a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a><span class="w">  </span><span class="nt">&quot;origin_country&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;China&quot;</span><span class="p">,</span>
+<a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a><span class="w">  </span><span class="nt">&quot;introduced_to_korea&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1905</span><span class="p">,</span>
+<a id="__codelineno-42-4" name="__codelineno-42-4" href="#__codelineno-42-4"></a><span class="w">  </span><span class="nt">&quot;key_milestone&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Adjusted recipe to Korean tastes&quot;</span><span class="p">,</span>
+<a id="__codelineno-42-5" name="__codelineno-42-5" href="#__codelineno-42-5"></a><span class="w">  </span><span class="nt">&quot;is_fusion&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-42-6" name="__codelineno-42-6" href="#__codelineno-42-6"></a><span class="p">}</span>
+</code></pre></div>
+<p>모든 필드가 스키마 타입과 정확히 일치합니다.</p>
+<h3 id="10-4">10-4. 모델별 지원 현황과 제약<a class="headerlink" href="#10-4" title="Permanent link">&para;</a></h3>
+<h4 id="gpt-4o">gpt-4o (✅ 완전 지원)<a class="headerlink" href="#gpt-4o" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>json_object</code>: 항상 valid JSON 반환</li>
+<li><code>json_schema</code>: strict mode로 스키마 100% 준수</li>
+<li>둘 다 <code>deliverable_format</code>과 무관하게 동작 (<code>json_outline</code> 아니어도 됨)</li>
+</ul>
+<h4 id="o3-deep-research">o3-deep-research (❌/⚠️ 제한적)<a class="headerlink" href="#o3-deep-research" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>❌ json_schema: API 레벨에서 즉시 오류 반환
+<a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a>   &quot;Invalid parameter: &#39;text.format&#39; of type &#39;json_schema&#39; is not supported
+<a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a>    with model version o3-deep-research-2025-06-26&quot;
+<a id="__codelineno-43-4" name="__codelineno-43-4" href="#__codelineno-43-4"></a>
+<a id="__codelineno-43-5" name="__codelineno-43-5" href="#__codelineno-43-5"></a>⚠️ json_object: API는 queued로 수락 (HTTP 200)
+<a id="__codelineno-43-6" name="__codelineno-43-6" href="#__codelineno-43-6"></a>   - 실제 연구가 끝난 뒤 JSON 형식으로 반환되는지는 보장되지 않음
+<a id="__codelineno-43-7" name="__codelineno-43-7" href="#__codelineno-43-7"></a>   - 긴 분석 결과를 단일 JSON 객체로 강제하기가 어려움
+<a id="__codelineno-43-8" name="__codelineno-43-8" href="#__codelineno-43-8"></a>   - 실용적으로는 background=true + 폴링 후 결과 확인 필요
+</code></pre></div>
+<p><strong>권장 패턴 (o3-deep-research + JSON 필요 시):</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="p">{</span>
+<a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a><span class="w">  </span><span class="nt">&quot;arguments&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-44-3" name="__codelineno-44-3" href="#__codelineno-44-3"></a><span class="w">    </span><span class="nt">&quot;research_question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;짜장면의 역사를 JSON 형식으로 정리해줘. 필드: origin, period, modernization&quot;</span><span class="p">,</span>
+<a id="__codelineno-44-4" name="__codelineno-44-4" href="#__codelineno-44-4"></a><span class="w">    </span><span class="nt">&quot;deliverable_format&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;json_outline&quot;</span><span class="p">,</span>
+<a id="__codelineno-44-5" name="__codelineno-44-5" href="#__codelineno-44-5"></a><span class="w">    </span><span class="nt">&quot;system_prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Return ONLY a JSON object. No prose, no markdown, no code fences.&quot;</span><span class="p">,</span>
+<a id="__codelineno-44-6" name="__codelineno-44-6" href="#__codelineno-44-6"></a><span class="w">    </span><span class="nt">&quot;background&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-44-7" name="__codelineno-44-7" href="#__codelineno-44-7"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-44-8" name="__codelineno-44-8" href="#__codelineno-44-8"></a><span class="p">}</span>
+</code></pre></div>
+<p>→ <code>system_prompt</code>로 JSON 출력을 유도하고, <code>background=true</code>로 제출한 뒤 결과를 폴링합니다. API 레벨 강제는 없지만 실용적입니다.</p>
+<h3 id="10-5">10-5. 내부 동작<a class="headerlink" href="#10-5" title="Permanent link">&para;</a></h3>
+<p>relay는 <code>text_format</code>을 다음과 같이 변환합니다.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="c1"># contracts.py</span>
+<a id="__codelineno-45-2" name="__codelineno-45-2" href="#__codelineno-45-2"></a><span class="n">text_format</span> <span class="o">=</span> <span class="n">TextFormatJsonObject</span><span class="p">()</span>   <span class="c1"># {&quot;type&quot;: &quot;json_object&quot;}</span>
+<a id="__codelineno-45-3" name="__codelineno-45-3" href="#__codelineno-45-3"></a><span class="n">text_format</span> <span class="o">=</span> <span class="n">TextFormatJsonSchema</span><span class="p">(</span>    <span class="c1"># {&quot;type&quot;: &quot;json_schema&quot;, &quot;name&quot;: ..., &quot;schema&quot;: {...}}</span>
+<a id="__codelineno-45-4" name="__codelineno-45-4" href="#__codelineno-45-4"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;food_history&quot;</span><span class="p">,</span>
+<a id="__codelineno-45-5" name="__codelineno-45-5" href="#__codelineno-45-5"></a>    <span class="n">schema</span><span class="o">=</span><span class="p">{</span><span class="o">...</span><span class="p">},</span>
+<a id="__codelineno-45-6" name="__codelineno-45-6" href="#__codelineno-45-6"></a>    <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-45-7" name="__codelineno-45-7" href="#__codelineno-45-7"></a><span class="p">)</span>
+<a id="__codelineno-45-8" name="__codelineno-45-8" href="#__codelineno-45-8"></a>
+<a id="__codelineno-45-9" name="__codelineno-45-9" href="#__codelineno-45-9"></a><span class="c1"># upstream.py</span>
+<a id="__codelineno-45-10" name="__codelineno-45-10" href="#__codelineno-45-10"></a><span class="n">extra_kwargs</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-45-11" name="__codelineno-45-11" href="#__codelineno-45-11"></a>    <span class="s2">&quot;format&quot;</span><span class="p">:</span> <span class="n">args</span><span class="o">.</span><span class="n">text_format</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">by_alias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exclude_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-45-12" name="__codelineno-45-12" href="#__codelineno-45-12"></a><span class="p">}</span>
+<a id="__codelineno-45-13" name="__codelineno-45-13" href="#__codelineno-45-13"></a><span class="c1"># → litellm.responses(..., text={&quot;format&quot;: {&quot;type&quot;: &quot;json_object&quot;}}, ...)</span>
+</code></pre></div>
+<h3 id="10-6-deliverable_format-vs-text_format">10-6. deliverable_format vs text_format<a class="headerlink" href="#10-6-deliverable_format-vs-text_format" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><code>deliverable_format</code></th>
+<th><code>text_format</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>위치</td>
+<td><code>_render_input()</code> → input 문자열</td>
+<td><code>text.format</code> → API 파라미터</td>
+</tr>
+<tr>
+<td>강제력</td>
+<td><strong>텍스트 힌트</strong> (모델이 무시 가능)</td>
+<td><strong>API 레벨 강제</strong> (위반 시 오류)</td>
+</tr>
+<tr>
+<td>지원 모델</td>
+<td>모든 모델</td>
+<td>gpt-4o 계열 (o3-deep-research 제한)</td>
+</tr>
+<tr>
+<td>JSON 보장</td>
+<td>❌</td>
+<td>✅ (json_object/json_schema)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>둘을 같이 쓰는 권장 패턴:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a><span class="p">{</span>
+<a id="__codelineno-46-2" name="__codelineno-46-2" href="#__codelineno-46-2"></a><span class="w">  </span><span class="nt">&quot;deliverable_format&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;json_outline&quot;</span><span class="p">,</span>
+<a id="__codelineno-46-3" name="__codelineno-46-3" href="#__codelineno-46-3"></a><span class="w">  </span><span class="nt">&quot;text_format&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;json_object&quot;</span><span class="p">}</span>
+<a id="__codelineno-46-4" name="__codelineno-46-4" href="#__codelineno-46-4"></a><span class="p">}</span>
+</code></pre></div>
+<p><code>deliverable_format: "json_outline"</code>은 모델이 "JSON 구조로 답하려는 의도"를 인지하는 힌트이고, <code>text_format</code>은 API 레벨에서 JSON을 실제로 강제합니다.</p>
+<hr />
+<h2 id="11-5-web_search-system_prompt">11. 작업 검증 이력 — '짜장면의 역사' 실호출 (5가지 경로 + web_search + system_prompt)<a class="headerlink" href="#11-5-web_search-system_prompt" title="Permanent link">&para;</a></h2>
+<p>이 저장소가 실제로 동작함을 검증하기 위해 다음 5가지 경로로 모두 성공 확인했습니다.</p>
+<h3 id="11-1-python-api-chat-gpt-4o">11-1. Python <code>--api chat</code> (gpt-4o)<a class="headerlink" href="#11-1-python-api-chat-gpt-4o" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a><span class="nb">cd</span><span class="w"> </span>clients/python
+<a id="__codelineno-47-2" name="__codelineno-47-2" href="#__codelineno-47-2"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_example<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-47-3" name="__codelineno-47-3" href="#__codelineno-47-3"></a><span class="w">  </span>--api<span class="w"> </span>chat<span class="w"> </span>--timeout<span class="w"> </span><span class="m">60</span><span class="w"> </span><span class="s2">&quot;짜장면의 역사를 3문단으로 설명해줘&quot;</span>
+</code></pre></div>
+<blockquote>
+<p>인천 차이나타운 기원(19세기 말) → 달짝지근한 춘장으로 한국화 → 1960~70년대 배달문화와 결합해 국민 외식 메뉴로 대중화 → 이사·졸업식·블랙데이 상징 음식으로 정착</p>
+</blockquote>
+<h3 id="11-2-python-api-responses-gpt-4o">11-2. Python <code>--api responses</code> (gpt-4o)<a class="headerlink" href="#11-2-python-api-responses-gpt-4o" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_example<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-48-2" name="__codelineno-48-2" href="#__codelineno-48-2"></a><span class="w">  </span>--api<span class="w"> </span>responses<span class="w"> </span>--timeout<span class="w"> </span><span class="m">60</span><span class="w"> </span><span class="s2">&quot;짜장면의 역사를 간략히 설명해줘&quot;</span>
+</code></pre></div>
+<blockquote>
+<p>1900년대 초 인천 화교들이 중국 작장면을 한국인 입맛에 맞게 변형(카라멜·춘장) → 1950~60년대 저렴한 한 끼 외식으로 전국 확산</p>
+</blockquote>
+<h3 id="11-3-java-api-chat-gpt-4o">11-3. Java <code>--api chat</code> (gpt-4o)<a class="headerlink" href="#11-3-java-api-chat-gpt-4o" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a><span class="nb">cd</span><span class="w"> </span>clients/java
+<a id="__codelineno-49-2" name="__codelineno-49-2" href="#__codelineno-49-2"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-49-3" name="__codelineno-49-3" href="#__codelineno-49-3"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--api chat --timeout 60 짜장면의 역사를 3문단으로 설명해줘&quot;</span>
+</code></pre></div>
+<blockquote>
+<p>산둥 이주 노동자들이 인천 차이나타운 중심으로 한국화 시작 → 간장 대신 춘장+설탕의 달콤한 소스로 변형, 채소·고기 풍성하게 추가 → 1960~70년대 배달문화와 결합</p>
+</blockquote>
+<h3 id="11-4-java-api-responses-gpt-4o">11-4. Java <code>--api responses</code> (gpt-4o)<a class="headerlink" href="#11-4-java-api-responses-gpt-4o" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-50-2" name="__codelineno-50-2" href="#__codelineno-50-2"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--api responses --timeout 60 짜장면의 역사를 간략히 설명해줘&quot;</span>
+</code></pre></div>
+<blockquote>
+<p>산둥 출신 화교들이 19세기 말~20세기 초 작장면 전래 → 춘장+기름볶음+감자·당근·양파로 풍부한 맛 완성 → 1960~70년대 배달 외식 대표 메뉴, 독자적 한국 음식으로 정착</p>
+</blockquote>
+<h3 id="11-5-java-target-relay-gpt-4o-relay">11-5. Java <code>--target relay</code> (gpt-4o, relay 서버 경유)<a class="headerlink" href="#11-5-java-target-relay-gpt-4o-relay" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a><span class="c1"># 터미널 A: relay 서버 시작</span>
+<a id="__codelineno-51-2" name="__codelineno-51-2" href="#__codelineno-51-2"></a><span class="nb">cd</span><span class="w"> </span>relay<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_relay
+<a id="__codelineno-51-3" name="__codelineno-51-3" href="#__codelineno-51-3"></a>
+<a id="__codelineno-51-4" name="__codelineno-51-4" href="#__codelineno-51-4"></a><span class="c1"># 터미널 B: Java relay 호출</span>
+<a id="__codelineno-51-5" name="__codelineno-51-5" href="#__codelineno-51-5"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-51-6" name="__codelineno-51-6" href="#__codelineno-51-6"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-51-7" name="__codelineno-51-7" href="#__codelineno-51-7"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--target relay --timeout 60 짜장면의 역사를 간략히 설명해줘&quot;</span>
+</code></pre></div>
+<blockquote>
+<p>1883년 인천항 개항 시 산둥 화교 이주 → 1905년 공화춘(共和春) 개점으로 첫 공식 판매 → 1950~60년대 춘장 개선·외식 산업 발전으로 대중화 → 블랙데이(4월 14일) 문화와 결합, 역사와 문화를 담은 대표 퓨전 요리로 자리매김</p>
+</blockquote>
+<h3 id="11-6-python-api-responses-web-search-gpt-4o">11-6. Python <code>--api responses --web-search</code> (gpt-4o + 웹 검색)<a class="headerlink" href="#11-6-python-api-responses-web-search-gpt-4o" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-52-1" name="__codelineno-52-1" href="#__codelineno-52-1"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_example<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-52-2" name="__codelineno-52-2" href="#__codelineno-52-2"></a><span class="w">  </span>--api<span class="w"> </span>responses<span class="w"> </span>--web-search<span class="w"> </span>--timeout<span class="w"> </span><span class="m">60</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-52-3" name="__codelineno-52-3" href="#__codelineno-52-3"></a><span class="w">  </span><span class="s2">&quot;짜장면의 역사를 웹 검색으로 3문단 정리해줘&quot;</span>
+</code></pre></div>
+<blockquote>
+<p>웹 검색 결과를 실시간으로 반영해 나무위키·네이버 블로그 등 출처와 함께 답변 반환. 공화춘(1905년) 개점, 사자표 춘장(1948년), 1960~70년대 분식 장려 운동 시기별 사실이 출처 URL과 함께 정확히 인용됨.</p>
+</blockquote>
+<h3 id="11-7-java-api-responses-web-search-gpt-4o">11-7. Java <code>--api responses --web-search</code> (gpt-4o + 웹 검색)<a class="headerlink" href="#11-7-java-api-responses-web-search-gpt-4o" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-53-1" name="__codelineno-53-1" href="#__codelineno-53-1"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-53-2" name="__codelineno-53-2" href="#__codelineno-53-2"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--api responses --web-search --timeout 60 짜장면의 역사를 웹 검색으로 간략히&quot;</span>
+</code></pre></div>
+<blockquote>
+<p>웹 검색 기반으로 나무위키·위키백과 출처 인용하며 짜장면의 기원·한국화·대중화 3단계를 정확히 서술.</p>
+</blockquote>
+<hr />
+<h2 id="12">12. 요약<a class="headerlink" href="#12" title="Permanent link">&para;</a></h2>
+<ul>
+<li>direct Python/Java 예제는 OpenAI 호환 <code>chat/completions</code>, <code>responses</code>, <code>background: true</code>를 지원합니다.</li>
+<li><code>--web-search</code> 플래그로 <code>web_search_preview</code> tool을 켜면 일반 모델(gpt-4o 등)에도 실시간 웹 검색을 추가할 수 있습니다.</li>
+<li><code>--timeout &lt;초&gt;</code>로 응답 대기 시간을 조정할 수 있습니다 (기본값 30초, o3-deep-research는 300초 이상 권장).</li>
+<li>relay <code>deep_research</code> wrapper는 <code>arguments.system_prompt</code> 필드를 통해 모델 수준 지시문(페르소나, 출력 언어, 형식)을 Responses API <code>instructions</code> 필드로 전달합니다.</li>
+<li><code>arguments.text_format</code>으로 API 레벨 JSON 강제가 가능합니다: <code>json_object</code>(자유 JSON), <code>json_schema</code>(스키마 강제). gpt-4o에서 완전 지원, o3-deep-research는 <code>json_schema</code> 미지원(400 오류), <code>json_object</code>는 수락되나 결과 보장 없음.</li>
+<li>relay 예제는 LiteLLM Python SDK + FastAPI + Hypercorn으로 구현되어 있습니다.</li>
+<li>Java는 <code>--target relay</code> 모드로 relay를 호출할 수 있습니다.</li>
+<li>relay 외부 계약은 <code>tool_name</code> + 구조화된 <code>arguments</code> 중심이며, raw upstream <code>input</code>은 내부에만 존재합니다.</li>
+<li>문서 사이트는 GitHub Pages에서 한국어로 출판됩니다.</li>
+</ul>
+<hr />
+<h2 id="13-tool-calling-deep_research">13. 자동 Tool Calling — 일반 대화 중 deep_research 자동 개입<a class="headerlink" href="#13-tool-calling-deep_research" title="Permanent link">&para;</a></h2>
+<p>자세한 내용은 → <a href="../auto-toolcalling/">자동 Tool Calling 가이드</a></p>
+<h3 id="13-1">13-1. 핵심 개념<a class="headerlink" href="#13-1" title="Permanent link">&para;</a></h3>
+<p>기존 방식은 항상 사용자가 명시적으로 <code>deep_research</code>를 호출해야 했습니다. 자동 tool calling은 모델이 스스로 판단해서 deep_research를 실행합니다.</p>
+<h3 id="13-2-approach-a-client-side-pythonjava">13-2. Approach A: Client-Side (Python/Java)<a class="headerlink" href="#13-2-approach-a-client-side-pythonjava" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-54-1" name="__codelineno-54-1" href="#__codelineno-54-1"></a><span class="c1"># Python</span>
+<a id="__codelineno-54-2" name="__codelineno-54-2" href="#__codelineno-54-2"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-54-3" name="__codelineno-54-3" href="#__codelineno-54-3"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_example<span class="w"> </span>--auto-tool-call<span class="w"> </span>--timeout<span class="w"> </span><span class="m">120</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-54-4" name="__codelineno-54-4" href="#__codelineno-54-4"></a><span class="w">  </span><span class="s2">&quot;짜장면의 역사를 자세히 알려줘&quot;</span>
+<a id="__codelineno-54-5" name="__codelineno-54-5" href="#__codelineno-54-5"></a>
+<a id="__codelineno-54-6" name="__codelineno-54-6" href="#__codelineno-54-6"></a><span class="c1"># Java</span>
+<a id="__codelineno-54-7" name="__codelineno-54-7" href="#__codelineno-54-7"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-54-8" name="__codelineno-54-8" href="#__codelineno-54-8"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-54-9" name="__codelineno-54-9" href="#__codelineno-54-9"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--auto-tool-call --timeout 120 짜장면의 역사를 자세히 알려줘&quot;</span>
+</code></pre></div>
+<p>클라이언트가 Chat Completions function calling 3-turn 흐름을 직접 처리합니다.</p>
+<h3 id="13-3-approach-c-relay-side-post-apiv1chat">13-3. Approach C: Relay-Side (<code>POST /api/v1/chat</code>)<a class="headerlink" href="#13-3-approach-c-relay-side-post-apiv1chat" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-55-1" name="__codelineno-55-1" href="#__codelineno-55-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8080/api/v1/chat<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-55-2" name="__codelineno-55-2" href="#__codelineno-55-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-55-3" name="__codelineno-55-3" href="#__codelineno-55-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-55-4" name="__codelineno-55-4" href="#__codelineno-55-4"></a><span class="s1">    &quot;message&quot;: &quot;짜장면의 역사를 자세히 알려줘&quot;,</span>
+<a id="__codelineno-55-5" name="__codelineno-55-5" href="#__codelineno-55-5"></a><span class="s1">    &quot;auto_tool_call&quot;: true</span>
+<a id="__codelineno-55-6" name="__codelineno-55-6" href="#__codelineno-55-6"></a><span class="s1">  }&#39;</span>
+</code></pre></div>
+<p>relay가 모든 orchestration을 내부에서 처리합니다. 클라이언트는 단순 chat 요청만 보내면 됩니다.</p>
+<h3 id="13-4">13-4. 모델 제약<a class="headerlink" href="#13-4" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>gpt-4o</strong> (orchestration): function calling 완전 지원</li>
+<li><strong>o3-deep-research</strong> (실제 연구): function calling 미지원 — 항상 피호출자</li>
+<li>orchestration 모델은 <code>LITELLM_CHAT_MODEL</code> 환경변수로 지정 (기본 <code>gpt-4o</code>)</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  맨위로
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "content.code.copy", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\ud074\ub9bd\ubcf4\ub4dc\uc5d0 \ubcf5\uc0ac\ub428", "clipboard.copy": "\ud074\ub9bd\ubcf4\ub4dc\ub85c \ubcf5\uc0ac", "search.result.more.one": "\uc774 \ubb38\uc11c\uc5d0\uc11c 1\uac1c\uc758 \uac80\uc0c9 \uacb0\uacfc \ub354 \ubcf4\uae30", "search.result.more.other": "\uc774 \ubb38\uc11c\uc5d0\uc11c #\uac1c\uc758 \uac80\uc0c9 \uacb0\uacfc \ub354 \ubcf4\uae30", "search.result.none": "\uac80\uc0c9\uc5b4\uc640 \uc77c\uce58\ud558\ub294 \ubb38\uc11c\uac00 \uc5c6\uc2b5\ub2c8\ub2e4", "search.result.one": "1\uac1c\uc758 \uc77c\uce58\ud558\ub294 \ubb38\uc11c", "search.result.other": "#\uac1c\uc758 \uc77c\uce58\ud558\ub294 \ubb38\uc11c", "search.result.placeholder": "\uac80\uc0c9\uc5b4\ub97c \uc785\ub825\ud558\uc138\uc694", "search.result.term.missing": "\ud3ec\ud568\ub418\uc9c0 \uc54a\uc740 \uac80\uc0c9\uc5b4", "select.version": "\ubc84\uc804 \uc120\ud0dd"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

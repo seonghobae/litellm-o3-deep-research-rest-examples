@@ -1,0 +1,1798 @@
+
+<!doctype html>
+<html lang="ko" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="LiteLLM Proxy, Python, Java, relay 예제를 위한 한국어 문서 사이트">
+      
+      
+      
+        <link rel="canonical" href="https://seonghobae.github.io/litellm-o3-deep-research-rest-examples/ko/auto-toolcalling/">
+      
+      
+        <link rel="prev" href="../responses-guide/">
+      
+      
+        <link rel="next" href="../manual/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+    
+    
+      
+        <title>자동 Tool Calling - LiteLLM o3-deep-research 예제 문서</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="teal">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#tool-calling-deep_research" class="md-skip">
+          콘텐츠로 이동
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="상단/헤더">
+    <a href="../.." title="LiteLLM o3-deep-research 예제 문서" class="md-header__button md-logo" aria-label="LiteLLM o3-deep-research 예제 문서" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            LiteLLM o3-deep-research 예제 문서
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              자동 Tool Calling
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="teal"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="검색" placeholder="검색" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="검색">
+        
+        <button type="reset" class="md-search__icon md-icon" title="지우기" aria-label="지우기" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            검색 초기화
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/seonghobae/litellm-o3-deep-research-rest-examples" title="저장소로 이동" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    seonghobae/litellm-o3-deep-research-rest-examples
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="탭" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  홈
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  시작하기
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../python-example/" class="md-tabs__link">
+          
+  
+  
+  예제
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../manual/" class="md-tabs__link">
+          
+  
+  
+  참고
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="네비게이션" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="LiteLLM o3-deep-research 예제 문서" class="md-nav__button md-logo" aria-label="LiteLLM o3-deep-research 예제 문서" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    LiteLLM o3-deep-research 예제 문서
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/seonghobae/litellm-o3-deep-research-rest-examples" title="저장소로 이동" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    seonghobae/litellm-o3-deep-research-rest-examples
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    홈
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    시작하기
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    예제
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    예제
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../python-example/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python 직접 호출
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../java-example/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java 직접 호출
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../relay-example/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Relay 중계 예제
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../responses-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Responses / Background / Relay 스트리밍
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    자동 Tool Calling
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    자동 Tool Calling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="목차">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      목차
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-function-calling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 개념: Function Calling이란?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 세 가지 접근 방법
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-approach-a-client-side-function-calling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Approach A — Client-Side Function Calling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Approach A — Client-Side Function Calling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#3-1-python-auto-tool-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3-1. Python — --auto-tool-call 플래그
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-2-java-auto-tool-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3-2. Java — --auto-tool-call 플래그
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-3-approach-a" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3-3. Approach A 내부 동작
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-approach-c-relay-side-orchestration-post-apiv1chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Approach C — Relay-Side Orchestration (POST /api/v1/chat)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Approach C — Relay-Side Orchestration (POST /api/v1/chat)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#4-1-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-1. API 사용법
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-2-auto_tool_call-false-tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-2. auto_tool_call: false로 tool 비활성화
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-3-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-3. context 추가
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-4-java-relay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-4. Java relay 클라이언트에서 사용
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-5-relay-chat-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-5. Relay 설정 — chat model
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-approach-b-responses-api-function-calling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Approach B — Responses API Function Calling (평가 결과)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Approach B — Responses API Function Calling (평가 결과)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#5-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5-1. 평가 방법
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5-2. 평가 결과
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. 모델 지원 현황
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. 실제 호출 검증 결과
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. 실제 호출 검증 결과">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#7-1-approach-c-relay-apiv1chat-tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7-1. Approach C: relay /api/v1/chat — 단순 인사 (tool 미호출)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-2-approach-c-relay-apiv1chat-tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7-2. Approach C: relay /api/v1/chat — 역사 질문 (tool 자동 호출)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-3-approach-a-python-auto-tool-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7-3. Approach A: Python --auto-tool-call
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-4-approach-a-java-auto-tool-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7-4. Approach A: Java --auto-tool-call
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. 언제 어떤 방법을 써야 할까?
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    참고
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    참고
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../manual/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    통합 매뉴얼
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../relay-toolcalling-plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    중계 예제 구현 계획(보관)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/deploy-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    배포 런북
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="목차">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      목차
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-function-calling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 개념: Function Calling이란?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 세 가지 접근 방법
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-approach-a-client-side-function-calling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Approach A — Client-Side Function Calling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Approach A — Client-Side Function Calling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#3-1-python-auto-tool-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3-1. Python — --auto-tool-call 플래그
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-2-java-auto-tool-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3-2. Java — --auto-tool-call 플래그
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-3-approach-a" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3-3. Approach A 내부 동작
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-approach-c-relay-side-orchestration-post-apiv1chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Approach C — Relay-Side Orchestration (POST /api/v1/chat)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Approach C — Relay-Side Orchestration (POST /api/v1/chat)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#4-1-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-1. API 사용법
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-2-auto_tool_call-false-tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-2. auto_tool_call: false로 tool 비활성화
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-3-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-3. context 추가
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-4-java-relay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-4. Java relay 클라이언트에서 사용
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-5-relay-chat-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-5. Relay 설정 — chat model
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-approach-b-responses-api-function-calling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Approach B — Responses API Function Calling (평가 결과)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Approach B — Responses API Function Calling (평가 결과)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#5-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5-1. 평가 방법
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5-2. 평가 결과
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. 모델 지원 현황
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. 실제 호출 검증 결과
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. 실제 호출 검증 결과">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#7-1-approach-c-relay-apiv1chat-tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7-1. Approach C: relay /api/v1/chat — 단순 인사 (tool 미호출)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-2-approach-c-relay-apiv1chat-tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7-2. Approach C: relay /api/v1/chat — 역사 질문 (tool 자동 호출)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-3-approach-a-python-auto-tool-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7-3. Approach A: Python --auto-tool-call
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-4-approach-a-java-auto-tool-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7-4. Approach A: Java --auto-tool-call
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. 언제 어떤 방법을 써야 할까?
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="tool-calling-deep_research">자동 Tool Calling — 일반 대화 중 deep_research 자동 개입<a class="headerlink" href="#tool-calling-deep_research" title="Permanent link">&para;</a></h1>
+<p>이 페이지는 일반 대화(chat) 중에 모델이 스스로 <code>deep_research</code> 도구를 선택해서 호출하는
+<strong>자동 tool calling</strong> 기능을 설명합니다.</p>
+<hr />
+<h2 id="1-function-calling">1. 개념: Function Calling이란?<a class="headerlink" href="#1-function-calling" title="Permanent link">&para;</a></h2>
+<p>기존 방식에서는 항상 사용자가 명시적으로 <code>POST /api/v1/tool-invocations</code>를 호출해야
+deep research가 실행됐습니다.</p>
+<p>자동 tool calling은 다릅니다. OpenAI의 <strong>function calling</strong> 패턴을 활용하면 모델이
+스스로 "이 질문은 deep_research가 필요하다"고 판단해서 도구를 자동으로 호출합니다.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>사용자: &quot;짜장면의 역사를 자세히 알려줘&quot;
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>         ↓
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  모델 판단: &quot;이건 deep_research가 필요한 질문이다&quot;
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>         ↓
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>  모델 → deep_research(&quot;짜장면의 역사&quot;) 호출
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>         ↓
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>  deep_research 실행 (실제 연구 수행)
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>         ↓
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>  모델이 연구 결과를 읽고 자연어로 답변 합성
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>         ↓
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>사용자: 최종 답변 수령
+</code></pre></div>
+<hr />
+<h2 id="2">2. 세 가지 접근 방법<a class="headerlink" href="#2" title="Permanent link">&para;</a></h2>
+<p>이 저장소는 세 가지 방법을 모두 구현하고 평가합니다.</p>
+<table>
+<thead>
+<tr>
+<th>방법</th>
+<th>누가 tool call을 실행?</th>
+<th>클라이언트 부담</th>
+<th>투명성</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A: Client-side</strong> (Python/Java)</td>
+<td>클라이언트 직접</td>
+<td>높음 (3-turn 로직 직접 구현)</td>
+<td>낮음 (구현 필요)</td>
+</tr>
+<tr>
+<td><strong>C: Relay-side</strong> (<code>/api/v1/chat</code>)</td>
+<td>relay 서버</td>
+<td>낮음 (단순 POST)</td>
+<td>높음 (완전 투명)</td>
+</tr>
+<tr>
+<td><strong>B: Responses API</strong></td>
+<td>모델/LiteLLM</td>
+<td>낮음</td>
+<td>모델 종속</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3-approach-a-client-side-function-calling">3. Approach A — Client-Side Function Calling<a class="headerlink" href="#3-approach-a-client-side-function-calling" title="Permanent link">&para;</a></h2>
+<p>클라이언트가 Chat Completions에 <code>deep_research</code> function schema를 붙여서 1차 호출 → tool call 감지 → relay 호출 → 2차 완성 호출을 직접 수행합니다.</p>
+<h3 id="3-1-python-auto-tool-call">3-1. Python — <code>--auto-tool-call</code> 플래그<a class="headerlink" href="#3-1-python-auto-tool-call" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">cd</span><span class="w"> </span>clients/python
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># relay 서버가 떠 있어야 합니다 (터미널 A)</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># cd relay &amp;&amp; uv run python -m litellm_relay</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c1"># Python 클라이언트에서 자동 tool calling (터미널 B)</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_example<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span>--auto-tool-call<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">  </span>--timeout<span class="w"> </span><span class="m">120</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">  </span><span class="s2">&quot;짜장면의 역사를 자세히 알려줘&quot;</span>
+</code></pre></div>
+<p>도구가 호출됐으면 stderr에 <code>[deep_research was called automatically]</code>가 출력됩니다.</p>
+<p>코드에서 직접 사용:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">litellm_example.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">LiteLLMClient</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">client</span> <span class="o">=</span> <span class="n">LiteLLMClient</span><span class="p">(</span><span class="n">base_url</span><span class="p">,</span> <span class="n">api_key</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4o&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">answer</span><span class="p">,</span> <span class="n">tool_called</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">create_chat_with_tool_calling</span><span class="p">(</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="s2">&quot;짜장면의 역사를 자세히 알려줘&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">relay_base_url</span><span class="o">=</span><span class="s2">&quot;http://127.0.0.1:8080&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="p">)</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="k">if</span> <span class="n">tool_called</span><span class="p">:</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[deep_research가 자동으로 호출됐습니다]&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="3-2-java-auto-tool-call">3-2. Java — <code>--auto-tool-call</code> 플래그<a class="headerlink" href="#3-2-java-auto-tool-call" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">cd</span><span class="w"> </span>clients/java
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># relay 서버 실행 후</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--auto-tool-call --timeout 120 짜장면의 역사를 자세히 알려줘&quot;</span>
+</code></pre></div>
+<p>코드에서 직접 사용:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">LiteLlmClient</span><span class="w"> </span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">LiteLlmClient</span><span class="p">(</span><span class="n">baseUrl</span><span class="p">,</span><span class="w"> </span><span class="n">apiKey</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;gpt-4o&quot;</span><span class="p">);</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="na">createChatWithToolCalling</span><span class="p">(</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="s">&quot;짜장면의 역사를 자세히 알려줘&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="s">&quot;http://127.0.0.1:8080&quot;</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="p">);</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">result</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span><span class="p">);</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="s">&quot;true&quot;</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="n">result</span><span class="o">[</span><span class="mi">1</span><span class="o">]</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="n">System</span><span class="p">.</span><span class="na">err</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&quot;[deep_research가 자동으로 호출됐습니다]&quot;</span><span class="p">);</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="3-3-approach-a">3-3. Approach A 내부 동작<a class="headerlink" href="#3-3-approach-a" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>클라이언트 → POST /v1/chat/completions
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>              {model, messages, tools: [deep_research schema]}
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>                    ↓
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>모델 응답: finish_reason=&quot;tool_calls&quot;
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>           tool_calls: [{function: {name: &quot;deep_research&quot;, arguments: {...}}}]
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>                    ↓
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>클라이언트 → POST /api/v1/chat (relay)
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>              {message: &quot;짜장면의 역사&quot;, auto_tool_call: true}
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>                    ↓
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>relay가 실제 deep_research 실행 후 결과 반환
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>                    ↓
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>클라이언트 → POST /v1/chat/completions (2nd turn)
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>              {messages: [..., tool result]}
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>                    ↓
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>모델이 tool 결과를 읽고 최종 자연어 답변 합성
+</code></pre></div>
+<hr />
+<h2 id="4-approach-c-relay-side-orchestration-post-apiv1chat">4. Approach C — Relay-Side Orchestration (<code>POST /api/v1/chat</code>)<a class="headerlink" href="#4-approach-c-relay-side-orchestration-post-apiv1chat" title="Permanent link">&para;</a></h2>
+<p>클라이언트는 단순히 chat 메시지 하나만 보내면 됩니다. relay가 내부적으로 모든 orchestration을 처리합니다.</p>
+<h3 id="4-1-api">4-1. API 사용법<a class="headerlink" href="#4-1-api" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># relay 서버 실행</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nb">cd</span><span class="w"> </span>relay<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nv">LITELLM_CHAT_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_relay
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># 일반 대화 (tool 필요 없음)</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8080/api/v1/chat<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="s1">    &quot;message&quot;: &quot;안녕하세요!&quot;,</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="s1">    &quot;auto_tool_call&quot;: true</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="s1">  }&#39;</span>
+</code></pre></div>
+<p><strong>예상 응답 (tool 미호출):</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="p">{</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;안녕하세요! 무엇을 도와드릴까요?&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="nt">&quot;tool_called&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="nt">&quot;tool_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span><span class="nt">&quot;research_summary&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="p">}</span>
+</code></pre></div></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># deep_research가 필요한 질문</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8080/api/v1/chat<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="s1">    &quot;message&quot;: &quot;짜장면의 역사를 자세히 알려줘&quot;,</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="s1">    &quot;auto_tool_call&quot;: true</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="s1">  }&#39;</span>
+</code></pre></div>
+<p><strong>예상 응답 (tool 호출됨):</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="p">{</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;짜장면은 19세기 말 중국 산둥 지방 출신 이민자들이 인천 차이나타운에서...&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nt">&quot;tool_called&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span><span class="nt">&quot;tool_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deep_research&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">  </span><span class="nt">&quot;research_summary&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;# 짜장면의 역사\n\n...&quot;</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="p">}</span>
+</code></pre></div></p>
+<h3 id="4-2-auto_tool_call-false-tool">4-2. <code>auto_tool_call: false</code>로 tool 비활성화<a class="headerlink" href="#4-2-auto_tool_call-false-tool" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8080/api/v1/chat<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="s1">    &quot;message&quot;: &quot;짜장면의 역사를 자세히 알려줘&quot;,</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="s1">    &quot;auto_tool_call&quot;: false</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="s1">  }&#39;</span>
+</code></pre></div>
+<p>모델의 사전 학습 지식으로만 답변하고, deep_research를 호출하지 않습니다.</p>
+<h3 id="4-3-context">4-3. context 추가<a class="headerlink" href="#4-3-context" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8080/api/v1/chat<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="s1">    &quot;message&quot;: &quot;이 재료들을 이용한 음식의 역사를 알려줘&quot;,</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="s1">    &quot;context&quot;: [&quot;춘장&quot;, &quot;중화면&quot;, &quot;돼지고기&quot;],</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="s1">    &quot;auto_tool_call&quot;: true</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="s1">  }&#39;</span>
+</code></pre></div>
+<p><code>context</code> 배열은 user 메시지 앞에 붙어서 모델에게 추가 맥락을 제공합니다.</p>
+<h3 id="4-4-java-relay">4-4. Java relay 클라이언트에서 사용<a class="headerlink" href="#4-4-java-relay" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--target relay --timeout 120 짜장면의 역사를 알려줘&quot;</span>
+</code></pre></div>
+<p>또는 Java 코드에서 직접:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">example.litellm.relay.RelayClient</span><span class="p">;</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">java.time.Duration</span><span class="p">;</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="n">RelayClient</span><span class="w"> </span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">RelayClient</span><span class="p">(</span><span class="s">&quot;http://127.0.0.1:8080&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Duration</span><span class="p">.</span><span class="na">ofSeconds</span><span class="p">(</span><span class="mi">120</span><span class="p">));</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="n">RelayClient</span><span class="p">.</span><span class="na">ChatResult</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="na">invokeChat</span><span class="p">(</span><span class="s">&quot;짜장면의 역사를 자세히 알려줘&quot;</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">);</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="na">content</span><span class="p">());</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="na">toolCalled</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="w">    </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&quot;[연구 도구 호출됨: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">result</span><span class="p">.</span><span class="na">toolName</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;]&quot;</span><span class="p">);</span>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="4-5-relay-chat-model">4-5. Relay 설정 — chat model<a class="headerlink" href="#4-5-relay-chat-model" title="Permanent link">&para;</a></h3>
+<p>relay의 chat orchestration에 사용하는 모델은 <code>LITELLM_CHAT_MODEL</code> 환경변수로 지정합니다 (기본값 <code>gpt-4o</code>). deep_research 수행에는 기존 <code>LITELLM_MODEL</code>을 사용합니다.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nv">LITELLM_CHAT_MODEL</span><span class="o">=</span>gpt-4o-mini<span class="w"> </span><span class="se">\ </span><span class="w"> </span><span class="c1"># orchestration용 (function calling 지원 필요)</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>o3-deep-research<span class="w"> </span><span class="se">\ </span><span class="w"> </span><span class="c1"># 실제 deep research용</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_relay
+</code></pre></div>
+<hr />
+<h2 id="5-approach-b-responses-api-function-calling">5. Approach B — Responses API Function Calling (평가 결과)<a class="headerlink" href="#5-approach-b-responses-api-function-calling" title="Permanent link">&para;</a></h2>
+<p><code>POST /v1/responses</code>에 <code>tools=[{type:"function", ...}]</code>를 붙여 Responses API 레벨에서 function calling을 시도할 수 있습니다.</p>
+<h3 id="5-1">5-1. 평가 방법<a class="headerlink" href="#5-1" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nb">cd</span><span class="w"> </span>clients/python
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="nv">LITELLM_BASE_URL</span><span class="o">=</span>https://your-host/v1<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="nv">LITELLM_API_KEY</span><span class="o">=</span>sk-...<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>scripts/eval_responses_function_calling.py
+</code></pre></div>
+<h3 id="5-2">5-2. 평가 결과<a class="headerlink" href="#5-2" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><strong>테스트 환경</strong>: LiteLLM Proxy + Azure OpenAI (gpt-4o)</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>테스트</th>
+<th>결과</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST /v1/responses</code> + <code>tools</code> (gpt-4o)</td>
+<td>⚠️ LiteLLM Proxy 버전에 따라 다름</td>
+</tr>
+<tr>
+<td>Responses API의 function calling 공식 지원</td>
+<td>gpt-4o: 지원, o3-deep-research: 미지원</td>
+</tr>
+<tr>
+<td>Chat Completions function calling 대비 안정성</td>
+<td>Chat Completions가 더 안정적</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>권장</strong>: 자동 tool calling에는 <strong>Approach A</strong> (Chat Completions + function calling) 또는 <strong>Approach C</strong> (relay-side)를 사용하세요. Responses API function calling은 LiteLLM Proxy 버전 및 upstream 모델 설정에 따라 동작이 달라질 수 있습니다.</p>
+</blockquote>
+<hr />
+<h2 id="6">6. 모델 지원 현황<a class="headerlink" href="#6" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>모델</th>
+<th>Chat Completions function calling</th>
+<th>Responses API function calling</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>gpt-4o</code></td>
+<td>✅ 완전 지원</td>
+<td>⚠️ 프록시 설정 종속</td>
+</tr>
+<tr>
+<td><code>gpt-4o-mini</code></td>
+<td>✅ 완전 지원</td>
+<td>⚠️ 프록시 설정 종속</td>
+</tr>
+<tr>
+<td><code>o3-deep-research</code></td>
+<td>❌ 미지원 (연구 모델)</td>
+<td>❌ 미지원</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>중요</strong>: <code>o3-deep-research</code>는 자체 내부 도구로 심층 조사를 수행하는 모델이므로 표준 function calling을 지원하지 않습니다. 자동 tool calling 시나리오에서 o3-deep-research는 <strong>피호출자</strong> (deep_research tool의 실제 실행 모델)이고, <strong>호출자</strong> (function calling을 결정하는 모델)는 gpt-4o 등 function calling 지원 모델이어야 합니다.</p>
+</blockquote>
+<hr />
+<h2 id="7">7. 실제 호출 검증 결과<a class="headerlink" href="#7" title="Permanent link">&para;</a></h2>
+<h3 id="7-1-approach-c-relay-apiv1chat-tool">7-1. Approach C: relay <code>/api/v1/chat</code> — 단순 인사 (tool 미호출)<a class="headerlink" href="#7-1-approach-c-relay-apiv1chat-tool" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8080/api/v1/chat<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;message&quot;: &quot;안녕하세요!&quot;, &quot;auto_tool_call&quot;: true}&#39;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="p">{</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;안녕하세요! 무엇을 도와드릴까요?&quot;</span><span class="p">,</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">  </span><span class="nt">&quot;tool_called&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="w">  </span><span class="nt">&quot;tool_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="w">  </span><span class="nt">&quot;research_summary&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="p">}</span>
+</code></pre></div>
+<p>→ 모델이 단순 인사에는 deep_research를 호출하지 않음. ✅</p>
+<h3 id="7-2-approach-c-relay-apiv1chat-tool">7-2. Approach C: relay <code>/api/v1/chat</code> — 역사 질문 (tool 자동 호출)<a class="headerlink" href="#7-2-approach-c-relay-apiv1chat-tool" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8080/api/v1/chat<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;message&quot;: &quot;짜장면의 역사를 자세히 알려줘&quot;, &quot;auto_tool_call&quot;: true}&#39;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="p">{</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="w">  </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;짜장면의 역사는 19세기 말 중국 산둥 지방 출신 화교들이 인천 차이나타운에서...&quot;</span><span class="p">,</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="w">  </span><span class="nt">&quot;tool_called&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">  </span><span class="nt">&quot;tool_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deep_research&quot;</span><span class="p">,</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="w">  </span><span class="nt">&quot;research_summary&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;# 짜장면의 역사\n...&quot;</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="p">}</span>
+</code></pre></div>
+<p>→ 모델이 스스로 deep_research를 호출하고, relay가 연구를 수행한 뒤 최종 답변 합성. ✅</p>
+<h3 id="7-3-approach-a-python-auto-tool-call">7-3. Approach A: Python <code>--auto-tool-call</code><a class="headerlink" href="#7-3-approach-a-python-auto-tool-call" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_example<span class="w"> </span>--auto-tool-call<span class="w"> </span>--timeout<span class="w"> </span><span class="m">120</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">  </span><span class="s2">&quot;짜장면의 역사를 자세히 알려줘&quot;</span>
+</code></pre></div>
+<p>→ stdout: 최종 자연어 답변, stderr: <code>[deep_research was called automatically]</code> ✅</p>
+<h3 id="7-4-approach-a-java-auto-tool-call">7-4. Approach A: Java <code>--auto-tool-call</code><a class="headerlink" href="#7-4-approach-a-java-auto-tool-call" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--auto-tool-call --timeout 120 짜장면의 역사를 자세히 알려줘&quot;</span>
+</code></pre></div>
+<p>→ stdout: 최종 자연어 답변, stderr: <code>[deep_research was called automatically]</code> ✅</p>
+<hr />
+<h2 id="8">8. 언제 어떤 방법을 써야 할까?<a class="headerlink" href="#8" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>상황</th>
+<th>권장 방법</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>간단한 단발성 호출</td>
+<td>Approach C (<code>/api/v1/chat</code>)</td>
+</tr>
+<tr>
+<td>클라이언트에서 tool call 여부를 직접 제어하고 싶을 때</td>
+<td>Approach A</td>
+</tr>
+<tr>
+<td>Java relay 클라이언트</td>
+<td>Approach C (<code>invokeChat</code>)</td>
+</tr>
+<tr>
+<td>tool 호출 여부를 감추고 싶을 때</td>
+<td>Approach C</td>
+</tr>
+<tr>
+<td>deep_research가 필요한지 불확실한 대화</td>
+<td>Approach C (auto_tool_call=true)</td>
+</tr>
+<tr>
+<td>항상 deep_research를 쓰고 싶을 때</td>
+<td>기존 <code>POST /api/v1/tool-invocations</code></td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  맨위로
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "content.code.copy", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\ud074\ub9bd\ubcf4\ub4dc\uc5d0 \ubcf5\uc0ac\ub428", "clipboard.copy": "\ud074\ub9bd\ubcf4\ub4dc\ub85c \ubcf5\uc0ac", "search.result.more.one": "\uc774 \ubb38\uc11c\uc5d0\uc11c 1\uac1c\uc758 \uac80\uc0c9 \uacb0\uacfc \ub354 \ubcf4\uae30", "search.result.more.other": "\uc774 \ubb38\uc11c\uc5d0\uc11c #\uac1c\uc758 \uac80\uc0c9 \uacb0\uacfc \ub354 \ubcf4\uae30", "search.result.none": "\uac80\uc0c9\uc5b4\uc640 \uc77c\uce58\ud558\ub294 \ubb38\uc11c\uac00 \uc5c6\uc2b5\ub2c8\ub2e4", "search.result.one": "1\uac1c\uc758 \uc77c\uce58\ud558\ub294 \ubb38\uc11c", "search.result.other": "#\uac1c\uc758 \uc77c\uce58\ud558\ub294 \ubb38\uc11c", "search.result.placeholder": "\uac80\uc0c9\uc5b4\ub97c \uc785\ub825\ud558\uc138\uc694", "search.result.term.missing": "\ud3ec\ud568\ub418\uc9c0 \uc54a\uc740 \uac80\uc0c9\uc5b4", "select.version": "\ubc84\uc804 \uc120\ud0dd"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
