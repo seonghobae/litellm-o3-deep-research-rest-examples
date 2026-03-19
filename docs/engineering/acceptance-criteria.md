@@ -38,23 +38,29 @@ Work in this repository is complete only when all of the following are true:
 14. The relay `ChatOrchestrator` uses separate timeouts: `RELAY_TIMEOUT_SECONDS` (default 30 s) for Chat Completions turns and `RELAY_RESEARCH_TIMEOUT_SECONDS` (default 300 s) for deep_research execution.
 15. Upstream errors in auto tool-calling are caught and returned as a structured `ChatResponse` (not bare HTTP 500).
 
+## ChatRequest enhanced contract
+
+16. `POST /api/v1/chat` accepts optional `system_prompt` (string | null) forwarded to the deep_research invocation as the Responses API `instructions` field — enabling persona, output language, or format constraints in relay-orchestrated research.
+17. `POST /api/v1/chat` accepts optional `deliverable_format` (default: `"markdown_brief"`) used as the fallback when the Chat Completions model does not specify a format in its tool-call arguments.
+18. The Java `RelayClient.invokeChat(message, autoToolCall, systemPrompt, deliverableFormat)` 4-argument overload sends both fields when provided; the 2-argument overload defaults to `system_prompt=null` and `deliverable_format="markdown_brief"`.
+
 ## Tests and coverage
 
-16. Automated tests cover: configuration loading, request construction, background handling, status polling, SSE text streaming, error handling, `system_prompt` passthrough, `text_format` passthrough, `web_search_preview` passthrough, `auto_tool_call` (no-tool and tool-call paths), `ChatOrchestrator` timeout separation, and Pydantic tool_call normalisation.
-17. Python relay: `uv run pytest --cov=litellm_relay --cov-fail-under=100` passes.
-18. Python client: `uv run pytest --cov=litellm_example --cov-fail-under=100` passes.
-19. Java: `mvn test` → BUILD SUCCESS.
+19. Automated tests cover: configuration loading, request construction, background handling, status polling, SSE text streaming, error handling, `system_prompt` passthrough, `text_format` passthrough, `web_search_preview` passthrough, `auto_tool_call` (no-tool and tool-call paths), `ChatOrchestrator` timeout separation, Pydantic tool_call normalisation, `ChatRequest.system_prompt` and `ChatRequest.deliverable_format` propagation to `DeepResearchArguments`.
+20. Python relay: `uv run pytest --cov=litellm_relay --cov-fail-under=100` passes.
+21. Python client: `uv run pytest --cov=litellm_example --cov-fail-under=100` passes.
+22. Java: `mvn test` → BUILD SUCCESS.
 
 ## Documentation
 
-20. Korean user-facing manuals cover: all CLI flags (`--api`, `--background`, `--web-search`, `--auto-tool-call`, `--timeout`, `--target`, `--stream`, `--deliverable-format`), relay API contract, auto tool-calling guide, system_prompt guide, text_format guide, timeout configuration, and live verification results.
-21. `python-example.md`, `java-example.md`, `quickstart.md`, `responses-guide.md`, `faq.md`, and `relay-example.md` accurately reflect the current feature set.
-22. `docs/engineering/acceptance-criteria.md` (this file) is current.
-23. The docs site builds successfully with `mkdocs build --strict`.
+23. Korean user-facing manuals cover: all CLI flags (`--api`, `--background`, `--web-search`, `--auto-tool-call`, `--timeout`, `--target`, `--stream`, `--deliverable-format`), relay API contract, auto tool-calling guide, system_prompt guide, text_format guide, timeout configuration, and live verification results.
+24. `python-example.md`, `java-example.md`, `quickstart.md`, `responses-guide.md`, `faq.md`, and `relay-example.md` accurately reflect the current feature set.
+25. `docs/engineering/acceptance-criteria.md` (this file) is current.
+26. The docs site builds successfully with `mkdocs build --strict`.
 
 ## Live verification
 
-24. If live credentials are available, at minimum the following are verified before declaring work complete:
+27. If live credentials are available, at minimum the following are verified before declaring work complete:
     - Python `chat` and `responses` foreground (direct)
     - Python `responses --background` submission (direct)
     - Java `chat` and `responses` foreground (direct)
@@ -66,3 +72,5 @@ Work in this repository is complete only when all of the following are true:
     - Python `--web-search` (web search result returned)
     - Python `--auto-tool-call` (relay invoked automatically)
     - Java `--auto-tool-call` (relay invoked automatically)
+    - Relay `/api/v1/chat` with `system_prompt` (persona applied to deep_research result)
+    - Relay `/api/v1/chat` with `deliverable_format="markdown_report"` (format used as fallback)
