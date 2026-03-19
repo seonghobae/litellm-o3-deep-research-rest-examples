@@ -587,6 +587,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#web_search_preview-web-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        web_search_preview — 실시간 웹 검색 (--web-search)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tool-calling-auto-tool-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        자동 Tool Calling (--auto-tool-call)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1000,6 +1022,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#web_search_preview-web-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        web_search_preview — 실시간 웹 검색 (--web-search)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tool-calling-auto-tool-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        자동 Tool Calling (--auto-tool-call)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1036,11 +1080,47 @@
 <li><code>clients/python/</code></li>
 </ul>
 <h2 id="_2">지원 범위<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
-<ul>
-<li><code>POST /v1/chat/completions</code></li>
-<li><code>POST /v1/responses</code></li>
-<li><code>POST /v1/responses</code> + <code>background: true</code></li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>기능</th>
+<th>플래그</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chat Completions</td>
+<td>기본</td>
+<td><code>POST /v1/chat/completions</code></td>
+</tr>
+<tr>
+<td>Responses API</td>
+<td><code>--api responses</code></td>
+<td><code>POST /v1/responses</code></td>
+</tr>
+<tr>
+<td>Background 제출</td>
+<td><code>--background</code></td>
+<td>서버 측 비동기 큐잉</td>
+</tr>
+<tr>
+<td>Web 검색</td>
+<td><code>--web-search</code></td>
+<td><code>web_search_preview</code> tool 활성화</td>
+</tr>
+<tr>
+<td>자동 Tool Calling</td>
+<td><code>--auto-tool-call</code></td>
+<td>deep_research 자동 개입</td>
+</tr>
+<tr>
+<td>타임아웃</td>
+<td><code>--timeout &lt;초&gt;</code></td>
+<td>요청 대기 시간 (기본 30초)</td>
+</tr>
+</tbody>
+</table>
 <h2 id="_3">테스트<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">cd</span><span class="w"> </span>clients/python
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uv<span class="w"> </span>run<span class="w"> </span>pytest
@@ -1054,17 +1134,81 @@
 <h2 id="background-responses">background responses 제출<a class="headerlink" href="#background-responses" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_example<span class="w"> </span>--api<span class="w"> </span>responses<span class="w"> </span>--background<span class="w"> </span><span class="s2">&quot;Reply with exactly: OK&quot;</span>
 </code></pre></div>
-<p>이 경우 최종 텍스트 대신 원본 JSON 메타데이터를 출력합니다.</p>
+<p>이 경우 최종 텍스트 대신 <code>id</code>, <code>status</code> 같은 후속 추적용 메타데이터가 담긴 원본 JSON을 출력합니다.</p>
 <h2 id="-timeout">타임아웃 조정 (--timeout)<a class="headerlink" href="#-timeout" title="Permanent link">&para;</a></h2>
 <p>기본 타임아웃은 30초입니다. <code>o3-deep-research</code>처럼 응답 시간이 긴 모델을 사용할 때는 <code>--timeout &lt;초&gt;</code>로 늘리세요.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_example<span class="w"> </span>--timeout<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="s2">&quot;짜장면의 역사를 상세히 조사해줘&quot;</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_example<span class="w"> </span>--api<span class="w"> </span>responses<span class="w"> </span>--timeout<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="s2">&quot;짜장면의 역사를 상세히 조사해줘&quot;</span>
 </code></pre></div>
+<h2 id="web_search_preview-web-search">web_search_preview — 실시간 웹 검색 (--web-search)<a class="headerlink" href="#web_search_preview-web-search" title="Permanent link">&para;</a></h2>
+<p><code>--web-search</code>는 <code>--api responses</code>와 함께 사용하면 모델이 실시간으로 웹을 검색해서 최신 정보를 답변에 반영합니다. <code>gpt-4o</code> 같은 일반 모델에도 검색 능력을 부여합니다.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_example<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>--api<span class="w"> </span>responses<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span>--web-search<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span>--timeout<span class="w"> </span><span class="m">60</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span><span class="s2">&quot;짜장면이 처음 만들어진 연도를 한 줄로&quot;</span>
+</code></pre></div>
+<p><strong>실제 결과 예시:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>짜장면은 1905년에 중국 청나라 출신 화교들에 의해 인천 차이나타운에서 처음 만들어졌습니다.
+</code></pre></div>
+<p>코드에서 직접 사용:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">litellm_example.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">LiteLLMClient</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">client</span> <span class="o">=</span> <span class="n">LiteLLMClient</span><span class="p">(</span><span class="n">base_url</span><span class="p">,</span> <span class="n">api_key</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4o&quot;</span><span class="p">)</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">create_response</span><span class="p">(</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="s2">&quot;짜장면의 역사를 웹 검색으로 정리해줘&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">tools</span><span class="o">=</span><span class="p">[{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;web_search_preview&quot;</span><span class="p">}],</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="p">)</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</code></pre></div>
+<blockquote>
+<p><strong>주의:</strong> <code>--web-search</code>는 반드시 <code>--api responses</code>와 함께 사용해야 합니다. <code>--api chat</code>에는 적용되지 않습니다.</p>
+</blockquote>
+<h2 id="tool-calling-auto-tool-call">자동 Tool Calling (--auto-tool-call)<a class="headerlink" href="#tool-calling-auto-tool-call" title="Permanent link">&para;</a></h2>
+<p><code>--auto-tool-call</code>은 모델이 스스로 <code>deep_research</code> 도구 호출 필요성을 판단하게 합니다.
+- 단순 질문 → 모델이 직접 답변
+- 심층 조사가 필요한 질문 → relay를 통해 deep_research 자동 실행 → 최종 답변 합성</p>
+<p>이 플래그는 relay 서버(<code>RELAY_BASE_URL</code>)가 실행 중이어야 합니다.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># 터미널 A: relay 서버 시작</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nb">cd</span><span class="w"> </span>relay<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_relay
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># 터미널 B: 자동 tool calling</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_example<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">  </span>--auto-tool-call<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">  </span>--timeout<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">  </span><span class="s2">&quot;짜장면의 역사와 기원에 대해 상세히 조사해줘&quot;</span>
+</code></pre></div>
+<p>deep_research가 자동으로 호출됐을 때 stderr에 <code>[deep_research was called automatically]</code>가 출력됩니다.</p>
+<p><strong>실제 결과:</strong></p>
+<ul>
+<li>stderr: <code>[deep_research was called automatically]</code></li>
+<li>stdout: BTS 또는 짜장면 역사에 대한 구조화된 마크다운 보고서</li>
+</ul>
+<blockquote>
+<p><strong>주의:</strong> <code>--auto-tool-call</code>은 <code>--target relay</code>와 함께 쓸 수 없습니다.</p>
+</blockquote>
+<p>코드에서 직접 사용:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">litellm_example.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">LiteLLMClient</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">client</span> <span class="o">=</span> <span class="n">LiteLLMClient</span><span class="p">(</span><span class="n">base_url</span><span class="p">,</span> <span class="n">api_key</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4o&quot;</span><span class="p">)</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">answer</span><span class="p">,</span> <span class="n">tool_called</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">create_chat_with_tool_calling</span><span class="p">(</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="s2">&quot;짜장면의 역사와 기원에 대해 상세히 조사해줘&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="n">relay_base_url</span><span class="o">=</span><span class="s2">&quot;http://127.0.0.1:8080&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="p">)</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="k">if</span> <span class="n">tool_called</span><span class="p">:</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[deep_research가 자동으로 호출됐습니다]&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+</code></pre></div>
 <h2 id="_4">해석 포인트<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h2>
 <ul>
 <li>foreground 호출: 바로 읽을 수 있는 텍스트를 반환</li>
-<li>background 호출: <code>id</code>, <code>status</code> 같은 메타데이터 중심 응답</li>
+<li>background 호출: <code>id</code>, <code>status</code> 같은 메타데이터 중심 응답 (후속 폴링 필요)</li>
 <li><code>--timeout</code>: 모델 응답 대기 시간 (초). 기본값 30초</li>
+<li><code>--web-search</code>: <code>gpt-4o</code> 계열에서 실시간 웹 검색 활성화 (<code>o3-deep-research</code>는 자체적으로 조사하므로 불필요)</li>
+<li><code>--auto-tool-call</code>: 3-turn function calling 흐름 (1차 completions → tool call 감지 → relay 호출 → 2차 completions)</li>
 <li>현재 Python 예제는 상시 실행 서버가 아니라 1회성 CLI입니다.</li>
 </ul>
 

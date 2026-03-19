@@ -615,6 +615,61 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#web_search_preview-web-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        web_search_preview — 실시간 웹 검색 (--web-search)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tool-calling-auto-tool-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        자동 Tool Calling (--auto-tool-call)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relay-target-relay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        relay 호출 모드 (--target relay)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deliverable-deliverable-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        deliverable 형식 지정 (--deliverable-format)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relay-invokechat-apiv1chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        relay invokeChat — /api/v1/chat 직접 호출
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1000,6 +1055,61 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#web_search_preview-web-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        web_search_preview — 실시간 웹 검색 (--web-search)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tool-calling-auto-tool-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        자동 Tool Calling (--auto-tool-call)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relay-target-relay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        relay 호출 모드 (--target relay)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deliverable-deliverable-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        deliverable 형식 지정 (--deliverable-format)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relay-invokechat-apiv1chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        relay invokeChat — /api/v1/chat 직접 호출
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1036,11 +1146,62 @@
 <li><code>clients/java/</code></li>
 </ul>
 <h2 id="_2">지원 범위<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
-<ul>
-<li><code>POST /v1/chat/completions</code></li>
-<li><code>POST /v1/responses</code></li>
-<li><code>POST /v1/responses</code> + <code>background: true</code></li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>기능</th>
+<th>플래그</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chat Completions</td>
+<td>기본</td>
+<td><code>POST /v1/chat/completions</code></td>
+</tr>
+<tr>
+<td>Responses API</td>
+<td><code>--api responses</code></td>
+<td><code>POST /v1/responses</code></td>
+</tr>
+<tr>
+<td>Background 제출</td>
+<td><code>--background</code></td>
+<td>서버 측 비동기 큐잉</td>
+</tr>
+<tr>
+<td>Web 검색</td>
+<td><code>--web-search</code></td>
+<td><code>web_search_preview</code> tool 활성화</td>
+</tr>
+<tr>
+<td>자동 Tool Calling</td>
+<td><code>--auto-tool-call</code></td>
+<td>deep_research 자동 개입</td>
+</tr>
+<tr>
+<td>타임아웃</td>
+<td><code>--timeout &lt;초&gt;</code></td>
+<td>요청 대기 시간 (기본 30초)</td>
+</tr>
+<tr>
+<td>Relay 모드</td>
+<td><code>--target relay</code></td>
+<td>relay 서버 경유 호출</td>
+</tr>
+<tr>
+<td>Relay 스트림</td>
+<td><code>--stream</code></td>
+<td>relay SSE 스트림 (<code>--target relay</code> 전용)</td>
+</tr>
+<tr>
+<td>Deliverable 형식</td>
+<td><code>--deliverable-format</code></td>
+<td>relay 호출 시 결과 형식 지정</td>
+</tr>
+</tbody>
+</table>
 <h2 id="_3">테스트<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">cd</span><span class="w"> </span>clients/java
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>mvn<span class="w"> </span><span class="nb">test</span>
@@ -1054,6 +1215,7 @@
 <h2 id="background-responses">background responses 제출<a class="headerlink" href="#background-responses" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--api responses --background Reply with exactly: OK&quot;</span>
 </code></pre></div>
+<p>이 경우 최종 텍스트 대신 원본 JSON 메타데이터를 반환합니다.</p>
 <h2 id="-timeout">타임아웃 조정 (--timeout)<a class="headerlink" href="#-timeout" title="Permanent link">&para;</a></h2>
 <p>기본 타임아웃은 30초입니다. <code>o3-deep-research</code>처럼 응답 시간이 긴 모델을 사용할 때는 <code>--timeout &lt;초&gt;</code>로 늘리세요.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
@@ -1064,11 +1226,94 @@
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--target relay --timeout 300 짜장면의 역사를 조사해줘&quot;</span>
 </code></pre></div>
+<h2 id="web_search_preview-web-search">web_search_preview — 실시간 웹 검색 (--web-search)<a class="headerlink" href="#web_search_preview-web-search" title="Permanent link">&para;</a></h2>
+<p><code>--web-search</code>는 <code>--api responses</code>와 함께 사용하면 모델이 실시간으로 웹을 검색합니다.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--api responses --web-search --timeout 60 짜장면이 처음 만들어진 연도를 한 줄로&quot;</span>
+</code></pre></div>
+<p>코드에서 직접 사용:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">LiteLlmClient</span><span class="w"> </span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">LiteLlmClient</span><span class="p">(</span><span class="n">baseUrl</span><span class="p">,</span><span class="w"> </span><span class="n">apiKey</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;gpt-4o&quot;</span><span class="p">);</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">String</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="na">createResponse</span><span class="p">(</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="s">&quot;짜장면의 역사를 웹 검색으로 정리해줘&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">    </span><span class="n">List</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">Map</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;type&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;web_search_preview&quot;</span><span class="p">))</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="p">);</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">result</span><span class="p">);</span>
+</code></pre></div>
+<blockquote>
+<p><strong>주의:</strong> <code>--web-search</code>는 반드시 <code>--api responses</code>와 함께 사용해야 합니다.</p>
+</blockquote>
+<h2 id="tool-calling-auto-tool-call">자동 Tool Calling (--auto-tool-call)<a class="headerlink" href="#tool-calling-auto-tool-call" title="Permanent link">&para;</a></h2>
+<p><code>--auto-tool-call</code>은 모델이 스스로 <code>deep_research</code> 도구 호출 필요성을 판단하게 합니다.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># 터미널 A: relay 서버 시작</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nb">cd</span><span class="w"> </span>relay<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_relay
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># 터미널 B: 자동 tool calling</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--auto-tool-call --timeout 300 짜장면의 역사와 기원에 대해 상세히 조사해줘&quot;</span>
+</code></pre></div>
+<p>deep_research가 자동으로 호출됐을 때 stderr에 <code>[deep_research was called automatically]</code>가 출력됩니다.</p>
+<p>코드에서 직접 사용:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">LiteLlmClient</span><span class="w"> </span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">LiteLlmClient</span><span class="p">(</span><span class="n">baseUrl</span><span class="p">,</span><span class="w"> </span><span class="n">apiKey</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;gpt-4o&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Duration</span><span class="p">.</span><span class="na">ofSeconds</span><span class="p">(</span><span class="mi">300</span><span class="p">));</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="na">createChatWithToolCalling</span><span class="p">(</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span><span class="s">&quot;짜장면의 역사와 기원에 대해 상세히 조사해줘&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">    </span><span class="s">&quot;http://127.0.0.1:8080&quot;</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="p">);</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">result</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span><span class="p">);</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="s">&quot;true&quot;</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="n">result</span><span class="o">[</span><span class="mi">1</span><span class="o">]</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="w">    </span><span class="n">System</span><span class="p">.</span><span class="na">err</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&quot;[deep_research가 자동으로 호출됐습니다]&quot;</span><span class="p">);</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="p">}</span>
+</code></pre></div>
+<blockquote>
+<p><strong>주의:</strong> <code>--auto-tool-call</code>은 <code>--target relay</code>와 함께 쓸 수 없습니다.</p>
+</blockquote>
+<h2 id="relay-target-relay">relay 호출 모드 (--target relay)<a class="headerlink" href="#relay-target-relay" title="Permanent link">&para;</a></h2>
+<p>relay 서버가 실행 중일 때 <code>--target relay</code>로 relay를 경유해 호출할 수 있습니다.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># foreground</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--target relay Summarize relay architecture&quot;</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="c1"># background</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--target relay --background Summarize relay architecture&quot;</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="c1"># stream (SSE)</span>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--target relay --stream Summarize relay architecture&quot;</span>
+</code></pre></div>
+<h2 id="deliverable-deliverable-format">deliverable 형식 지정 (--deliverable-format)<a class="headerlink" href="#deliverable-deliverable-format" title="Permanent link">&para;</a></h2>
+<p>relay 호출 시 결과 형식을 지정할 수 있습니다.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--target relay --deliverable-format markdown_report 짜장면의 역사&quot;</span>
+</code></pre></div>
+<p>지원 값: <code>markdown_brief</code> (기본값), <code>markdown_report</code>, <code>json_outline</code></p>
+<h2 id="relay-invokechat-apiv1chat">relay invokeChat — /api/v1/chat 직접 호출<a class="headerlink" href="#relay-invokechat-apiv1chat" title="Permanent link">&para;</a></h2>
+<p>Java에서 relay의 자동 orchestration 엔드포인트를 코드로 직접 호출할 수 있습니다.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">example.litellm.relay.RelayClient</span><span class="p">;</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">java.time.Duration</span><span class="p">;</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="n">RelayClient</span><span class="w"> </span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">RelayClient</span><span class="p">(</span><span class="s">&quot;http://127.0.0.1:8080&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Duration</span><span class="p">.</span><span class="na">ofSeconds</span><span class="p">(</span><span class="mi">120</span><span class="p">));</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="n">RelayClient</span><span class="p">.</span><span class="na">ChatResult</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="na">invokeChat</span><span class="p">(</span><span class="s">&quot;짜장면의 역사를 자세히 알려줘&quot;</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">);</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="na">content</span><span class="p">());</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="na">toolCalled</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="w">    </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&quot;[연구 도구 호출됨: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">result</span><span class="p">.</span><span class="na">toolName</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;]&quot;</span><span class="p">);</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="p">}</span>
+</code></pre></div>
 <h2 id="_4">해석 포인트<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Java도 Python과 같은 API 흐름을 지원합니다.</li>
 <li>background 모드에서는 원본 JSON 메타데이터를 반환합니다.</li>
 <li><code>--timeout</code>: 모델 응답 대기 시간 (초). 기본값 30초. 직접 호출과 relay 모두 지원</li>
+<li><code>--web-search</code>: <code>gpt-4o</code> 계열에서 실시간 웹 검색 활성화</li>
+<li><code>--auto-tool-call</code>: 3-turn function calling 흐름 (relay 서버 필요)</li>
+<li><code>--deliverable-format</code>: relay 호출 시 결과 형식 지정</li>
 <li>현재 Java 예제 역시 상시 서비스가 아니라 1회성 CLI입니다.</li>
 <li>relay를 호출하려면 <code>--target relay</code>를 사용하고, 자세한 내용은 <a href="../relay-example/">Relay 중계 예제</a>를 참고하세요.</li>
 </ul>

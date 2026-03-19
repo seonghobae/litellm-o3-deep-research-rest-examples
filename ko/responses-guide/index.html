@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#responses-background-relay" class="md-skip">
+        <a href="#responses-background-web-tool-calling" class="md-skip">
           콘텐츠로 이동
         </a>
       
@@ -616,10 +616,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3" class="md-nav__link">
+  <a href="#3-relay-background" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. 현재 저장소 기준 해석
+        3. 직접 예제와 relay 예제의 background 비교
       
     </span>
   </a>
@@ -627,10 +627,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4" class="md-nav__link">
+  <a href="#4-web_search_preview" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. 스트리밍 상태
+        4. web_search_preview — 일반 모델에 웹 검색 추가
       
     </span>
   </a>
@@ -638,10 +638,60 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-relay" class="md-nav__link">
+  <a href="#5-tool-calling-deep_research" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. relay 예제와의 연결
+        5. 자동 Tool Calling — 모델이 deep_research 여부를 스스로 결정
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. 자동 Tool Calling — 모델이 deep_research 여부를 스스로 결정">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#5-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5-1. 개념
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-2-client-side-auto-tool-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5-2. Client-Side (--auto-tool-call)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-3-relay-side-post-apiv1chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5-3. Relay-Side (POST /api/v1/chat)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-relay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. relay 스트리밍
       
     </span>
   </a>
@@ -912,10 +962,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3" class="md-nav__link">
+  <a href="#3-relay-background" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. 현재 저장소 기준 해석
+        3. 직접 예제와 relay 예제의 background 비교
       
     </span>
   </a>
@@ -923,10 +973,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4" class="md-nav__link">
+  <a href="#4-web_search_preview" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. 스트리밍 상태
+        4. web_search_preview — 일반 모델에 웹 검색 추가
       
     </span>
   </a>
@@ -934,10 +984,60 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-relay" class="md-nav__link">
+  <a href="#5-tool-calling-deep_research" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. relay 예제와의 연결
+        5. 자동 Tool Calling — 모델이 deep_research 여부를 스스로 결정
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. 자동 Tool Calling — 모델이 deep_research 여부를 스스로 결정">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#5-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5-1. 개념
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-2-client-side-auto-tool-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5-2. Client-Side (--auto-tool-call)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-3-relay-side-post-apiv1chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5-3. Relay-Side (POST /api/v1/chat)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-relay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. relay 스트리밍
       
     </span>
   </a>
@@ -964,12 +1064,44 @@
   
 
 
-<h1 id="responses-background-relay">Responses / Background / Relay 스트리밍 정리<a class="headerlink" href="#responses-background-relay" title="Permanent link">&para;</a></h1>
+<h1 id="responses-background-web-tool-calling">Responses / Background / Web 검색 / 자동 Tool Calling 가이드<a class="headerlink" href="#responses-background-web-tool-calling" title="Permanent link">&para;</a></h1>
 <h2 id="1-responses-chatcompletions">1. <code>responses</code> 와 <code>chat/completions</code> 차이<a class="headerlink" href="#1-responses-chatcompletions" title="Permanent link">&para;</a></h2>
-<ul>
-<li><code>chat/completions</code>: 전통적인 메시지 중심 호출</li>
-<li><code>responses</code>: 더 일반화된 응답 모델</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><code>chat/completions</code></th>
+<th><code>responses</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>입력 형식</td>
+<td><code>messages</code> 배열</td>
+<td><code>input</code> 문자열</td>
+</tr>
+<tr>
+<td>background 지원</td>
+<td>❌</td>
+<td>✅ (<code>background: true</code>)</td>
+</tr>
+<tr>
+<td>web_search tool</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>output_text 추출</td>
+<td><code>choices[0].message.content</code></td>
+<td><code>output_text</code> 또는 <code>output[].content[].text</code></td>
+</tr>
+<tr>
+<td>o3-deep-research 권장</td>
+<td>제한적</td>
+<td>✅ (공식 지원)</td>
+</tr>
+</tbody>
+</table>
 <p>현재 저장소는 두 방식을 모두 예제로 제공합니다.</p>
 <h2 id="2-background-true">2. <code>background: true</code> 의 의미<a class="headerlink" href="#2-background-true" title="Permanent link">&para;</a></h2>
 <p><code>background: true</code> 는 <strong>서버 측 작업 제출 방식</strong>입니다.</p>
@@ -978,26 +1110,129 @@
 <li>로컬 프로세스가 background daemon이 된다는 뜻이 아님</li>
 <li>서버가 작업을 큐잉/비동기 처리할 수 있게 요청한다는 뜻</li>
 </ul>
-<h2 id="3">3. 현재 저장소 기준 해석<a class="headerlink" href="#3" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Python/Java 예제는 모두 foreground 1회성 CLI</li>
-<li>하지만 <code>responses</code> 호출은 서버 쪽 background 작업으로 제출 가능</li>
-</ul>
-<h2 id="4">4. 스트리밍 상태<a class="headerlink" href="#4" title="Permanent link">&para;</a></h2>
-<p>현재 <code>main</code> 기준 직접 예제는 다음을 보여줍니다.</p>
-<ul>
-<li>foreground <code>responses</code></li>
-<li>background <code>responses</code></li>
-</ul>
-<p>하지만 <strong>직접 예제 자체가 stream 이벤트를 소비하는 고급 예제까지 포함하는 것은 아닙니다.</strong>
-stream 이벤트 수명주기는 relay 예제에서 구현되어 있으며, relay의 <code>GET /api/v1/tool-invocations/{id}/events</code>가 text-only SSE를 제공합니다.</p>
-<h2 id="5-relay">5. relay 예제와의 연결<a class="headerlink" href="#5-relay" title="Permanent link">&para;</a></h2>
+<p>반환값: <code>id</code>, <code>status</code> 같은 메타데이터 (최종 텍스트가 아님)</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Python</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_example<span class="w"> </span>--api<span class="w"> </span>responses<span class="w"> </span>--background<span class="w"> </span><span class="s2">&quot;조사 요청&quot;</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Java</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>...<span class="w"> </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--api responses --background 조사 요청&quot;</span>
+</code></pre></div>
+<h2 id="3-relay-background">3. 직접 예제와 relay 예제의 background 비교<a class="headerlink" href="#3-relay-background" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>direct Python/Java</th>
+<th>relay</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>실행 방식</td>
+<td>1회성 CLI 프로세스</td>
+<td>FastAPI + Hypercorn 장기 서버</td>
+</tr>
+<tr>
+<td>background 의미</td>
+<td>서버 측 비동기 큐잉</td>
+<td>동일</td>
+</tr>
+<tr>
+<td>background 결과</td>
+<td>원본 JSON 메타데이터 출력</td>
+<td><code>upstream_response_id</code>, <code>status</code> 반환</td>
+</tr>
+<tr>
+<td>후속 폴링</td>
+<td>직접 구현 필요</td>
+<td><code>GET /api/v1/tool-invocations/{id}/wait</code></td>
+</tr>
+<tr>
+<td>SSE 스트리밍</td>
+<td>미지원</td>
+<td><code>GET /api/v1/tool-invocations/{id}/events</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-web_search_preview">4. web_search_preview — 일반 모델에 웹 검색 추가<a class="headerlink" href="#4-web_search_preview" title="Permanent link">&para;</a></h2>
+<p><code>web_search_preview</code>는 Responses API의 내장 tool입니다. <code>gpt-4o</code> 같은 일반 모델에 실시간 웹 검색 능력을 부여합니다.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>요청: POST /v1/responses
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>{
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>  &quot;model&quot;: &quot;gpt-4o&quot;,
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>  &quot;input&quot;: &quot;짜장면의 역사를 웹 검색으로 정리해줘&quot;,
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>  &quot;tools&quot;: [{&quot;type&quot;: &quot;web_search_preview&quot;}]
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>}
+</code></pre></div>
+<p>CLI 사용:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Python</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_example<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span>--api<span class="w"> </span>responses<span class="w"> </span>--web-search<span class="w"> </span>--timeout<span class="w"> </span><span class="m">60</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="s2">&quot;짜장면의 역사를 웹 검색으로 3문단 정리해줘&quot;</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># Java</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--api responses --web-search --timeout 60 짜장면의 역사를 웹 검색으로 정리해줘&quot;</span>
+</code></pre></div>
+<blockquote>
+<p><code>o3-deep-research</code>는 자체적으로 심층 조사를 수행하므로 <code>--web-search</code>가 불필요합니다. <code>gpt-4o</code> 같은 범용 모델에 최신 정보가 필요할 때 유용합니다.</p>
+</blockquote>
+<p><strong>실제 결과 예시 (gpt-4o + web_search_preview):</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>짜장면은 1905년에 중국 청나라 출신 화교들에 의해 인천 차이나타운에서 처음 만들어졌습니다.
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>[출처: 코리아타임즈]
+</code></pre></div>
+<h2 id="5-tool-calling-deep_research">5. 자동 Tool Calling — 모델이 deep_research 여부를 스스로 결정<a class="headerlink" href="#5-tool-calling-deep_research" title="Permanent link">&para;</a></h2>
+<h3 id="5-1">5-1. 개념<a class="headerlink" href="#5-1" title="Permanent link">&para;</a></h3>
+<p>기존 방식은 항상 명시적으로 deep_research를 호출해야 했습니다. 자동 tool calling은 모델이 스스로 "이 질문은 심층 조사가 필요하다"고 판단해서 deep_research를 자동으로 실행합니다.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>사용자: &quot;짜장면의 역사를 자세히 알려줘&quot;
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>         ↓
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>모델: &quot;이 질문은 deep_research가 필요하다&quot;
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>         ↓
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>deep_research 자동 실행 (o3-deep-research)
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>         ↓
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>모델이 연구 결과로 최종 자연어 답변 합성
+</code></pre></div>
+<h3 id="5-2-client-side-auto-tool-call">5-2. Client-Side (--auto-tool-call)<a class="headerlink" href="#5-2-client-side-auto-tool-call" title="Permanent link">&para;</a></h3>
+<p>직접 클라이언트에서 3-turn function calling 흐름을 구현합니다.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># relay 서버 먼저 시작</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nb">cd</span><span class="w"> </span>relay<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_relay
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Python</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_example<span class="w"> </span>--auto-tool-call<span class="w"> </span>--timeout<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">  </span><span class="s2">&quot;짜장면의 역사와 기원에 대해 상세히 조사해줘&quot;</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="c1"># Java</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--auto-tool-call --timeout 300 짜장면의 역사와 기원에 대해 상세히 조사해줘&quot;</span>
+</code></pre></div>
+<h3 id="5-3-relay-side-post-apiv1chat">5-3. Relay-Side (POST /api/v1/chat)<a class="headerlink" href="#5-3-relay-side-post-apiv1chat" title="Permanent link">&para;</a></h3>
+<p>relay가 모든 orchestration을 내부에서 처리합니다. 클라이언트는 단순 chat 메시지만 보내면 됩니다.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8080/api/v1/chat<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="s1">    &quot;message&quot;: &quot;짜장면의 역사와 기원에 대해 상세히 조사해줘&quot;,</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="s1">    &quot;auto_tool_call&quot;: true</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="s1">  }&#39;</span>
+</code></pre></div>
+<p><strong>응답 예시 (deep_research 호출됨):</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="p">{</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;짜장면은 중국에서 유래된 자장몐(炸酱面)을 바탕으로...&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="nt">&quot;tool_called&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="nt">&quot;tool_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deep_research&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span><span class="nt">&quot;research_summary&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;# 짜장면의 역사와 기원에 관한 상세 연구\n...&quot;</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="p">}</span>
+</code></pre></div></p>
+<p>자세한 내용은 <a href="../auto-toolcalling/">자동 Tool Calling 가이드</a>를 참고하세요.</p>
+<h2 id="6-relay">6. relay 스트리밍<a class="headerlink" href="#6-relay" title="Permanent link">&para;</a></h2>
 <p>relay 예제는 다음 lifecycle을 정식으로 다룹니다.</p>
 <ul>
-<li>foreground invocation</li>
-<li>background invocation</li>
-<li>polling / wait</li>
-<li>SSE event stream</li>
+<li>foreground invocation → <code>POST /api/v1/tool-invocations</code></li>
+<li>background invocation → <code>arguments.background: true</code></li>
+<li>polling / wait → <code>GET /api/v1/tool-invocations/{id}/wait</code></li>
+<li>SSE event stream → <code>GET /api/v1/tool-invocations/{id}/events</code></li>
 </ul>
 <p>자세한 내용은 <a href="../relay-example/">Relay 중계 예제</a>에서 확인할 수 있고, 구현 전 설계 판단은 <a href="../relay-toolcalling-plan/">중계 예제 구현 계획(보관)</a>에서 볼 수 있습니다.</p>
 

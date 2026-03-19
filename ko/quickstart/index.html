@@ -484,10 +484,60 @@
   <a href="#6" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6. 무엇이 이미 구현되어 있나
+        6. 구현된 기능 전체 목록
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="6. 구현된 기능 전체 목록">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#python-java" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        직접 호출 클라이언트 (Python / Java)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relay-fastapi-hypercorn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relay 서버 (FastAPI + Hypercorn)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relay 환경변수
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#java-relay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Java relay 클라이언트 모드
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -954,10 +1004,60 @@
   <a href="#6" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6. 무엇이 이미 구현되어 있나
+        6. 구현된 기능 전체 목록
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="6. 구현된 기능 전체 목록">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#python-java" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        직접 호출 클라이언트 (Python / Java)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relay-fastapi-hypercorn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relay 서버 (FastAPI + Hypercorn)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relay 환경변수
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#java-relay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Java relay 클라이언트 모드
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1035,15 +1135,149 @@
 <li><code>https://localhost:4000/v1</code></li>
 </ul>
 <p>direct Python/Java 예제는 내부적으로 <code>/v1/</code> 루트로 정규화합니다. relay 예제는 같은 값을 LiteLLM SDK의 <code>api_base</code>로 그대로 사용하므로, upstream LiteLLM Proxy가 허용하는 root URL 또는 <code>/v1</code> URL을 넣으면 됩니다.</p>
-<h2 id="6">6. 무엇이 이미 구현되어 있나<a class="headerlink" href="#6" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Python 직접 호출 예제</li>
-<li>Java 직접 호출 예제</li>
-<li>LiteLLM SDK + FastAPI + Hypercorn relay 예제</li>
-<li><code>responses</code> + <code>background: true</code> 지원</li>
-<li>relay의 structured tool invocation + status/wait/events API</li>
-<li>한국어 매뉴얼 및 GitHub Pages 문서 구조</li>
-</ul>
+<h2 id="6">6. 구현된 기능 전체 목록<a class="headerlink" href="#6" title="Permanent link">&para;</a></h2>
+<h3 id="python-java">직접 호출 클라이언트 (Python / Java)<a class="headerlink" href="#python-java" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>기능</th>
+<th>Python</th>
+<th>Java</th>
+<th>플래그</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chat Completions</td>
+<td>✅</td>
+<td>✅</td>
+<td>기본값</td>
+</tr>
+<tr>
+<td>Responses API</td>
+<td>✅</td>
+<td>✅</td>
+<td><code>--api responses</code></td>
+</tr>
+<tr>
+<td>Background 제출</td>
+<td>✅</td>
+<td>✅</td>
+<td><code>--background</code></td>
+</tr>
+<tr>
+<td>타임아웃 조정</td>
+<td>✅</td>
+<td>✅</td>
+<td><code>--timeout &lt;초&gt;</code></td>
+</tr>
+<tr>
+<td>Web 검색</td>
+<td>✅</td>
+<td>✅</td>
+<td><code>--web-search</code> (requires <code>--api responses</code>)</td>
+</tr>
+<tr>
+<td>자동 Tool Calling</td>
+<td>✅</td>
+<td>✅</td>
+<td><code>--auto-tool-call</code> (relay 서버 필요)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="relay-fastapi-hypercorn">Relay 서버 (FastAPI + Hypercorn)<a class="headerlink" href="#relay-fastapi-hypercorn" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>기능</th>
+<th>엔드포인트 / 환경변수</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>구조화된 tool invocation</td>
+<td><code>POST /api/v1/tool-invocations</code></td>
+</tr>
+<tr>
+<td>상태 조회</td>
+<td><code>GET /api/v1/tool-invocations/{id}</code></td>
+</tr>
+<tr>
+<td>동기 대기</td>
+<td><code>GET /api/v1/tool-invocations/{id}/wait</code></td>
+</tr>
+<tr>
+<td>SSE 스트리밍</td>
+<td><code>GET /api/v1/tool-invocations/{id}/events</code></td>
+</tr>
+<tr>
+<td>자동 tool calling chat</td>
+<td><code>POST /api/v1/chat</code></td>
+</tr>
+<tr>
+<td>System prompt</td>
+<td><code>arguments.system_prompt</code></td>
+</tr>
+<tr>
+<td>JSON 강제 출력</td>
+<td><code>arguments.text_format</code></td>
+</tr>
+<tr>
+<td>Background 제출</td>
+<td><code>arguments.background: true</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="relay">Relay 환경변수<a class="headerlink" href="#relay" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>변수</th>
+<th>기본값</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>RELAY_HOST</code></td>
+<td><code>127.0.0.1</code></td>
+<td>서버 바인딩 주소</td>
+</tr>
+<tr>
+<td><code>RELAY_PORT</code></td>
+<td><code>8080</code></td>
+<td>서버 포트</td>
+</tr>
+<tr>
+<td><code>RELAY_TIMEOUT_SECONDS</code></td>
+<td><code>30</code></td>
+<td>Chat Completions 타임아웃</td>
+</tr>
+<tr>
+<td><code>RELAY_RESEARCH_TIMEOUT_SECONDS</code></td>
+<td><code>300</code></td>
+<td>deep_research 실행 타임아웃</td>
+</tr>
+<tr>
+<td><code>LITELLM_CHAT_MODEL</code></td>
+<td><code>gpt-4o</code></td>
+<td>auto tool calling orchestration 모델</td>
+</tr>
+</tbody>
+</table>
+<h3 id="java-relay">Java relay 클라이언트 모드<a class="headerlink" href="#java-relay" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># foreground</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>...<span class="w"> </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--target relay ...&quot;</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># background</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>...<span class="w"> </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--target relay --background ...&quot;</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="c1"># stream</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>...<span class="w"> </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--target relay --stream ...&quot;</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="c1"># auto tool calling (relay-side orchestration)</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>...<span class="w"> </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--auto-tool-call ...&quot;</span>
+</code></pre></div>
 
 
 
