@@ -786,3 +786,48 @@ LITELLM_MODEL=gpt-4o mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
 - Java는 `--target relay` 모드로 relay를 호출할 수 있습니다.
 - relay 외부 계약은 `tool_name` + 구조화된 `arguments` 중심이며, raw upstream `input`은 내부에만 존재합니다.
 - 문서 사이트는 GitHub Pages에서 한국어로 출판됩니다.
+
+---
+
+## 13. 자동 Tool Calling — 일반 대화 중 deep_research 자동 개입
+
+자세한 내용은 → [자동 Tool Calling 가이드](auto-toolcalling.md)
+
+### 13-1. 핵심 개념
+
+기존 방식은 항상 사용자가 명시적으로 `deep_research`를 호출해야 했습니다. 자동 tool calling은 모델이 스스로 판단해서 deep_research를 실행합니다.
+
+### 13-2. Approach A: Client-Side (Python/Java)
+
+```bash
+# Python
+LITELLM_MODEL=gpt-4o RELAY_BASE_URL=http://127.0.0.1:8080 \
+uv run python -m litellm_example --auto-tool-call --timeout 120 \
+  "짜장면의 역사를 자세히 알려줘"
+
+# Java
+LITELLM_MODEL=gpt-4o RELAY_BASE_URL=http://127.0.0.1:8080 \
+mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
+  -Dexec.args="--auto-tool-call --timeout 120 짜장면의 역사를 자세히 알려줘"
+```
+
+클라이언트가 Chat Completions function calling 3-turn 흐름을 직접 처리합니다.
+
+### 13-3. Approach C: Relay-Side (`POST /api/v1/chat`)
+
+```bash
+curl -X POST http://127.0.0.1:8080/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "짜장면의 역사를 자세히 알려줘",
+    "auto_tool_call": true
+  }'
+```
+
+relay가 모든 orchestration을 내부에서 처리합니다. 클라이언트는 단순 chat 요청만 보내면 됩니다.
+
+### 13-4. 모델 제약
+
+- **gpt-4o** (orchestration): function calling 완전 지원
+- **o3-deep-research** (실제 연구): function calling 미지원 — 항상 피호출자
+- orchestration 모델은 `LITELLM_CHAT_MODEL` 환경변수로 지정 (기본 `gpt-4o`)

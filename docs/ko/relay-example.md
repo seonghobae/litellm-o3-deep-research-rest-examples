@@ -167,7 +167,56 @@ mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--target rel
 - background invocation은 `invocation_id`, `upstream_response_id`, `status` 중심 메타데이터를 반환합니다.
 - stream invocation은 `text/event-stream` 형태의 SSE를 반환하며, 현재 예제는 text delta만 중계합니다.
 
+## 새 엔드포인트: POST /api/v1/chat (자동 Tool Calling)
+
+relay에 `POST /api/v1/chat` 엔드포인트가 추가되었습니다. 이 엔드포인트는 일반 대화 요청을 받아 모델이 스스로 deep_research tool 호출 여부를 결정하는 **relay-side 자동 orchestration**을 제공합니다.
+
+### 요청
+
+```json
+{
+  "message": "짜장면의 역사를 자세히 알려줘",
+  "context": [],
+  "auto_tool_call": true
+}
+```
+
+| 필드 | 타입 | 기본값 | 설명 |
+|------|------|--------|------|
+| `message` | string | 필수 | 사용자 메시지 |
+| `context` | list[string] | `[]` | 추가 맥락 (user 메시지 앞에 붙음) |
+| `auto_tool_call` | bool | `true` | `false`이면 tool schema 없이 직접 답변 |
+
+### 응답
+
+```json
+{
+  "content": "짜장면의 역사는...",
+  "tool_called": true,
+  "tool_name": "deep_research",
+  "research_summary": "# 짜장면의 역사\n..."
+}
+```
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `content` | string | 최종 자연어 답변 |
+| `tool_called` | bool | deep_research가 호출됐는지 여부 |
+| `tool_name` | string \| null | 호출된 tool 이름 (`"deep_research"` 또는 `null`) |
+| `research_summary` | string \| null | deep_research의 실제 연구 결과 요약 |
+
+### relay 설정
+
+```bash
+LITELLM_CHAT_MODEL=gpt-4o \  # function calling orchestration 모델
+LITELLM_MODEL=o3-deep-research \  # 실제 deep research 모델
+uv run python -m litellm_relay
+```
+
+자세한 내용은 [자동 Tool Calling 가이드](auto-toolcalling.md)를 참고하세요.
+
 ## 관련 문서
 
 - [Responses / Background / Relay 스트리밍](responses-guide.md)
 - [중계 예제 구현 계획(보관)](relay-toolcalling-plan.md)
+- [자동 Tool Calling 가이드](auto-toolcalling.md)

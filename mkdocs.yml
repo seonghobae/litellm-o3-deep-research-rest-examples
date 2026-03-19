@@ -29,6 +29,7 @@ nav:
       - Java 직접 호출: ko/java-example.md
       - Relay 중계 예제: ko/relay-example.md
       - Responses / Background / Relay 스트리밍: ko/responses-guide.md
+      - 자동 Tool Calling: ko/auto-toolcalling.md
   - 참고:
       - 통합 매뉴얼: ko/manual.md
       - FAQ: ko/faq.md
