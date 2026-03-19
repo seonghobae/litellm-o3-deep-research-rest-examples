@@ -69,7 +69,7 @@ uv run python -m litellm_relay
 
 ## Java에서 relay 호출
 
-foreground:
+포그라운드 호출:
 
 ```bash
 cd clients/java
@@ -77,7 +77,7 @@ RELAY_BASE_URL=http://127.0.0.1:8080 \
 mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--target relay Summarize relay architecture"
 ```
 
-background 제출:
+백그라운드 제출:
 
 ```bash
 cd clients/java
@@ -85,7 +85,7 @@ RELAY_BASE_URL=http://127.0.0.1:8080 \
 mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--target relay --background Summarize relay architecture"
 ```
 
-stream:
+스트림 모드:
 
 ```bash
 cd clients/java

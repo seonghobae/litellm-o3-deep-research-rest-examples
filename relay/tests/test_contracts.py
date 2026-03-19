@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from litellm_relay.contracts import ToolInvocationRequest
 
 
-def test_tool_invocation_request_requires_tool_name_and_arguments() -> None:
+def test_valid_deep_research_invocation_parses_correctly() -> None:
     payload = {
         "tool_name": "deep_research",
         "arguments": {
