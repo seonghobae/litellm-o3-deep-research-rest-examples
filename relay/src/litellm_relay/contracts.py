@@ -165,11 +165,36 @@ class ChatRequest(BaseModel):
     decides the question warrants deep research it returns a tool call; the
     relay executes the research and performs a second completions turn to
     produce the final natural-language answer.
+
+    Optional fields ``system_prompt`` and ``deliverable_format`` let callers
+    control the deep_research invocation when the model triggers it:
+
+    * **system_prompt** is forwarded to ``DeepResearchArguments.system_prompt``
+      which maps to the Responses API ``instructions`` field.  Use it to set
+      a persona, output language, or answer format for the research step.
+    * **deliverable_format** is used as the fallback format when the Chat
+      Completions model does not specify one in its tool-call arguments.
     """
 
     message: str
     context: list[str] = Field(default_factory=list)
     auto_tool_call: bool = True
+    system_prompt: str | None = Field(
+        default=None,
+        description=(
+            "Optional system-level instructions forwarded to the deep_research "
+            "invocation (Responses API ``instructions`` field). Use to set "
+            "persona, output language, or format constraints."
+        ),
+    )
+    deliverable_format: DeliverableFormat = Field(
+        default="markdown_brief",
+        description=(
+            "Deliverable format for the deep_research invocation "
+            "(default: ``markdown_brief``). Used as fallback when the model "
+            "does not specify a format in its tool-call arguments."
+        ),
+    )
 
 
 class ChatResponse(BaseModel):
