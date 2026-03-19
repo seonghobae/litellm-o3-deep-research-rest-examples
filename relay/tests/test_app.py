@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from unittest.mock import AsyncMock, patch
+
+import pytest
 from fastapi.testclient import TestClient
 
 from litellm_relay.app import create_app
 from litellm_relay.config import RelaySettings
-from litellm_relay.contracts import DeepResearchArguments
+from litellm_relay.contracts import ChatResponse, DeepResearchArguments
 from litellm_relay.service import RelayService
 from litellm_relay.upstream import UpstreamInvocationResult
 
@@ -145,3 +148,49 @@ def test_wait_invocation_returns_404_for_unknown_id() -> None:
     response = client.get("/api/v1/tool-invocations/does-not-exist/wait")
     assert response.status_code == 404
     assert "not found" in response.json()["detail"].lower()
+
+
+@pytest.fixture()
+def client() -> TestClient:
+    """Pytest fixture variant of _client() for use with new chat tests."""
+    return _client()
+
+
+def test_post_chat_returns_direct_answer(client: TestClient) -> None:
+    """POST /api/v1/chat with auto_tool_call=False returns plain assistant answer."""
+    with patch(
+        "litellm_relay.app.ChatOrchestrator.chat",
+        new_callable=AsyncMock,
+        return_value=ChatResponse(content="hello", tool_called=False),
+    ):
+        resp = client.post(
+            "/api/v1/chat",
+            json={"message": "안녕", "auto_tool_call": False},
+        )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["content"] == "hello"
+    assert data["tool_called"] is False
+
+
+def test_post_chat_returns_tool_called_response(client: TestClient) -> None:
+    """POST /api/v1/chat that triggers deep_research returns tool metadata."""
+    with patch(
+        "litellm_relay.app.ChatOrchestrator.chat",
+        new_callable=AsyncMock,
+        return_value=ChatResponse(
+            content="짜장면의 역사는...",
+            tool_called=True,
+            tool_name="deep_research",
+            research_summary="인천 차이나타운 기원",
+        ),
+    ):
+        resp = client.post(
+            "/api/v1/chat",
+            json={"message": "짜장면의 역사를 알려줘"},
+        )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["tool_called"] is True
+    assert data["tool_name"] == "deep_research"
+    assert data["research_summary"] == "인천 차이나타운 기원"

@@ -3,8 +3,14 @@ from __future__ import annotations
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from .chat_orchestrator import ChatOrchestrator
 from .config import RelaySettings, load_settings
-from .contracts import ToolInvocationRequest, ToolInvocationView
+from .contracts import (
+    ChatRequest,
+    ChatResponse,
+    ToolInvocationRequest,
+    ToolInvocationView,
+)
 from .service import InvocationNotFoundError, RelayService
 from .upstream import LiteLLMRelayGateway
 
@@ -32,6 +38,14 @@ def create_app(
             model=settings.model,
             timeout_seconds=settings.timeout_seconds,
         ),
+        timeout_seconds=settings.timeout_seconds,
+    )
+
+    orchestrator_instance = ChatOrchestrator(
+        base_url=settings.base_url,
+        api_key=settings.api_key,
+        chat_model=f"litellm_proxy/{settings.chat_model}",
+        research_model=f"litellm_proxy/{settings.model}",
         timeout_seconds=settings.timeout_seconds,
     )
 
@@ -75,5 +89,9 @@ def create_app(
             service.event_stream(invocation_id),
             media_type="text/event-stream",
         )
+
+    @app.post("/api/v1/chat", response_model=ChatResponse)
+    async def chat(payload: ChatRequest) -> ChatResponse:
+        return await orchestrator_instance.chat(payload)
 
     return app
