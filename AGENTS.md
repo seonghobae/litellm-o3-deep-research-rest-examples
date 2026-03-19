@@ -7,17 +7,20 @@
 ## Setup commands
 - Python: `cd clients/python && uv sync --all-extras --dev`
 - Java: `cd clients/java && mvn test`
+- Relay: `cd relay && uv sync --all-extras --dev`
 - Docs: `python3 -m pip install -r requirements-docs.txt`
 
 ## Build / Test commands
 - Python tests: `cd clients/python && uv run pytest`
 - Java tests: `cd clients/java && mvn test`
+- Relay tests: `cd relay && uv run pytest`
 - Docs build: `mkdocs build --strict`
 
 ## Code style
 - Keep the examples minimal, dependency-light, and explicit about OpenAI-compatible wire format.
 - Do not silently read project-local `.env`; the examples use environment variables and optionally `~/.env` only.
 - User-facing manuals and published docs should be written in Korean.
+- The relay example must expose a structured tool-invocation contract instead of leaking raw upstream `input` fields to callers.
 
 ## Security considerations
 - Never commit secrets or a populated `.env` file.
@@ -26,4 +29,4 @@
 
 ## PR / Commit instructions
 - Prefer small commits with tests.
-- Re-run both language test suites before commit or PR creation.
+- Re-run Python, Java, and relay test suites before commit or PR creation.

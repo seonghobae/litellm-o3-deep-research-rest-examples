@@ -27,11 +27,12 @@ nav:
   - 예제:
       - Python 직접 호출: ko/python-example.md
       - Java 직접 호출: ko/java-example.md
-      - Responses / Background / 중계 계획의 스트리밍: ko/responses-guide.md
-      - 중계 예제 구현 계획: ko/relay-toolcalling-plan.md
+      - Relay 중계 예제: ko/relay-example.md
+      - Responses / Background / Relay 스트리밍: ko/responses-guide.md
   - 참고:
       - 통합 매뉴얼: ko/manual.md
       - FAQ: ko/faq.md
+      - 중계 예제 구현 계획(보관): ko/relay-toolcalling-plan.md
       - 배포 런북: operations/deploy-runbook.md
 
 exclude_docs: |

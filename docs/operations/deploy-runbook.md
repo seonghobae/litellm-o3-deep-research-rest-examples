@@ -32,7 +32,7 @@ mkdocs build --strict
    - 시작하기
    - Python 직접 호출
    - Java 직접 호출
-   - 중계 예제 구현 계획
+   - Relay 중계 예제
 
 ## 장애 시 점검 항목
 
