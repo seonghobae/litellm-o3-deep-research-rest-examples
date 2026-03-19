@@ -25,12 +25,24 @@ uv run pytest
 uv run python -m litellm_example "Reply with exactly: OK"
 ```
 
+`o3-deep-research`처럼 응답이 느린 모델을 직접 호출할 때는 `--timeout`(초 단위)을 늘리세요.
+
+```bash
+uv run python -m litellm_example --timeout 300 "짜장면의 역사를 조사해줘"
+```
+
 ## 3. Java 예제 시작
 
 ```bash
 cd clients/java
 mvn test
 mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="Reply with exactly: OK"
+```
+
+긴 응답 시간이 예상될 때:
+
+```bash
+mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--timeout 300 짜장면의 역사를 조사해줘"
 ```
 
 ## 4. Relay 예제 시작
@@ -50,6 +62,14 @@ uv run python -m litellm_relay
 cd clients/java
 RELAY_BASE_URL=http://127.0.0.1:8080 \
 mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--target relay Summarize relay architecture"
+```
+
+relay 호출도 `--timeout`을 지원합니다:
+
+```bash
+RELAY_BASE_URL=http://127.0.0.1:8080 \
+mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
+  -Dexec.args="--target relay --timeout 300 짜장면의 역사를 조사해줘"
 ```
 
 ## 5. base URL 규칙

@@ -62,6 +62,12 @@ uv run python -m litellm_example --api responses "Reply with exactly: OK"
 uv run python -m litellm_example --api responses --background "Reply with exactly: OK"
 ```
 
+`o3-deep-research`처럼 응답 시간이 긴 모델을 사용할 때는 `--timeout`으로 대기 시간을 늘립니다.
+
+```bash
+uv run python -m litellm_example --timeout 300 "짜장면의 역사를 조사해줘"
+```
+
 ### Java 직접 호출
 
 ```bash
@@ -70,6 +76,12 @@ mvn test
 mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="Reply with exactly: OK"
 mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--api responses Reply with exactly: OK"
 mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--api responses --background Reply with exactly: OK"
+```
+
+긴 응답 시간이 예상될 때:
+
+```bash
+mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--timeout 300 짜장면의 역사를 조사해줘"
 ```
 
 ### relay 서버 + Java relay 호출
@@ -89,6 +101,14 @@ uv run python -m litellm_relay
 cd clients/java
 RELAY_BASE_URL=http://127.0.0.1:8080 \
 mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--target relay Summarize relay architecture"
+```
+
+relay 호출에도 `--timeout`을 적용할 수 있습니다:
+
+```bash
+RELAY_BASE_URL=http://127.0.0.1:8080 \
+mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
+  -Dexec.args="--target relay --timeout 300 짜장면의 역사를 조사해줘"
 ```
 
 stream 모드:

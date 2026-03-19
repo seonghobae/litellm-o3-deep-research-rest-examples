@@ -166,6 +166,24 @@ class RelayClientTest {
     }
 
     @Test
+    void customTimeoutConstructorIsUsedForRequests() throws Exception {
+        // Verify that the public RelayClient(String, Duration) constructor wires
+        // the timeout through correctly by completing a request successfully.
+        server.createContext("/api/v1/tool-invocations", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200,
+                    "{\"invocation_id\":\"inv_timeout_test\",\"mode\":\"foreground\","
+                            + "\"status\":\"completed\",\"deliverable_format\":\"markdown_brief\","
+                            + "\"output_text\":\"timeout constructor ok\"}");
+        });
+
+        example.litellm.relay.RelayClient client =
+                new example.litellm.relay.RelayClient(baseUrl, java.time.Duration.ofSeconds(120));
+        String result = client.invokeDeepResearch("timeout test", "markdown_brief", false, false);
+        assertEquals("timeout constructor ok", result);
+    }
+
+    @Test
     void backgroundAndStreamCannotBothBeSetOnRelay() throws Exception {
         server.createContext("/api/v1/tool-invocations", exchange -> {
             exchange.getRequestBody().readAllBytes();

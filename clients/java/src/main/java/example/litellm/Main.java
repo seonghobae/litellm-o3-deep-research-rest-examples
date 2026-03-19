@@ -37,7 +37,7 @@ public final class Main {
 
         String content;
         if ("relay".equals(target)) {
-            RelayClient client = new RelayClient(RelayClient.defaultBaseUrl());
+            RelayClient client = new RelayClient(RelayClient.defaultBaseUrl(), timeout);
             content = client.invokeDeepResearch(prompt, deliverableFormat, background, stream);
         } else {
             if (background && !"responses".equals(api)) {

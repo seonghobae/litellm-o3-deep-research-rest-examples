@@ -19,17 +19,27 @@ import java.util.Map;
 public final class RelayClient {
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
+    private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
 
     private final URI baseUrl;
+    private final Duration requestTimeout;
     private final HttpClient httpClient;
 
     public RelayClient(String baseUrl) {
-        this(normalizeBaseUrl(baseUrl), HttpClient.newHttpClient());
+        this(normalizeBaseUrl(baseUrl), DEFAULT_TIMEOUT, HttpClient.newHttpClient());
+    }
+
+    public RelayClient(String baseUrl, Duration timeout) {
+        this(normalizeBaseUrl(baseUrl), timeout, HttpClient.newHttpClient());
     }
 
     RelayClient(URI baseUrl, HttpClient httpClient) {
+        this(baseUrl, DEFAULT_TIMEOUT, httpClient);
+    }
+
+    RelayClient(URI baseUrl, Duration timeout, HttpClient httpClient) {
         this.baseUrl = baseUrl;
+        this.requestTimeout = timeout;
         this.httpClient = httpClient;
     }
 
@@ -147,7 +157,7 @@ public final class RelayClient {
         }
 
         HttpRequest request = HttpRequest.newBuilder(target)
-                .timeout(REQUEST_TIMEOUT)
+                .timeout(requestTimeout)
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
@@ -158,7 +168,7 @@ public final class RelayClient {
 
     private JsonNode getJson(URI target) {
         HttpRequest request = HttpRequest.newBuilder(target)
-                .timeout(REQUEST_TIMEOUT)
+                .timeout(requestTimeout)
                 .header("Accept", "application/json")
                 .GET()
                 .build();
@@ -167,7 +177,7 @@ public final class RelayClient {
 
     private String getText(URI target, String accept) {
         HttpRequest request = HttpRequest.newBuilder(target)
-                .timeout(REQUEST_TIMEOUT)
+                .timeout(requestTimeout)
                 .header("Accept", accept)
                 .GET()
                 .build();

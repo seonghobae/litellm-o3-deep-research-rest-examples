@@ -83,6 +83,15 @@ uv run python -m litellm_example --api responses --background "Reply with exactl
 
 이 경우 최종 텍스트 대신 `id`, `status` 같은 후속 추적용 메타데이터가 담긴 원본 JSON을 출력합니다.
 
+### 타임아웃 조정 (--timeout)
+
+기본 타임아웃은 30초입니다. `o3-deep-research`처럼 응답 시간이 긴 모델을 사용할 때는 `--timeout <초>`를 늘리세요.
+
+```bash
+uv run python -m litellm_example --timeout 300 "짜장면의 역사를 조사해줘"
+uv run python -m litellm_example --api responses --timeout 300 "짜장면의 역사를 조사해줘"
+```
+
 ## 4. Java 예제
 
 경로:
@@ -136,6 +145,21 @@ stream:
 ```bash
 RELAY_BASE_URL=http://127.0.0.1:8080 \
 mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--target relay --stream Summarize relay architecture"
+```
+
+### 4-5. 타임아웃 조정 (--timeout)
+
+기본 타임아웃은 30초입니다. direct 및 relay 호출 모두 `--timeout <초>`로 조정할 수 있습니다.
+
+```bash
+# direct 호출 타임아웃 늘리기
+mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
+  -Dexec.args="--timeout 300 짜장면의 역사를 조사해줘"
+
+# relay 호출 타임아웃 늘리기
+RELAY_BASE_URL=http://127.0.0.1:8080 \
+mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
+  -Dexec.args="--target relay --timeout 300 짜장면의 역사를 조사해줘"
 ```
 
 ## 5. relay 중계 예제
