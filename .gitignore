@@ -20,3 +20,5 @@ target/
 
 # Docs build output
 site/
+relay/.coverage
+clients/python/.coverage

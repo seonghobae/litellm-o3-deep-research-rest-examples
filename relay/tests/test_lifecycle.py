@@ -382,6 +382,130 @@ def test_to_view_includes_error_message_when_stream_fails() -> None:
     assert "stream exploded" in payload["error_message"]
 
 
+def test_event_stream_emits_completed_event_for_background_invocation_with_output_text() -> (
+    None
+):
+    """event_stream() for a non-stream (background) mode with output_text must emit a
+    'completed' SSE event containing the output text.  This covers service.py line 119."""
+
+    class CompletedBackgroundGateway:
+        async def invoke_deep_research(
+            self, args: DeepResearchArguments
+        ) -> UpstreamInvocationResult:
+            return UpstreamInvocationResult(
+                mode="background",
+                status="queued",
+                upstream_response_id="resp_bg_complete",
+                response={"id": "resp_bg_complete", "status": "queued"},
+            )
+
+        async def get_response(self, response_id: str) -> dict[str, object]:
+            return {
+                "id": response_id,
+                "status": "completed",
+                "output_text": "bg answer",
+            }
+
+        async def wait_for_response(
+            self, response_id: str, timeout_seconds: float
+        ) -> dict[str, object]:
+            return {
+                "id": response_id,
+                "status": "completed",
+                "output_text": "bg answer",
+            }
+
+        async def stream_deep_research(self, args: DeepResearchArguments):
+            return
+            yield  # pragma: no cover
+
+    client = TestClient(
+        create_app(
+            service=RelayService(CompletedBackgroundGateway(), 30.0),
+            settings=_DUMMY_SETTINGS,
+        )
+    )
+
+    create_response = client.post(
+        "/api/v1/tool-invocations",
+        json={
+            "tool_name": "deep_research",
+            "arguments": {
+                "research_question": "Background with answer",
+                "deliverable_format": "markdown_brief",
+                "background": True,
+            },
+        },
+    )
+    invocation_id = create_response.json()["invocation_id"]
+
+    # Polling GET triggers _apply_upstream_payload with status="completed"
+    client.get(f"/api/v1/tool-invocations/{invocation_id}")
+
+    # Now event_stream on a non-stream mode with output_text → completed event
+    with client.stream(
+        "GET", f"/api/v1/tool-invocations/{invocation_id}/events"
+    ) as resp:
+        body = "".join(resp.iter_text())
+
+    assert resp.status_code == 200
+    assert "event: completed" in body
+    assert "bg answer" in body
+
+
+def test_apply_upstream_payload_sets_status_to_running_for_running_status() -> None:
+    """_apply_upstream_payload with status='running' must update status to 'running'.
+    This covers service.py line 232."""
+
+    class RunningGateway:
+        _calls = 0
+
+        async def invoke_deep_research(
+            self, args: DeepResearchArguments
+        ) -> UpstreamInvocationResult:
+            return UpstreamInvocationResult(
+                mode="background",
+                status="queued",
+                upstream_response_id="resp_running_1",
+                response={"id": "resp_running_1", "status": "queued"},
+            )
+
+        async def get_response(self, response_id: str) -> dict[str, object]:
+            return {"id": response_id, "status": "running"}
+
+        async def wait_for_response(
+            self, response_id: str, timeout_seconds: float
+        ) -> dict[str, object]:
+            return {}
+
+        async def stream_deep_research(self, args: DeepResearchArguments):
+            return
+            yield  # pragma: no cover
+
+    client = TestClient(
+        create_app(
+            service=RelayService(RunningGateway(), 30.0), settings=_DUMMY_SETTINGS
+        )
+    )
+
+    create_response = client.post(
+        "/api/v1/tool-invocations",
+        json={
+            "tool_name": "deep_research",
+            "arguments": {
+                "research_question": "Running question",
+                "deliverable_format": "markdown_brief",
+                "background": True,
+            },
+        },
+    )
+    invocation_id = create_response.json()["invocation_id"]
+
+    get_response = client.get(f"/api/v1/tool-invocations/{invocation_id}")
+    assert get_response.status_code == 200
+    assert get_response.json()["status"] == "running"
+
+
 def test_event_stream_replays_error_event_on_re_subscription_to_failed_stream() -> None:
     """Re-subscribing to a failed stream must replay the error event."""
     gateway = FailingLifecycleGateway()

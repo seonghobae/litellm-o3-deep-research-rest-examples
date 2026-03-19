@@ -46,6 +46,33 @@ def test_env_vars_take_precedence_over_dotenv(
     assert settings.model == "custom-model"
 
 
+def test_load_settings_uses_home_dotenv_by_default(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Cover config.py:35 – the default dotenv_path = Path.home() / '.env' branch.
+
+    We monkeypatch Path.home() to return tmp_path so the test does not touch
+    the real home directory.
+    """
+    dotenv = tmp_path / ".env"
+    dotenv.write_text(
+        "LITELLM_BASE_URL=https://home-default.example\nLITELLM_API_KEY=sk-home\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.delenv("LITELLM_BASE_URL", raising=False)
+    monkeypatch.delenv("LITELLM_API_KEY", raising=False)
+
+    from litellm_example import config as config_module
+
+    monkeypatch.setattr(config_module.Path, "home", staticmethod(lambda: tmp_path))
+
+    settings = load_settings()  # no dotenv_path argument → uses default
+    assert settings.base_url == "https://home-default.example"
+    assert settings.api_key == "sk-home"
+
+
 @pytest.mark.parametrize("var_name", ["LITELLM_BASE_URL", "LITELLM_API_KEY"])
 def test_missing_required_variables_raise(
     var_name: str, monkeypatch: pytest.MonkeyPatch, tmp_path: Path

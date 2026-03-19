@@ -129,3 +129,19 @@ def test_events_endpoint_returns_404_for_unknown_invocation() -> None:
     response = client.get("/api/v1/tool-invocations/missing/events")
 
     assert response.status_code == 404
+
+
+def test_get_invocation_returns_404_for_unknown_id() -> None:
+    """GET /api/v1/tool-invocations/{id} must return 404 for an unknown id."""
+    client = _client()
+    response = client.get("/api/v1/tool-invocations/does-not-exist")
+    assert response.status_code == 404
+    assert "not found" in response.json()["detail"].lower()
+
+
+def test_wait_invocation_returns_404_for_unknown_id() -> None:
+    """GET /api/v1/tool-invocations/{id}/wait must return 404 for an unknown id."""
+    client = _client()
+    response = client.get("/api/v1/tool-invocations/does-not-exist/wait")
+    assert response.status_code == 404
+    assert "not found" in response.json()["detail"].lower()

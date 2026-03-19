@@ -367,6 +367,36 @@ def test_render_input_includes_context_and_constraints() -> None:
     assert "- Cite sources" in rendered
 
 
+def test_extract_response_text_skips_non_dict_output_items() -> None:
+    """Cover the `continue` branch when an output[] item is not a dict (line 170)."""
+    result = LiteLLMRelayGateway._extract_response_text(
+        {
+            "output": [
+                "not a dict",  # must be skipped
+                {"content": [{"type": "output_text", "text": "valid"}]},
+            ]
+        }
+    )
+    assert result == "valid"
+
+
+def test_extract_response_text_skips_non_dict_content_blocks() -> None:
+    """Cover the `continue` branch when a content[] block is not a dict (line 173)."""
+    result = LiteLLMRelayGateway._extract_response_text(
+        {
+            "output": [
+                {
+                    "content": [
+                        "not a dict",  # must be skipped
+                        {"type": "output_text", "text": "valid block"},
+                    ]
+                }
+            ]
+        }
+    )
+    assert result == "valid block"
+
+
 def test_render_input_omits_context_and_constraints_sections_when_empty() -> None:
     args = DeepResearchArguments(
         research_question="Minimal question",

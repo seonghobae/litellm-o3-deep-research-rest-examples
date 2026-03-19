@@ -288,3 +288,352 @@ def test_chat_completion_raises_when_content_is_empty_string(
 
     assert excinfo.value.status == 200
     assert "usable" in str(excinfo.value).lower()
+
+
+# --------------------------------------------------------------------------- #
+# _normalize_base_url: scheme and security guard paths                        #
+# --------------------------------------------------------------------------- #
+
+
+def test_normalize_base_url_rejects_non_http_scheme() -> None:
+    """Cover line 44: scheme not in {https, http} raises ValueError."""
+    with pytest.raises(ValueError, match="https or http"):
+        _normalize_base_url("ftp://example.com")
+
+
+def test_normalize_base_url_rejects_http_for_remote_host() -> None:
+    """Cover lines 58-59: http with non-localhost host raises ValueError."""
+    with pytest.raises(ValueError, match="localhost"):
+        _normalize_base_url("http://example.com/v1")
+
+
+def test_normalize_base_url_rejects_unexpected_https_path() -> None:
+    """Cover line 58: https URL with unexpected path (not empty, /, /v1) raises."""
+    with pytest.raises(ValueError, match="empty path or /v1"):
+        _normalize_base_url("https://example.com/api")
+
+
+# --------------------------------------------------------------------------- #
+# Network-layer error paths (lines 164-165, 171-172, 176-177, 180)           #
+# --------------------------------------------------------------------------- #
+
+
+def test_client_raises_on_os_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Cover lines 164-165: OSError during urlopen raises LiteLLMError."""
+
+    def fake_urlopen(req, timeout=None, context=None):  # type: ignore[override]
+        raise OSError("connection refused")
+
+    from litellm_example import client as client_module
+
+    monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
+
+    c = LiteLLMClient("https://example.com", "sk-test", model="o3-deep-research")
+    with pytest.raises(LiteLLMError) as excinfo:
+        c.create_chat_completion("Hi")
+
+    assert excinfo.value.status == -1
+    assert "connection refused" in str(excinfo.value).lower()
+
+
+def test_client_raises_on_non_2xx_status(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Cover lines 171-172: non-2xx status code from urlopen raises LiteLLMError."""
+
+    def fake_urlopen(req, timeout=None, context=None):  # type: ignore[override]
+        body = json.dumps({"error": {"message": "service unavailable"}}).encode("utf-8")
+        return FakeResponse(body, status=503)
+
+    from litellm_example import client as client_module
+
+    monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
+
+    c = LiteLLMClient("https://example.com", "sk-test", model="o3-deep-research")
+    with pytest.raises(LiteLLMError) as excinfo:
+        c.create_chat_completion("Hi")
+
+    assert excinfo.value.status == 503
+
+
+def test_client_raises_on_invalid_json_response(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cover lines 176-177: invalid JSON from server raises LiteLLMError."""
+
+    def fake_urlopen(req, timeout=None, context=None):  # type: ignore[override]
+        return FakeResponse(b"not valid json", status=200)
+
+    from litellm_example import client as client_module
+
+    monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
+
+    c = LiteLLMClient("https://example.com", "sk-test", model="o3-deep-research")
+    with pytest.raises(LiteLLMError) as excinfo:
+        c.create_chat_completion("Hi")
+
+    assert "invalid json" in str(excinfo.value).lower()
+
+
+def test_client_raises_on_non_dict_json_response(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cover line 180: JSON that is not a dict raises LiteLLMError."""
+
+    def fake_urlopen(req, timeout=None, context=None):  # type: ignore[override]
+        return FakeResponse(b"[1,2,3]", status=200)
+
+    from litellm_example import client as client_module
+
+    monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
+
+    c = LiteLLMClient("https://example.com", "sk-test", model="o3-deep-research")
+    with pytest.raises(LiteLLMError) as excinfo:
+        c.create_chat_completion("Hi")
+
+    assert "unexpected" in str(excinfo.value).lower()
+
+
+# --------------------------------------------------------------------------- #
+# _extract_error_message: json parse failure and no-match fallback            #
+# --------------------------------------------------------------------------- #
+
+
+def test_extract_error_message_returns_generic_when_body_is_not_json() -> None:
+    """Cover lines 191-192: non-JSON body falls back to generic message."""
+    from litellm_example.client import LiteLLMClient
+
+    msg = LiteLLMClient._extract_error_message("not json at all")
+    assert "error" in msg.lower()
+
+
+def test_extract_error_message_returns_generic_when_no_matching_key() -> None:
+    """Cover line 200: JSON body with no usable message key falls back."""
+    from litellm_example.client import LiteLLMClient
+
+    msg = LiteLLMClient._extract_error_message(json.dumps({"error": {"code": 500}}))
+    assert "error" in msg.lower()
+
+
+# --------------------------------------------------------------------------- #
+# _extract_content: error path coverage (lines 207, 213, 219)                #
+# --------------------------------------------------------------------------- #
+
+
+def test_extract_content_raises_when_no_choices(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cover line 207: empty choices list raises LiteLLMError."""
+
+    def fake_urlopen(req, timeout=None, context=None):  # type: ignore[override]
+        return FakeResponse(json.dumps({"choices": []}).encode(), status=200)
+
+    from litellm_example import client as client_module
+
+    monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
+
+    c = LiteLLMClient("https://example.com", "sk-test", model="o3-deep-research")
+    with pytest.raises(LiteLLMError) as excinfo:
+        c.create_chat_completion("No choices")
+
+    assert "choices" in str(excinfo.value).lower()
+
+
+def test_extract_content_raises_when_choice_is_not_dict(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cover line 213: choice that is not a dict raises LiteLLMError."""
+
+    def fake_urlopen(req, timeout=None, context=None):  # type: ignore[override]
+        return FakeResponse(
+            json.dumps({"choices": ["not a dict"]}).encode(), status=200
+        )
+
+    from litellm_example import client as client_module
+
+    monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
+
+    c = LiteLLMClient("https://example.com", "sk-test", model="o3-deep-research")
+    with pytest.raises(LiteLLMError) as excinfo:
+        c.create_chat_completion("Bad choice")
+
+    assert "choice" in str(excinfo.value).lower()
+
+
+def test_extract_content_raises_when_message_is_not_dict(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cover line 219: message field that is not a dict raises LiteLLMError."""
+
+    def fake_urlopen(req, timeout=None, context=None):  # type: ignore[override]
+        body = json.dumps({"choices": [{"message": "just a string"}]}).encode()
+        return FakeResponse(body, status=200)
+
+    from litellm_example import client as client_module
+
+    monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
+
+    c = LiteLLMClient("https://example.com", "sk-test", model="o3-deep-research")
+    with pytest.raises(LiteLLMError) as excinfo:
+        c.create_chat_completion("Bad message")
+
+    assert "message" in str(excinfo.value).lower()
+
+
+# --------------------------------------------------------------------------- #
+# _extract_response_content: non-dict items coverage (lines 261,264,267,269) #
+# --------------------------------------------------------------------------- #
+
+
+def test_responses_api_skips_non_dict_output_items(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cover line 261: non-dict output[] items are skipped."""
+
+    def fake_urlopen(req, timeout=None, context=None):  # type: ignore[override]
+        body = json.dumps(
+            {
+                "output": [
+                    "not a dict",  # must be skipped
+                    {"content": [{"type": "output_text", "text": "real answer"}]},
+                ]
+            }
+        ).encode()
+        return FakeResponse(body, status=200)
+
+    from litellm_example import client as client_module
+
+    monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
+
+    c = LiteLLMClient("https://example.com", "sk-test", model="o3-deep-research")
+    text = c.create_response("Non-dict output item")  # type: ignore[attr-defined]
+
+    assert text == "real answer"
+
+
+def test_responses_api_skips_non_list_content(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cover line 264: content that is not a list is skipped, falls through to error."""
+
+    def fake_urlopen(req, timeout=None, context=None):  # type: ignore[override]
+        body = json.dumps(
+            {
+                "output": [
+                    {"content": "not a list"},
+                    {"content": [{"type": "output_text", "text": "fallback answer"}]},
+                ]
+            }
+        ).encode()
+        return FakeResponse(body, status=200)
+
+    from litellm_example import client as client_module
+
+    monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
+
+    c = LiteLLMClient("https://example.com", "sk-test", model="o3-deep-research")
+    text = c.create_response("Non-list content")  # type: ignore[attr-defined]
+
+    assert text == "fallback answer"
+
+
+def test_responses_api_skips_non_dict_content_blocks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cover line 267: non-dict content blocks are skipped."""
+
+    def fake_urlopen(req, timeout=None, context=None):  # type: ignore[override]
+        body = json.dumps(
+            {
+                "output": [
+                    {
+                        "content": [
+                            "not a dict block",  # must be skipped
+                            {"type": "output_text", "text": "block answer"},
+                        ]
+                    }
+                ]
+            }
+        ).encode()
+        return FakeResponse(body, status=200)
+
+    from litellm_example import client as client_module
+
+    monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
+
+    c = LiteLLMClient("https://example.com", "sk-test", model="o3-deep-research")
+    text = c.create_response("Non-dict block")  # type: ignore[attr-defined]
+
+    assert text == "block answer"
+
+
+def test_responses_api_skips_wrong_type_blocks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cover line 269: blocks with unrecognised type are skipped."""
+
+    def fake_urlopen(req, timeout=None, context=None):  # type: ignore[override]
+        body = json.dumps(
+            {
+                "output": [
+                    {
+                        "content": [
+                            {"type": "reasoning", "text": "should be ignored"},
+                            {"type": "output_text", "text": "correct answer"},
+                        ]
+                    }
+                ]
+            }
+        ).encode()
+        return FakeResponse(body, status=200)
+
+    from litellm_example import client as client_module
+
+    monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
+
+    c = LiteLLMClient("https://example.com", "sk-test", model="o3-deep-research")
+    text = c.create_response("Wrong type block")  # type: ignore[attr-defined]
+
+    assert text == "correct answer"
+
+
+def test_responses_api_collects_plain_string_text(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cover line 272: plain string text field is appended to parts."""
+
+    def fake_urlopen(req, timeout=None, context=None):  # type: ignore[override]
+        body = json.dumps(
+            {"output": [{"content": [{"type": "output_text", "text": "plain str"}]}]}
+        ).encode()
+        return FakeResponse(body, status=200)
+
+    from litellm_example import client as client_module
+
+    monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
+
+    c = LiteLLMClient("https://example.com", "sk-test", model="o3-deep-research")
+    text = c.create_response("Plain string text")  # type: ignore[attr-defined]
+
+    assert text == "plain str"
+
+
+def test_responses_api_raises_when_all_blocks_skipped(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cover line 281: no usable parts after traversal raises LiteLLMError."""
+
+    def fake_urlopen(req, timeout=None, context=None):  # type: ignore[override]
+        body = json.dumps(
+            {"output": [{"content": [{"type": "reasoning", "text": "ignored"}]}]}
+        ).encode()
+        return FakeResponse(body, status=200)
+
+    from litellm_example import client as client_module
+
+    monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
+
+    c = LiteLLMClient("https://example.com", "sk-test", model="o3-deep-research")
+    with pytest.raises(LiteLLMError) as excinfo:
+        c.create_response("All blocks skipped")  # type: ignore[attr-defined]
+
+    assert excinfo.value.status == 200
+    assert "usable" in str(excinfo.value).lower()
