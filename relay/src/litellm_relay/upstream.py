@@ -79,7 +79,7 @@ class LiteLLMRelayGateway:
         self,
         response_id: str,
         timeout_seconds: float,
-        poll_interval_seconds: float = 0.05,
+        poll_interval_seconds: float = 0.5,
     ) -> dict[str, Any]:
         deadline = asyncio.get_running_loop().time() + timeout_seconds
         while True:

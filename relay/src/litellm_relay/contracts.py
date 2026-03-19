@@ -20,7 +20,7 @@ class DeepResearchArguments(BaseModel):
     stream: bool = False
 
     @model_validator(mode="after")
-    def validate_execution_mode(self) -> "DeepResearchArguments":
+    def validate_execution_mode(self) -> DeepResearchArguments:
         if self.background and self.stream:
             raise ValueError("background and stream cannot both be true")
         return self

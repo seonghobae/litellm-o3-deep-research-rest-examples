@@ -1,4 +1,4 @@
-## Java 예제
+# Java 예제
 
 이 디렉터리에는 LiteLLM 호환 REST API를 직접 호출하는 Java 21 CLI와,
 relay를 호출하는 Java 모드가 함께 들어 있습니다.

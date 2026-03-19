@@ -3,9 +3,14 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from litellm_relay.app import create_app
+from litellm_relay.config import RelaySettings
 from litellm_relay.contracts import DeepResearchArguments
 from litellm_relay.service import RelayService
 from litellm_relay.upstream import UpstreamInvocationResult
+
+# Settings object used to prevent create_app() from calling load_settings()
+# which requires LITELLM_BASE_URL/LITELLM_API_KEY environment variables.
+_DUMMY_SETTINGS = RelaySettings(base_url="https://dummy.test", api_key="sk-dummy")
 
 
 class FakeGateway:
@@ -42,8 +47,16 @@ class FakeGateway:
         yield "ignored"
 
 
+def _client() -> TestClient:
+    """Create a TestClient with a fake service and dummy settings so that
+    create_app() never calls load_settings() and thus never needs live env vars."""
+    return TestClient(
+        create_app(service=RelayService(FakeGateway(), 30.0), settings=_DUMMY_SETTINGS)
+    )
+
+
 def test_post_tool_invocations_returns_completed_result() -> None:
-    client = TestClient(create_app(service=RelayService(FakeGateway(), 30.0)))
+    client = _client()
 
     response = client.post(
         "/api/v1/tool-invocations",
@@ -64,7 +77,7 @@ def test_post_tool_invocations_returns_completed_result() -> None:
 
 
 def test_post_tool_invocations_returns_background_metadata() -> None:
-    client = TestClient(create_app(service=RelayService(FakeGateway(), 30.0)))
+    client = _client()
 
     response = client.post(
         "/api/v1/tool-invocations",
@@ -86,7 +99,7 @@ def test_post_tool_invocations_returns_background_metadata() -> None:
 
 
 def test_get_tool_invocations_by_id_returns_latest_status() -> None:
-    client = TestClient(create_app(service=RelayService(FakeGateway(), 30.0)))
+    client = _client()
 
     create_response = client.post(
         "/api/v1/tool-invocations",
@@ -111,7 +124,7 @@ def test_get_tool_invocations_by_id_returns_latest_status() -> None:
 
 
 def test_events_endpoint_returns_404_for_unknown_invocation() -> None:
-    client = TestClient(create_app(service=RelayService(FakeGateway(), 30.0)))
+    client = _client()
 
     response = client.get("/api/v1/tool-invocations/missing/events")
 

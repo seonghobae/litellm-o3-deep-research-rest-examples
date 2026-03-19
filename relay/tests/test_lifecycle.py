@@ -3,9 +3,12 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from litellm_relay.app import create_app
+from litellm_relay.config import RelaySettings
 from litellm_relay.contracts import DeepResearchArguments
 from litellm_relay.service import RelayService
 from litellm_relay.upstream import UpstreamInvocationResult
+
+_DUMMY_SETTINGS = RelaySettings(base_url="https://dummy.test", api_key="sk-dummy")
 
 
 class LifecycleGateway:
@@ -60,7 +63,11 @@ class FailingLifecycleGateway(LifecycleGateway):
 
 
 def test_wait_endpoint_polls_upstream_until_completed() -> None:
-    client = TestClient(create_app(service=RelayService(LifecycleGateway(), 30.0)))
+    client = TestClient(
+        create_app(
+            service=RelayService(LifecycleGateway(), 30.0), settings=_DUMMY_SETTINGS
+        )
+    )
 
     create_response = client.post(
         "/api/v1/tool-invocations",
@@ -85,7 +92,9 @@ def test_wait_endpoint_polls_upstream_until_completed() -> None:
 
 def test_events_endpoint_relays_text_deltas_as_sse() -> None:
     gateway = LifecycleGateway()
-    client = TestClient(create_app(service=RelayService(gateway, 30.0)))
+    client = TestClient(
+        create_app(service=RelayService(gateway, 30.0), settings=_DUMMY_SETTINGS)
+    )
 
     create_response = client.post(
         "/api/v1/tool-invocations",
@@ -127,7 +136,10 @@ def test_events_endpoint_relays_text_deltas_as_sse() -> None:
 
 def test_events_endpoint_marks_failed_streams() -> None:
     client = TestClient(
-        create_app(service=RelayService(FailingLifecycleGateway(), 30.0))
+        create_app(
+            service=RelayService(FailingLifecycleGateway(), 30.0),
+            settings=_DUMMY_SETTINGS,
+        )
     )
 
     create_response = client.post(

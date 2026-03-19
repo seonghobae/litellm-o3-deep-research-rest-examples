@@ -198,7 +198,7 @@ relay 내부에서만 위 구조를 LiteLLM Responses 요청으로 변환하며,
 ### 6-2. relay 예제의 `stream`
 
 - relay는 `POST /api/v1/tool-invocations`로 invocation을 만들고,
-- `GET /api/v1/tool-invocations/{id}/events`로 `text/event-stream`을 제공합니다.
+- `GET /api/v1/tool-invocations/{invocation_id}/events`로 `text/event-stream`을 제공합니다.
 - 현재 구현은 text delta만 중계하는 **text-focused SSE 예제**입니다.
 
 ## 7. 문제 해결

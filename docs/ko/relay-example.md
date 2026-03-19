@@ -11,6 +11,7 @@
 - `arguments.context`
 - `arguments.constraints`
 - `arguments.deliverable_format`
+- `arguments.require_citations`
 - `arguments.background`
 - `arguments.stream`
 

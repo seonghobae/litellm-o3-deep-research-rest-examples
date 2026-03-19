@@ -26,8 +26,10 @@ def create_app(
 
     app = FastAPI(title="LiteLLM relay example")
 
-    @app.post("/api/v1/tool-invocations")
-    async def create_tool_invocation(payload: ToolInvocationRequest):
+    @app.post("/api/v1/tool-invocations", response_model=ToolInvocationView)
+    async def create_tool_invocation(
+        payload: ToolInvocationRequest,
+    ) -> JSONResponse | ToolInvocationView:
         status_code, result = await service.create_invocation(payload)
         if status_code == 200:
             return result

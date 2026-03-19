@@ -19,6 +19,7 @@ import java.util.Map;
 public final class RelayClient {
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
 
     private final URI baseUrl;
     private final HttpClient httpClient;
@@ -112,7 +113,8 @@ public final class RelayClient {
                         builder.append(text.asText());
                     }
                 } catch (JsonProcessingException exception) {
-                    throw new ApiException(200, "Relay returned invalid SSE JSON.", payload);
+                    // Do not include raw SSE payload in message to avoid leaking sensitive data.
+                    throw new ApiException(200, "Relay returned invalid SSE JSON.", "[redacted]");
                 }
             }
         }
@@ -145,7 +147,7 @@ public final class RelayClient {
         }
 
         HttpRequest request = HttpRequest.newBuilder(target)
-                .timeout(Duration.ofSeconds(30))
+                .timeout(REQUEST_TIMEOUT)
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
@@ -156,7 +158,7 @@ public final class RelayClient {
 
     private JsonNode getJson(URI target) {
         HttpRequest request = HttpRequest.newBuilder(target)
-                .timeout(Duration.ofSeconds(30))
+                .timeout(REQUEST_TIMEOUT)
                 .header("Accept", "application/json")
                 .GET()
                 .build();
@@ -165,7 +167,7 @@ public final class RelayClient {
 
     private String getText(URI target, String accept) {
         HttpRequest request = HttpRequest.newBuilder(target)
-                .timeout(Duration.ofSeconds(30))
+                .timeout(REQUEST_TIMEOUT)
                 .header("Accept", accept)
                 .GET()
                 .build();

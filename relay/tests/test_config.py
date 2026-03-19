@@ -23,6 +23,7 @@ def test_loads_relay_settings_from_env_and_dotenv(
 
     monkeypatch.delenv("LITELLM_BASE_URL", raising=False)
     monkeypatch.delenv("LITELLM_API_KEY", raising=False)
+    monkeypatch.delenv("LITELLM_MODEL", raising=False)
     monkeypatch.delenv("RELAY_HOST", raising=False)
     monkeypatch.delenv("RELAY_PORT", raising=False)
     monkeypatch.delenv("RELAY_TIMEOUT_SECONDS", raising=False)

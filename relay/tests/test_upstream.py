@@ -129,7 +129,7 @@ async def test_builds_streaming_responses_request(
         def __init__(self, events: list[dict[str, object]]) -> None:
             self._events = iter(events)
 
-        def __aiter__(self) -> "FakeStream":
+        def __aiter__(self) -> FakeStream:
             return self
 
         async def __anext__(self) -> dict[str, object]:

@@ -51,8 +51,8 @@ def load_settings(dotenv_path: Path | None = None) -> RelaySettings:
     return RelaySettings(
         base_url=base_url.strip(),
         api_key=api_key.strip(),
-        model=(model or "o3-deep-research").strip() or "o3-deep-research",
-        host=(host or "127.0.0.1").strip() or "127.0.0.1",
-        port=int((port or "8080").strip() or "8080"),
-        timeout_seconds=float((timeout_seconds or "30").strip() or "30"),
+        model=(model or "").strip() or "o3-deep-research",
+        host=(host or "").strip() or "127.0.0.1",
+        port=int((port or "").strip() or "8080"),
+        timeout_seconds=float((timeout_seconds or "").strip() or "30"),
     )

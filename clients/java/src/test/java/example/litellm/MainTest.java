@@ -22,4 +22,18 @@ class MainTest {
                 IllegalArgumentException.class,
                 () -> Main.main(new String[] {"--target", "relay", "--deliverable-format"}));
     }
+
+    @Test
+    void backgroundAndStreamCannotBeCombined() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> Main.main(new String[] {"--background", "--stream", "hello"}));
+    }
+
+    @Test
+    void streamRequiresRelayTarget() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> Main.main(new String[] {"--stream", "hello"}));
+    }
 }
