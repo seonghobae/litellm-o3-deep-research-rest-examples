@@ -488,6 +488,71 @@ class RelayClientTest {
         assertEquals("요약", result.researchSummary());
     }
 
+    @Test
+    void invokeChat_with_system_prompt_sends_it_in_request_body() throws Exception {
+        AtomicReference<String> capturedBody = new AtomicReference<>();
+        server.createContext("/api/v1/chat", exchange -> {
+            capturedBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            writeJson(exchange, 200,
+                    "{\"content\":\"English answer\",\"tool_called\":false}");
+        });
+
+        example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
+        example.litellm.relay.RelayClient.ChatResult result =
+                client.invokeChat("짜장면의 역사", true, "Always answer in English only.", "markdown_brief");
+
+        assertEquals("English answer", result.content());
+        assertTrue(capturedBody.get().contains("\"system_prompt\":\"Always answer in English only.\""));
+        assertTrue(capturedBody.get().contains("\"deliverable_format\":\"markdown_brief\""));
+    }
+
+    @Test
+    void invokeChat_with_null_system_prompt_omits_field_from_request() throws Exception {
+        AtomicReference<String> capturedBody = new AtomicReference<>();
+        server.createContext("/api/v1/chat", exchange -> {
+            capturedBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            writeJson(exchange, 200,
+                    "{\"content\":\"answer\",\"tool_called\":false}");
+        });
+
+        example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
+        client.invokeChat("test", false, null, "markdown_brief");
+
+        assertFalse(capturedBody.get().contains("\"system_prompt\""));
+        assertTrue(capturedBody.get().contains("\"deliverable_format\":\"markdown_brief\""));
+    }
+
+    @Test
+    void invokeChat_with_markdown_report_format_sends_it_in_request_body() throws Exception {
+        AtomicReference<String> capturedBody = new AtomicReference<>();
+        server.createContext("/api/v1/chat", exchange -> {
+            capturedBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            writeJson(exchange, 200,
+                    "{\"content\":\"report\",\"tool_called\":true,\"tool_name\":\"deep_research\",\"research_summary\":\"s\"}");
+        });
+
+        example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
+        client.invokeChat("짜장면의 역사를 자세히", true, null, "markdown_report");
+
+        assertTrue(capturedBody.get().contains("\"deliverable_format\":\"markdown_report\""));
+    }
+
+    @Test
+    void invokeChat_two_arg_delegates_to_four_arg_with_defaults() throws Exception {
+        AtomicReference<String> capturedBody = new AtomicReference<>();
+        server.createContext("/api/v1/chat", exchange -> {
+            capturedBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            writeJson(exchange, 200, "{\"content\":\"ok\",\"tool_called\":false}");
+        });
+
+        example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
+        client.invokeChat("hello", false);
+
+        // 2-arg variant should not include system_prompt and should include deliverable_format=markdown_brief
+        assertFalse(capturedBody.get().contains("\"system_prompt\""));
+        assertTrue(capturedBody.get().contains("\"deliverable_format\":\"markdown_brief\""));
+    }
+
     private static void writeJson(HttpExchange exchange, int status, String payload) throws IOException {
         writeText(exchange, status, "application/json", payload);
     }
