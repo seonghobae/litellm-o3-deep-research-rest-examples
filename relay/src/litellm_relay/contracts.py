@@ -155,3 +155,27 @@ class ToolInvocationEvent(BaseModel):
     type: Literal["status", "output_text", "completed", "error"]
     status: InvocationStatus
     data: dict[str, Any] = Field(default_factory=dict)
+
+
+class ChatRequest(BaseModel):
+    """Inbound payload for ``POST /api/v1/chat``.
+
+    The relay uses the ``message`` as the user turn in a Chat Completions
+    request with a ``deep_research`` function tool attached.  When the model
+    decides the question warrants deep research it returns a tool call; the
+    relay executes the research and performs a second completions turn to
+    produce the final natural-language answer.
+    """
+
+    message: str
+    context: list[str] = Field(default_factory=list)
+    auto_tool_call: bool = True
+
+
+class ChatResponse(BaseModel):
+    """Outbound payload for ``POST /api/v1/chat``."""
+
+    content: str
+    tool_called: bool
+    tool_name: str | None = None
+    research_summary: str | None = None
