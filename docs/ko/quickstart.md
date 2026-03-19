@@ -16,6 +16,28 @@ LITELLM_BASE_URL=https://localhost:4000/v1
 LITELLM_MODEL=o3-deep-research
 ```
 
+## 1-1. `uv` 설치 (Python / relay 예제)
+
+Python 예제와 relay 예제는 `uv`를 사용합니다.
+
+macOS / Linux:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+uv --version
+```
+
+PATH가 아직 반영되지 않았다면:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+uv --version
+```
+
+공식 안내:
+
+- <https://docs.astral.sh/uv/getting-started/installation/>
+
 ## 2. Python 예제 시작
 
 ```bash

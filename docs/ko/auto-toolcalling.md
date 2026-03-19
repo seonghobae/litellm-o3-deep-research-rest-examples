@@ -43,7 +43,7 @@ deep research가 실행됐습니다.
 
 ## 3. Approach A — Client-Side Function Calling
 
-클라이언트가 Chat Completions에 `deep_research` function schema를 붙여서 1차 호출 → tool call 감지 → relay 호출 → 2차 완성 호출을 직접 수행합니다.
+클라이언트가 Chat Completions에 `deep_research` function schema를 붙여서 1차 호출 → tool call 감지 → relay-side chat orchestration 위임 → 2차 완성 호출을 직접 수행합니다.
 
 ### 3-1. Python — `--auto-tool-call` 플래그
 
@@ -117,7 +117,8 @@ if ("true".equals(result[1])) {
 클라이언트 → POST /api/v1/chat (relay)
               {message: "짜장면의 역사", auto_tool_call: true}
                     ↓
-relay가 실제 deep_research 실행 후 결과 반환
+relay가 chat orchestration을 다시 수행하고,
+필요하다고 판단하면 내부에서 deep_research 실행
                     ↓
 클라이언트 → POST /v1/chat/completions (2nd turn)
               {messages: [..., tool result]}
@@ -322,8 +323,8 @@ System.out.println(result.content());
 relay의 chat orchestration에 사용하는 모델은 `LITELLM_CHAT_MODEL` 환경변수로 지정합니다 (기본값 `gpt-4o`). deep_research 수행에는 기존 `LITELLM_MODEL`을 사용합니다.
 
 ```bash
-LITELLM_CHAT_MODEL=gpt-4o-mini \  # orchestration용 (function calling 지원 필요)
-LITELLM_MODEL=o3-deep-research \  # 실제 deep research용
+LITELLM_CHAT_MODEL=gpt-4o-mini
+LITELLM_MODEL=o3-deep-research
 uv run python -m litellm_relay
 ```
 

@@ -14,7 +14,7 @@ LiteLLM Proxy를 통해 `o3-deep-research`를 호출하는 Python 직접 예제,
 
 ## GitHub Pages로 볼 수 있게 되어 있나요?
 
-네. push 시 자동으로 GitHub Pages에 배포됩니다. [`seonghobae.github.io/litellm-o3-deep-research-rest-examples`](https://seonghobae.github.io/litellm-o3-deep-research-rest-examples)에서 한국어 문서를 읽을 수 있습니다.
+네. `main` 브랜치 push 또는 GitHub Actions의 수동 실행(`workflow_dispatch`) 시 GitHub Pages에 배포됩니다. [`seonghobae.github.io/litellm-o3-deep-research-rest-examples`](https://seonghobae.github.io/litellm-o3-deep-research-rest-examples)에서 한국어 문서를 읽을 수 있습니다.
 
 ## 왜 relay 예제에서 `input` 대신 tool-calling-like 구조를 쓰나요?
 
@@ -59,7 +59,7 @@ relay의 `DeepResearchArguments.system_prompt`는 Responses API의 `instructions
 
 ## text_format 은 무엇인가요?
 
-relay의 `arguments.text_format`은 Responses API의 `text.format`에 매핑됩니다. API 레벨에서 JSON 출력을 강제합니다. `gpt-4o`에서 완전 지원, `o3-deep-research`는 `json_schema` 미지원(400 오류).
+relay의 `arguments.text_format`은 Responses API의 `text.format`에 매핑됩니다. API 레벨에서 JSON 출력을 강제합니다. `gpt-4o` 같은 호환 모델에서 지원되며, 기본 `o3-deep-research` 경로에서는 `json_object`, `json_schema` 모두 API 400 오류가 발생합니다.
 
 ```json
 {

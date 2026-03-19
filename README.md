@@ -64,6 +64,21 @@ direct Python/Java 예제는 `LITELLM_BASE_URL`을 `https://host:4000` 또는 `h
 
 ## 빠른 시작
 
+### `uv` 설치 (Python / relay 예제)
+
+Python 예제와 relay 예제는 `uv`를 사용합니다.
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 새 셸을 열거나 PATH를 반영한 뒤 확인
+uv --version
+```
+
+공식 설치 안내:
+
+- <https://docs.astral.sh/uv/getting-started/installation/>
+
 ### Python 직접 호출
 
 ```bash

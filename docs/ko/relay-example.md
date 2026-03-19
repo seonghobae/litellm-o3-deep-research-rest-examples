@@ -134,7 +134,7 @@ uv run python -m litellm_relay
 }
 ```
 
-> **주의:** `text_format`은 gpt-4o 계열에서만 완전 지원됩니다. o3-deep-research는 `json_schema` 미지원(API 400), `json_object`는 수락되나 JSON 출력이 보장되지 않습니다.
+> **주의:** `text_format`은 gpt-4o 계열에서만 완전 지원됩니다. 기본 `o3-deep-research` 경로에서는 `json_object`, `json_schema` 모두 지원되지 않으며 API 400 오류가 발생합니다.
 
 ## Java에서 relay 호출
 
@@ -273,8 +273,8 @@ System.out.println(result.content());
 ### relay 설정
 
 ```bash
-LITELLM_CHAT_MODEL=gpt-4o \  # function calling orchestration 모델
-LITELLM_MODEL=o3-deep-research \  # 실제 deep research 모델
+LITELLM_CHAT_MODEL=gpt-4o
+LITELLM_MODEL=o3-deep-research
 uv run python -m litellm_relay
 ```
 
