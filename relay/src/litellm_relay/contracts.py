@@ -11,6 +11,13 @@ InvocationStatus = Literal["pending", "queued", "running", "completed", "failed"
 
 
 class DeepResearchArguments(BaseModel):
+    """Structured arguments for a deep-research tool invocation.
+
+    These fields form the public contract exposed by the relay.  The relay
+    translates them into a LiteLLM Responses API request internally so that
+    callers never need to know the upstream ``input`` string format.
+    """
+
     research_question: str
     context: list[str] = Field(default_factory=list)
     constraints: list[str] = Field(default_factory=list)
@@ -27,11 +34,15 @@ class DeepResearchArguments(BaseModel):
 
 
 class ToolInvocationRequest(BaseModel):
+    """Inbound request payload for ``POST /api/v1/tool-invocations``."""
+
     tool_name: Literal["deep_research"]
     arguments: DeepResearchArguments
 
 
 class ToolInvocationView(BaseModel):
+    """Outbound response shape for all tool-invocation endpoints."""
+
     model_config = ConfigDict(extra="ignore")
 
     invocation_id: str
@@ -46,6 +57,8 @@ class ToolInvocationView(BaseModel):
 
 
 class ToolInvocationEvent(BaseModel):
+    """A single SSE frame emitted by ``GET /api/v1/tool-invocations/{id}/events``."""
+
     invocation_id: str
     type: Literal["status", "output_text", "completed", "error"]
     status: InvocationStatus

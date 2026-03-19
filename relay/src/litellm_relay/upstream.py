@@ -12,6 +12,8 @@ from .contracts import DeepResearchArguments, InvocationMode
 
 @dataclass(frozen=True)
 class UpstreamInvocationResult:
+    """Normalised result returned by the gateway after calling the upstream API."""
+
     mode: InvocationMode
     status: str
     upstream_response_id: str | None = None
@@ -39,6 +41,12 @@ class LiteLLMRelayGateway:
     async def invoke_deep_research(
         self, args: DeepResearchArguments
     ) -> UpstreamInvocationResult:
+        """Submit a deep-research invocation to the upstream LiteLLM Proxy.
+
+        Foreground calls block until the response is ready.  Background calls
+        return immediately with a queued-status result containing the upstream
+        response id.
+        """
         payload = await asyncio.to_thread(
             litellm.responses,
             model=self._model,
@@ -67,6 +75,7 @@ class LiteLLMRelayGateway:
         )
 
     async def get_response(self, response_id: str) -> dict[str, Any]:
+        """Fetch the current status of an upstream response by its id."""
         payload = await litellm.aget_responses(
             response_id=response_id,
             api_base=self._base_url,
@@ -81,6 +90,10 @@ class LiteLLMRelayGateway:
         timeout_seconds: float,
         poll_interval_seconds: float = 0.5,
     ) -> dict[str, Any]:
+        """Poll the upstream until the response reaches a terminal status.
+
+        Raises ``TimeoutError`` if *timeout_seconds* elapses before completion.
+        """
         deadline = asyncio.get_running_loop().time() + timeout_seconds
         while True:
             payload = await self.get_response(response_id)
@@ -96,6 +109,7 @@ class LiteLLMRelayGateway:
     async def stream_deep_research(
         self, args: DeepResearchArguments
     ) -> AsyncIterator[str]:
+        """Async-generator that yields text-delta chunks from a streaming response."""
         response = await litellm.aresponses(
             model=self._model,
             input=self._render_input(args),

@@ -13,6 +13,17 @@ def create_app(
     service: RelayService | None = None,
     settings: RelaySettings | None = None,
 ) -> FastAPI:
+    """Build and return the FastAPI application for the LiteLLM relay example.
+
+    Parameters
+    ----------
+    service:
+        Optional pre-built ``RelayService``.  Primarily used in tests to inject
+        a fake gateway without live credentials.
+    settings:
+        Optional pre-loaded settings.  When omitted, ``load_settings()`` is
+        called so that environment variables or ``~/.env`` are used.
+    """
     settings = settings or load_settings()
     service = service or RelayService(
         LiteLLMRelayGateway(

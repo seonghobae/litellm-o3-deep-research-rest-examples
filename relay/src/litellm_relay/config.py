@@ -24,7 +24,13 @@ def _is_blank(value: str | None) -> bool:
 
 
 def load_settings(dotenv_path: Path | None = None) -> RelaySettings:
-    """Load relay settings from env vars and an optional ~/.env file."""
+    """Load relay settings from env vars and an optional ``~/.env`` file.
+
+    Environment variables always take precedence; the dotenv file is only read
+    when the variable is absent from the real environment.  Raises
+    ``RuntimeError`` if ``LITELLM_BASE_URL`` or ``LITELLM_API_KEY`` remain
+    unset after loading.
+    """
 
     if dotenv_path is None:
         dotenv_path = Path.home() / ".env"

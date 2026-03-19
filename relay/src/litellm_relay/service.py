@@ -33,6 +33,13 @@ class _StoredInvocation:
 
 
 class RelayService:
+    """In-process relay that stores invocations in memory and drives the gateway.
+
+    Each call to :meth:`create_invocation` allocates a UUID for the new
+    invocation and stores it so subsequent ``get``, ``wait``, and ``events``
+    requests can look it up.  The store is per-process and not persistent.
+    """
+
     def __init__(self, gateway: LiteLLMRelayGateway, timeout_seconds: float) -> None:
         self._gateway = gateway
         self._timeout_seconds = timeout_seconds
@@ -41,6 +48,12 @@ class RelayService:
     async def create_invocation(
         self, payload: ToolInvocationRequest
     ) -> tuple[int, ToolInvocationView]:
+        """Create a new invocation and drive it through the upstream gateway.
+
+        Returns a ``(status_code, view)`` pair where *status_code* is 200 for
+        synchronous foreground results and 202 for background or stream
+        invocations.
+        """
         invocation_id = str(uuid4())
         args = payload.arguments
 
@@ -60,6 +73,7 @@ class RelayService:
         return status_code, self._to_view(invocation_id, stored)
 
     async def get_invocation(self, invocation_id: str) -> ToolInvocationView:
+        """Return the current view of an invocation, refreshing from upstream if needed."""
         stored = self._require(invocation_id)
         if stored.mode == "background" and stored.upstream_response_id:
             payload = await self._gateway.get_response(stored.upstream_response_id)
@@ -67,6 +81,7 @@ class RelayService:
         return self._to_view(invocation_id, stored)
 
     async def wait_for_invocation(self, invocation_id: str) -> ToolInvocationView:
+        """Block until the upstream completes the invocation and return the final view."""
         stored = self._require(invocation_id)
         if stored.mode == "background" and stored.upstream_response_id:
             payload = await self._gateway.wait_for_response(
@@ -77,6 +92,18 @@ class RelayService:
         return self._to_view(invocation_id, stored)
 
     async def event_stream(self, invocation_id: str):
+        """Async generator that yields SSE-formatted frames for the given invocation.
+
+        For foreground and background invocations the generator emits a final
+        ``completed`` event and stops.  For stream invocations it pulls text
+        chunks from the upstream gateway, emitting one ``output_text`` event per
+        chunk, followed by a ``completed`` event when the upstream stream ends.
+        A single ``error`` event is emitted if the upstream stream raises.
+
+        Re-subscriptions (calling this method a second time for the same id)
+        replay cached chunks from the first subscription without re-calling the
+        upstream.
+        """
         stored = self._require(invocation_id)
         yield self._to_sse(
             ToolInvocationEvent(

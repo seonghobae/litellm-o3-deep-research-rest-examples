@@ -10,12 +10,14 @@ from .config import RelaySettings, load_settings
 
 
 def build_hypercorn_config(settings: RelaySettings) -> Config:
+    """Build a Hypercorn ``Config`` that binds to the host and port in *settings*."""
     config = Config()
     config.bind = [f"{settings.host}:{settings.port}"]
     return config
 
 
 def main() -> int:
+    """Entrypoint for ``python -m litellm_relay`` and the ``litellm-relay`` script."""
     settings = load_settings()
     app = create_app(settings=settings)
     config = build_hypercorn_config(settings)

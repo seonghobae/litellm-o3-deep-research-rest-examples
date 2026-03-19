@@ -64,6 +64,8 @@ def _normalize_base_url(raw: str) -> str:
 
 @dataclass
 class ChatMessage:
+    """A single message in a chat conversation."""
+
     role: str
     content: str
 
@@ -133,6 +135,7 @@ class LiteLLMClient:
         return self._extract_response_content(parsed)
 
     def _post_json(self, url: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """POST *payload* as JSON to *url* and return the parsed response dict."""
         data = json.dumps(payload).encode("utf-8")
         req = request.Request(
             url,
@@ -182,6 +185,7 @@ class LiteLLMClient:
 
     @staticmethod
     def _extract_error_message(text: str) -> str:
+        """Try to extract a human-readable error message from a JSON error body."""
         try:
             data = json.loads(text)
         except json.JSONDecodeError:
@@ -197,6 +201,7 @@ class LiteLLMClient:
 
     @staticmethod
     def _extract_content(payload: Dict[str, Any]) -> str:
+        """Extract the first assistant message text from a chat completions response."""
         choices = payload.get("choices") or []
         if not isinstance(choices, list) or not choices:
             raise LiteLLMError(
@@ -239,6 +244,7 @@ class LiteLLMClient:
 
     @staticmethod
     def _extract_response_content(payload: Dict[str, Any]) -> str:
+        """Extract text from a LiteLLM responses API result payload."""
         output_text = payload.get("output_text")
         if isinstance(output_text, str) and output_text.strip():
             return output_text
