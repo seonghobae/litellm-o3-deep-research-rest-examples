@@ -13,7 +13,11 @@ from litellm_relay.upstream import UpstreamInvocationResult
 
 # Settings object used to prevent create_app() from calling load_settings()
 # which requires LITELLM_BASE_URL/LITELLM_API_KEY environment variables.
-_DUMMY_SETTINGS = RelaySettings(base_url="https://dummy.test", api_key="sk-dummy")
+_DUMMY_SETTINGS = RelaySettings(
+    base_url="https://dummy.test",
+    api_key="sk-dummy",
+    research_timeout_seconds=300.0,
+)
 
 
 class FakeGateway:

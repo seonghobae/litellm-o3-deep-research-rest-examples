@@ -51,6 +51,21 @@ class ChatOrchestrator:
        Completions request to obtain the final natural-language answer.
     4. Return a :class:`~litellm_relay.contracts.ChatResponse` capturing
        whether a tool was called and, if so, the research summary.
+
+    Timeout split
+    -------------
+    ``timeout_seconds`` governs Chat Completions turns (fast, typically <30 s).
+    ``research_timeout_seconds`` governs the deep_research invocation
+    (slow — ``o3-deep-research`` regularly takes 2–10 minutes).  The default
+    for ``research_timeout_seconds`` is 300 s but can be raised via
+    ``RELAY_RESEARCH_TIMEOUT_SECONDS``.
+
+    Error handling
+    --------------
+    Upstream errors during research are caught and returned as a
+    :class:`~litellm_relay.contracts.ChatResponse` with ``tool_called=True``
+    and an ``error_detail`` payload in ``research_summary`` so callers receive
+    a structured response rather than a bare HTTP 500.
     """
 
     def __init__(
@@ -60,16 +75,18 @@ class ChatOrchestrator:
         chat_model: str = "litellm_proxy/gpt-4o",
         research_model: str = "litellm_proxy/o3-deep-research",
         timeout_seconds: float = 30.0,
+        research_timeout_seconds: float = 300.0,
     ) -> None:
         self._base_url = base_url
         self._api_key = api_key
         self._chat_model = chat_model
         self._timeout_seconds = timeout_seconds
+        self._research_timeout_seconds = research_timeout_seconds
         self._gateway = LiteLLMRelayGateway(
             base_url=base_url,
             api_key=api_key,
             model=research_model.removeprefix("litellm_proxy/"),
-            timeout_seconds=timeout_seconds,
+            timeout_seconds=research_timeout_seconds,
         )
 
     async def chat(self, request: ChatRequest) -> ChatResponse:
@@ -91,7 +108,7 @@ class ChatOrchestrator:
         first_choice = self._extract_choice(first_response)
         first_message = first_choice.get("message", {})
 
-        tool_calls = first_message.get("tool_calls") or []
+        tool_calls = self._extract_tool_calls(first_message)
         deep_research_call = next(
             (
                 tc
@@ -116,13 +133,23 @@ class ChatOrchestrator:
         research_question = tool_args.get("research_question", request.message)
         deliverable_format = tool_args.get("deliverable_format", "markdown_brief")
 
-        research_result = await self._invoke_deep_research(
-            DeepResearchArguments(
-                research_question=research_question,
-                deliverable_format=deliverable_format,
+        try:
+            research_result = await self._invoke_deep_research(
+                DeepResearchArguments(
+                    research_question=research_question,
+                    deliverable_format=deliverable_format,
+                )
             )
-        )
-        research_summary = research_result.output_text or ""
+            research_summary = research_result.output_text or ""
+        except Exception as exc:  # noqa: BLE001
+            # Surface as structured error rather than HTTP 500
+            error_detail = f"deep_research failed: {exc}"
+            return ChatResponse(
+                content=error_detail,
+                tool_called=True,
+                tool_name="deep_research",
+                research_summary=error_detail,
+            )
 
         tool_call_id = deep_research_call.get("id", "call_0")
         messages_with_result: list[dict[str, Any]] = [
@@ -164,6 +191,28 @@ class ChatOrchestrator:
             return request.message
         context_block = "\n".join(f"- {item}" for item in request.context)
         return f"Context:\n{context_block}\n\n{request.message}"
+
+    @staticmethod
+    def _extract_tool_calls(message: dict[str, Any]) -> list[dict[str, Any]]:
+        """Normalise tool_calls from a message dict into a list of plain dicts.
+
+        The LiteLLM SDK may return ``tool_calls`` as:
+        - ``None`` / missing
+        - a list of plain dicts
+        - a list of Pydantic-like objects with ``model_dump()``
+        """
+        raw = message.get("tool_calls")
+        if not raw:
+            return []
+        result: list[dict[str, Any]] = []
+        for tc in raw:
+            if isinstance(tc, dict):
+                result.append(tc)
+            elif hasattr(tc, "model_dump"):
+                dumped = tc.model_dump()
+                if isinstance(dumped, dict):
+                    result.append(dumped)
+        return result
 
     @staticmethod
     def _extract_choice(response: Any) -> dict[str, Any]:

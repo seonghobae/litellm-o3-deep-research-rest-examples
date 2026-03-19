@@ -17,6 +17,7 @@ class RelaySettings:
     host: str = "127.0.0.1"
     port: int = 8080
     timeout_seconds: float = 30.0
+    research_timeout_seconds: float = 300.0
     chat_model: str = "gpt-4o"
 
 
@@ -67,6 +68,7 @@ def load_settings(
     host = os.getenv("RELAY_HOST", "127.0.0.1")
     port = os.getenv("RELAY_PORT", "8080")
     timeout_seconds = os.getenv("RELAY_TIMEOUT_SECONDS", "30")
+    research_timeout_seconds = os.getenv("RELAY_RESEARCH_TIMEOUT_SECONDS", "300")
     chat_model = os.getenv("LITELLM_CHAT_MODEL", "gpt-4o")
 
     if _is_blank(base_url):
@@ -85,5 +87,8 @@ def load_settings(
         host=(host or "").strip() or "127.0.0.1",
         port=int((port or "").strip() or "8080"),
         timeout_seconds=float((timeout_seconds or "").strip() or "30"),
+        research_timeout_seconds=float(
+            (research_timeout_seconds or "").strip() or "300"
+        ),
         chat_model=(chat_model or "").strip() or "gpt-4o",
     )

@@ -144,3 +144,19 @@ def test_chat_model_can_be_overridden(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LITELLM_CHAT_MODEL", "gpt-4o-mini")
     settings = load_settings(env_file=None)
     assert settings.chat_model == "gpt-4o-mini"
+
+
+def test_research_timeout_defaults_to_300(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LITELLM_API_KEY", "sk-x")
+    monkeypatch.setenv("LITELLM_BASE_URL", "https://h/v1")
+    monkeypatch.delenv("RELAY_RESEARCH_TIMEOUT_SECONDS", raising=False)
+    settings = load_settings(env_file=None)
+    assert settings.research_timeout_seconds == 300.0
+
+
+def test_research_timeout_can_be_overridden(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LITELLM_API_KEY", "sk-x")
+    monkeypatch.setenv("LITELLM_BASE_URL", "https://h/v1")
+    monkeypatch.setenv("RELAY_RESEARCH_TIMEOUT_SECONDS", "600")
+    settings = load_settings(env_file=None)
+    assert settings.research_timeout_seconds == 600.0

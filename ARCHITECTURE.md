@@ -21,3 +21,7 @@ This repository is intentionally small and split by language under `clients/`.
 - The Java example now has a separate relay mode that targets `RELAY_BASE_URL` instead of the upstream LiteLLM Proxy directly.
 - A Korean GitHub Pages documentation site is built from `docs/` with MkDocs Material.
 - Streaming and tool-calling remain intentionally out of scope for the direct Python client, but they are implemented in the relay example as a text-focused SSE flow.
+- **Auto tool-calling** (`POST /api/v1/chat`): the relay also exposes a chat endpoint where the model autonomously decides whether to invoke `deep_research` via function calling.  The orchestrator uses two separate timeouts: `RELAY_TIMEOUT_SECONDS` (default 30 s) for Chat Completions turns and `RELAY_RESEARCH_TIMEOUT_SECONDS` (default 300 s) for the deep research invocation.  Upstream errors are surfaced as structured `ChatResponse` payloads rather than bare HTTP 500s.
+- **web_search_preview**: both Python and Java direct clients support `tools=[{"type":"web_search_preview"}]` via the `--web-search` CLI flag.
+- **system_prompt** maps to the Responses API `instructions` field so relay callers can inject personas and output constraints without polluting the research question.
+- **text_format** maps to the Responses API `text.format` field for machine-readable JSON output (`json_object` / `json_schema`).  Supported by gpt-4o; `json_schema` is rejected by o3-deep-research at the API level.

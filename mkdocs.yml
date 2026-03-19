@@ -42,6 +42,8 @@ exclude_docs: |
   engineering/acceptance-criteria.md
   engineering/harness-engineering.md
   plans/2026-03-17-relay-toolcalling-example.md
+  plans/2026-03-19-auto-toolcalling-design.md
+  plans/2026-03-19-auto-toolcalling-implementation.md
   security/api-security-checklist.md
   workflow/one-day-delivery-plan.md
   workflow/pr-continuity.md

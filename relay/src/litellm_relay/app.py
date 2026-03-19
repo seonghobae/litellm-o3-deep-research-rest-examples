@@ -47,6 +47,7 @@ def create_app(
         chat_model=f"litellm_proxy/{settings.chat_model}",
         research_model=f"litellm_proxy/{settings.model}",
         timeout_seconds=settings.timeout_seconds,
+        research_timeout_seconds=settings.research_timeout_seconds,
     )
 
     app = FastAPI(title="LiteLLM relay example")

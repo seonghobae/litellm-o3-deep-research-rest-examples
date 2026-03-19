@@ -412,3 +412,184 @@ async def test_invoke_deep_research_delegates_to_gateway(monkeypatch):
     assert result.output_text == "gateway result"
     assert len(invoked_args) == 1
     assert invoked_args[0].research_question == "test question"
+
+
+@pytest.mark.asyncio
+async def test_research_timeout_is_separate_from_chat_timeout(monkeypatch):
+    """ChatOrchestrator uses research_timeout_seconds for gateway, not chat timeout."""
+    from litellm_relay.chat_orchestrator import ChatOrchestrator as CO
+
+    orchestrator = CO(
+        base_url="https://proxy.example/v1",
+        api_key="sk-test",
+        timeout_seconds=10.0,
+        research_timeout_seconds=300.0,
+    )
+    # Gateway should have research timeout, not chat timeout
+    assert orchestrator._gateway._timeout_seconds == 300.0
+    assert orchestrator._timeout_seconds == 10.0
+
+
+@pytest.mark.asyncio
+async def test_chat_deep_research_error_returns_structured_response(monkeypatch):
+    """When deep_research raises, returns ChatResponse with error detail instead of 500."""
+    import json as _json
+
+    def fake_completions(**kwargs):
+        return {
+            "choices": [
+                {
+                    "finish_reason": "tool_calls",
+                    "message": {
+                        "role": "assistant",
+                        "content": None,
+                        "tool_calls": [
+                            {
+                                "id": "call_err",
+                                "type": "function",
+                                "function": {
+                                    "name": "deep_research",
+                                    "arguments": _json.dumps(
+                                        {
+                                            "research_question": "will fail",
+                                            "deliverable_format": "markdown_brief",
+                                        }
+                                    ),
+                                },
+                            }
+                        ],
+                    },
+                }
+            ]
+        }
+
+    monkeypatch.setattr(
+        "litellm_relay.chat_orchestrator.litellm.completion", fake_completions
+    )
+
+    orchestrator = ChatOrchestrator(
+        base_url="https://proxy.example/v1",
+        api_key="sk-test",
+    )
+
+    async def failing_invoke(args):
+        raise RuntimeError("upstream timeout")
+
+    orchestrator._invoke_deep_research = failing_invoke
+
+    result = await orchestrator.chat(ChatRequest(message="will fail"))
+    assert result.tool_called is True
+    assert result.tool_name == "deep_research"
+    assert "deep_research failed" in result.content
+    assert "upstream timeout" in result.research_summary
+
+
+@pytest.mark.asyncio
+async def test_extract_tool_calls_handles_pydantic_objects(monkeypatch):
+    """_extract_tool_calls normalises Pydantic-like tool call objects to dicts."""
+    import json as _json
+
+    class FakeFunctionCall:
+        def model_dump(self):
+            return {
+                "name": "deep_research",
+                "arguments": _json.dumps(
+                    {
+                        "research_question": "pydantic q",
+                        "deliverable_format": "markdown_brief",
+                    }
+                ),
+            }
+
+    class FakeToolCall:
+        type = "function"
+        id = "call_pydantic"
+
+        def model_dump(self):
+            return {
+                "id": self.id,
+                "type": self.type,
+                "function": {
+                    "name": "deep_research",
+                    "arguments": _json.dumps(
+                        {
+                            "research_question": "pydantic q",
+                            "deliverable_format": "markdown_brief",
+                        }
+                    ),
+                },
+            }
+
+    turn = 0
+
+    def fake_completions(**kwargs):
+        nonlocal turn
+        turn += 1
+        if turn == 1:
+            # Return a response where tool_calls contains a Pydantic-like object
+            class FakeMessage:
+                role = "assistant"
+                content = None
+                tool_calls = [FakeToolCall()]
+
+                def get(self, key, default=None):
+                    return getattr(self, key, default)
+
+            class FakeChoice:
+                finish_reason = "tool_calls"
+                message = {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [FakeToolCall()],
+                }
+
+                def get(self, key, default=None):
+                    return getattr(self, key, default)
+
+            return {
+                "choices": [
+                    {
+                        "finish_reason": "tool_calls",
+                        "message": {
+                            "role": "assistant",
+                            "content": None,
+                            "tool_calls": [FakeToolCall()],
+                        },
+                    }
+                ]
+            }
+        return {
+            "choices": [
+                {
+                    "finish_reason": "stop",
+                    "message": {
+                        "role": "assistant",
+                        "content": "done",
+                        "tool_calls": None,
+                    },
+                }
+            ]
+        }
+
+    monkeypatch.setattr(
+        "litellm_relay.chat_orchestrator.litellm.completion", fake_completions
+    )
+
+    orchestrator = ChatOrchestrator(
+        base_url="https://proxy.example/v1",
+        api_key="sk-test",
+    )
+
+    from litellm_relay.upstream import UpstreamInvocationResult
+
+    async def fake_invoke(args):
+        assert args.research_question == "pydantic q"
+        return UpstreamInvocationResult(
+            mode="foreground", status="completed", output_text="pydantic summary"
+        )
+
+    orchestrator._invoke_deep_research = fake_invoke
+
+    result = await orchestrator.chat(ChatRequest(message="pydantic test"))
+    assert result.tool_called is True
+    assert result.research_summary == "pydantic summary"
