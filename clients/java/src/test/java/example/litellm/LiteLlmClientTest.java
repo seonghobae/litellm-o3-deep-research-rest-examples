@@ -360,6 +360,48 @@ class LiteLlmClientTest {
         assertEquals("timeout path", result);
     }
 
+    // ---- web_search_preview tools support -----------------------------------
+
+    @Test
+    void sendsWebSearchToolInRequestBodyWhenProvided() throws Exception {
+        java.util.concurrent.atomic.AtomicReference<String> capturedBody =
+                new java.util.concurrent.atomic.AtomicReference<>();
+
+        server.createContext("/v1/responses", exchange -> {
+            capturedBody.set(new String(exchange.getRequestBody().readAllBytes(),
+                    java.nio.charset.StandardCharsets.UTF_8));
+            writeJson(exchange, 200,
+                    "{\"output_text\":\"web search result\"}");
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "sk-test", "gpt-4o");
+        String result = client.createResponse(
+                "짜장면의 역사",
+                false,
+                java.util.List.of(java.util.Map.of("type", "web_search_preview")));
+
+        assertEquals("web search result", result);
+        assertEquals(true, capturedBody.get().contains("web_search_preview"));
+        assertEquals(true, capturedBody.get().contains("\"tools\""));
+    }
+
+    @Test
+    void omitsToolsFieldWhenNullProvided() throws Exception {
+        java.util.concurrent.atomic.AtomicReference<String> capturedBody =
+                new java.util.concurrent.atomic.AtomicReference<>();
+
+        server.createContext("/v1/responses", exchange -> {
+            capturedBody.set(new String(exchange.getRequestBody().readAllBytes(),
+                    java.nio.charset.StandardCharsets.UTF_8));
+            writeJson(exchange, 200, "{\"output_text\":\"no tools result\"}");
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "sk-test", "gpt-4o");
+        client.createResponse("Hello", false, null);
+
+        assertEquals(false, capturedBody.get().contains("\"tools\""));
+    }
+
     // ---- extractResponseText: blank top-level output_text falls through --------
 
     @Test

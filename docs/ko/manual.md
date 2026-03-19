@@ -268,9 +268,178 @@ Python direct 예제는 `certifi` CA 번들을 사용합니다. 그래도 실패
 - 프록시가 `/v1/chat/completions` 또는 `/v1/responses`를 노출하는지
 - relay라면 upstream Proxy와 relay의 listen 주소가 모두 맞는지
 
-## 8. 요약
+## 8. web_search_preview — 일반 모델에 웹 검색 켜기
+
+`web_search_preview`는 OpenAI Responses API의 **내장 tool**로, `gpt-4o` 같은 일반 모델에도 실시간 웹 검색 능력을 부여합니다.
+
+### 동작 원리
+
+```
+요청: POST /v1/responses
+{
+  "model": "gpt-4o",
+  "input": "짜장면의 역사를 웹 검색으로 정리해줘",
+  "tools": [{"type": "web_search_preview"}]
+}
+```
+
+- 모델이 필요하다고 판단하면 자동으로 웹 검색을 수행하고 결과를 응답에 반영합니다.
+- 검색 결과 URL이 출처로 인용되어 답변에 포함될 수 있습니다.
+- `o3-deep-research`는 자체적으로 심층 조사를 수행하므로 이 tool이 불필요하지만, `gpt-4o` 같은 범용 모델에서 최신 정보가 필요할 때 유용합니다.
+
+> **주의:** LiteLLM Proxy 설정에서 해당 모델에 대해 `web_search_preview` tool이 허용되어야 합니다.
+
+### Python — `--web-search` 플래그
+
+```bash
+# --api responses 와 함께 사용
+uv run python -m litellm_example \
+  --api responses \
+  --web-search \
+  --timeout 60 \
+  "짜장면의 역사를 웹 검색으로 3문단 정리해줘"
+```
+
+코드에서 직접 사용:
+
+```python
+from litellm_example.client import LiteLLMClient
+
+client = LiteLLMClient(base_url, api_key, model="gpt-4o")
+result = client.create_response(
+    "짜장면의 역사를 웹 검색으로 정리해줘",
+    tools=[{"type": "web_search_preview"}],
+)
+print(result)
+```
+
+> `--web-search`는 반드시 `--api responses`와 함께 사용해야 합니다. `--api chat`에는 적용되지 않습니다.
+
+### Java — `--web-search` 플래그
+
+```bash
+mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
+  -Dexec.args="--api responses --web-search --timeout 60 짜장면의 역사를 웹 검색으로 정리해줘"
+```
+
+코드에서 직접 사용:
+
+```java
+import example.litellm.LiteLlmClient;
+import java.util.List;
+import java.util.Map;
+
+LiteLlmClient client = new LiteLlmClient(baseUrl, apiKey, "gpt-4o");
+String result = client.createResponse(
+        "짜장면의 역사를 웹 검색으로 정리해줘",
+        false,
+        List.of(Map.of("type", "web_search_preview"))
+);
+System.out.println(result);
+```
+
+### 실제 호출 결과 예시 (gpt-4o + web_search_preview)
+
+```
+1. **짜장면의 기원**
+짜장면은 중국 산둥 지역의 전통 가정식인 '작장면(炸酱面)'에서 유래된 음식으로,
+1883년 인천항 개항 이후 한국에 들어오게 되었습니다. 산둥 출신 화교들은
+차이나타운 부근에서 춘장과 면을 이용해 간단히 만들어 먹기 시작했습니다.
+[출처: 나무위키]
+
+2. **한국식 짜장면으로의 변화**
+1948년, 영화식품의 왕송산이 춘장에 캐러멜을 첨가해 단맛을 강조한 '사자표 춘장'을
+출시하며 짜장면은 한국화의 결정적 계기를 마련했습니다. [출처: 네이버 블로그]
+
+3. **현대의 짜장면**
+졸업식·입학식 등 특별한 날의 상징이자 배달 음식의 대명사로 자리 잡았으며,
+간짜장·삼선짜장 등 다양한 변주로 세분화되어 있습니다. [출처: 티스토리 블로그]
+```
+
+---
+
+## 9. 작업 검증 이력 — '짜장면의 역사' 실호출
+
+이 저장소가 실제로 동작함을 검증하기 위해 다음 5가지 경로로 모두 성공 확인했습니다.
+
+### 9-1. Python `--api chat` (gpt-4o)
+
+```bash
+cd clients/python
+LITELLM_MODEL=gpt-4o uv run python -m litellm_example \
+  --api chat --timeout 60 "짜장면의 역사를 3문단으로 설명해줘"
+```
+
+> 인천 차이나타운 기원(19세기 말) → 달짝지근한 춘장으로 한국화 → 1960~70년대 배달문화와 결합해 국민 외식 메뉴로 대중화 → 이사·졸업식·블랙데이 상징 음식으로 정착
+
+### 9-2. Python `--api responses` (gpt-4o)
+
+```bash
+LITELLM_MODEL=gpt-4o uv run python -m litellm_example \
+  --api responses --timeout 60 "짜장면의 역사를 간략히 설명해줘"
+```
+
+> 1900년대 초 인천 화교들이 중국 작장면을 한국인 입맛에 맞게 변형(카라멜·춘장) → 1950~60년대 저렴한 한 끼 외식으로 전국 확산
+
+### 9-3. Java `--api chat` (gpt-4o)
+
+```bash
+cd clients/java
+LITELLM_MODEL=gpt-4o mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
+  -Dexec.args="--api chat --timeout 60 짜장면의 역사를 3문단으로 설명해줘"
+```
+
+> 산둥 이주 노동자들이 인천 차이나타운 중심으로 한국화 시작 → 간장 대신 춘장+설탕의 달콤한 소스로 변형, 채소·고기 풍성하게 추가 → 1960~70년대 배달문화와 결합
+
+### 9-4. Java `--api responses` (gpt-4o)
+
+```bash
+LITELLM_MODEL=gpt-4o mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
+  -Dexec.args="--api responses --timeout 60 짜장면의 역사를 간략히 설명해줘"
+```
+
+> 산둥 출신 화교들이 19세기 말~20세기 초 작장면 전래 → 춘장+기름볶음+감자·당근·양파로 풍부한 맛 완성 → 1960~70년대 배달 외식 대표 메뉴, 독자적 한국 음식으로 정착
+
+### 9-5. Java `--target relay` (gpt-4o, relay 서버 경유)
+
+```bash
+# 터미널 A: relay 서버 시작
+cd relay && uv run python -m litellm_relay
+
+# 터미널 B: Java relay 호출
+LITELLM_MODEL=gpt-4o RELAY_BASE_URL=http://127.0.0.1:8080 \
+mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
+  -Dexec.args="--target relay --timeout 60 짜장면의 역사를 간략히 설명해줘"
+```
+
+> 1883년 인천항 개항 시 산둥 화교 이주 → 1905년 공화춘(共和春) 개점으로 첫 공식 판매 → 1950~60년대 춘장 개선·외식 산업 발전으로 대중화 → 블랙데이(4월 14일) 문화와 결합, 역사와 문화를 담은 대표 퓨전 요리로 자리매김
+
+### 9-6. Python `--api responses --web-search` (gpt-4o + 웹 검색)
+
+```bash
+LITELLM_MODEL=gpt-4o uv run python -m litellm_example \
+  --api responses --web-search --timeout 60 \
+  "짜장면의 역사를 웹 검색으로 3문단 정리해줘"
+```
+
+> 웹 검색 결과를 실시간으로 반영해 나무위키·네이버 블로그 등 출처와 함께 답변 반환. 공화춘(1905년) 개점, 사자표 춘장(1948년), 1960~70년대 분식 장려 운동 시기별 사실이 출처 URL과 함께 정확히 인용됨.
+
+### 9-7. Java `--api responses --web-search` (gpt-4o + 웹 검색)
+
+```bash
+LITELLM_MODEL=gpt-4o mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
+  -Dexec.args="--api responses --web-search --timeout 60 짜장면의 역사를 웹 검색으로 간략히"
+```
+
+> 웹 검색 기반으로 나무위키·위키백과 출처 인용하며 짜장면의 기원·한국화·대중화 3단계를 정확히 서술.
+
+---
+
+## 10. 요약
 
 - direct Python/Java 예제는 OpenAI 호환 `chat/completions`, `responses`, `background: true`를 지원합니다.
+- `--web-search` 플래그로 `web_search_preview` tool을 켜면 일반 모델(gpt-4o 등)에도 실시간 웹 검색을 추가할 수 있습니다.
+- `--timeout <초>`로 응답 대기 시간을 조정할 수 있습니다 (기본값 30초, o3-deep-research는 300초 이상 권장).
 - relay 예제는 LiteLLM Python SDK + FastAPI + Hypercorn으로 구현되어 있습니다.
 - Java는 `--target relay` 모드로 relay를 호출할 수 있습니다.
 - relay 외부 계약은 `tool_name` + 구조화된 `arguments` 중심이며, raw upstream `input`은 내부에만 존재합니다.

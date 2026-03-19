@@ -67,10 +67,14 @@ def test_main_calls_responses_api_when_requested(
     captured: dict[str, object] = {}
 
     def fake_create_response(
-        self: LiteLLMClient, prompt: str, background: bool = False
+        self: LiteLLMClient,
+        prompt: str,
+        background: bool = False,
+        tools: object = None,
     ) -> str:
         captured["api"] = "responses"
         captured["background"] = background
+        captured["tools"] = tools
         return "responses answer"
 
     monkeypatch.setattr(
@@ -84,6 +88,7 @@ def test_main_calls_responses_api_when_requested(
     assert exit_code == 0
     assert captured["api"] == "responses"
     assert captured["background"] is False
+    assert captured["tools"] is None
 
 
 def test_main_passes_background_flag_to_responses_api(
@@ -92,7 +97,10 @@ def test_main_passes_background_flag_to_responses_api(
     captured: dict[str, object] = {}
 
     def fake_create_response(
-        self: LiteLLMClient, prompt: str, background: bool = False
+        self: LiteLLMClient,
+        prompt: str,
+        background: bool = False,
+        tools: object = None,
     ) -> str:
         captured["background"] = background
         return '{"id": "resp_1", "status": "queued"}'
@@ -182,3 +190,45 @@ def test_main_passes_custom_timeout_to_client(monkeypatch: pytest.MonkeyPatch) -
 
     assert exit_code == 0
     assert captured["timeout"] == 120.0
+
+
+def test_main_passes_web_search_tool_to_responses_api(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """--web-search attaches web_search_preview tool to the responses call."""
+    captured: dict[str, object] = {}
+
+    def fake_create_response(
+        self: LiteLLMClient,
+        prompt: str,
+        background: bool = False,
+        tools: object = None,
+    ) -> str:
+        captured["tools"] = tools
+        return "web search answer"
+
+    monkeypatch.setattr(
+        "litellm_example.__main__.load_settings",
+        lambda dotenv_path=None: _make_settings(),
+    )
+    monkeypatch.setattr(LiteLLMClient, "create_response", fake_create_response)
+
+    exit_code = main(["--api", "responses", "--web-search", "짜장면의 역사를 검색해줘"])
+
+    assert exit_code == 0
+    assert isinstance(captured["tools"], list)
+    assert captured["tools"][0]["type"] == "web_search_preview"
+
+
+def test_main_rejects_web_search_without_responses_api(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """--web-search without --api responses must fail fast."""
+    monkeypatch.setattr(
+        "litellm_example.__main__.load_settings",
+        lambda dotenv_path=None: _make_settings(),
+    )
+
+    exit_code = main(["--web-search", "some prompt"])
+
+    assert exit_code == 1

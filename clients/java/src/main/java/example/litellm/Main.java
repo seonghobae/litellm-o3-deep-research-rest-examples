@@ -11,6 +11,7 @@ public final class Main {
         String api = "chat";
         boolean background = false;
         boolean stream = false;
+        boolean webSearch = false;
         String deliverableFormat = "markdown_brief";
         Duration timeout = Duration.ofSeconds(30);
 
@@ -21,6 +22,7 @@ public final class Main {
                 case "--api" -> api = requireOptionValue(args, ++i, "--api");
                 case "--background" -> background = true;
                 case "--stream" -> stream = true;
+                case "--web-search" -> webSearch = true;
                 case "--deliverable-format" -> deliverableFormat = requireOptionValue(args, ++i, "--deliverable-format");
                 case "--timeout" -> timeout = Duration.ofSeconds(Long.parseLong(requireOptionValue(args, ++i, "--timeout")));
                 default -> promptParts.add(args[i]);
@@ -33,6 +35,9 @@ public final class Main {
 
         if (background && stream) {
             throw new IllegalArgumentException("--background and --stream cannot be combined.");
+        }
+        if (webSearch && !"responses".equals(api)) {
+            throw new IllegalArgumentException("--web-search can only be used with --api responses.");
         }
 
         String content;
@@ -49,9 +54,14 @@ public final class Main {
 
             EnvConfig config = EnvConfig.loadDefault();
             LiteLlmClient client = new LiteLlmClient(config.baseUrl(), config.apiKey(), config.model(), timeout);
-            content = "responses".equals(api)
-                    ? client.createResponse(prompt, background)
-                    : client.createChatCompletion(prompt);
+            if ("responses".equals(api)) {
+                java.util.List<java.util.Map<String, Object>> tools = webSearch
+                        ? java.util.List.of(java.util.Map.of("type", "web_search_preview"))
+                        : null;
+                content = client.createResponse(prompt, background, tools);
+            } else {
+                content = client.createChatCompletion(prompt);
+            }
         }
 
         System.out.println(content);

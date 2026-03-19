@@ -81,15 +81,33 @@ public final class LiteLlmClient {
     }
 
     public String createResponse(String prompt) {
-        return createResponse(prompt, false);
+        return createResponse(prompt, false, null);
     }
 
     public String createResponse(String prompt, boolean background) {
+        return createResponse(prompt, background, null);
+    }
+
+    /**
+     * Send a Responses API request with optional server-side tools.
+     *
+     * <p>Pass {@code tools = List.of(Map.of("type", "web_search_preview"))} to
+     * enable real-time web search on models that support it (e.g. gpt-4o).
+     * The LiteLLM Proxy must also have the tool enabled for the target model.
+     *
+     * @param prompt     user prompt
+     * @param background submit as a background job and return raw metadata
+     * @param tools      optional list of tool descriptors; {@code null} omits the field
+     */
+    public String createResponse(String prompt, boolean background, java.util.List<Map<String, Object>> tools) {
         Map<String, Object> requestPayload = new java.util.LinkedHashMap<>();
         requestPayload.put("model", model);
         requestPayload.put("input", prompt);
         if (background) {
             requestPayload.put("background", true);
+        }
+        if (tools != null && !tools.isEmpty()) {
+            requestPayload.put("tools", tools);
         }
 
         JsonNode payload = postJson(

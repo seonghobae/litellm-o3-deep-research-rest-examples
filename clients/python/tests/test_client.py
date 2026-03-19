@@ -637,3 +637,56 @@ def test_responses_api_raises_when_all_blocks_skipped(
 
     assert excinfo.value.status == 200
     assert "usable" in str(excinfo.value).lower()
+
+
+# --------------------------------------------------------------------------- #
+# web_search_preview tool support                                             #
+# --------------------------------------------------------------------------- #
+
+
+def test_responses_api_includes_tools_when_provided(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """tools=[...] is forwarded in the request body."""
+    captured: dict[str, object] = {}
+
+    def fake_urlopen(req, timeout=None, context=None):  # type: ignore[override]
+        captured["body"] = json.loads(req.data.decode("utf-8"))  # type: ignore[attr-defined]
+        body = json.dumps({"output_text": "search result"}).encode()
+        return FakeResponse(body, status=200)
+
+    from litellm_example import client as client_module
+
+    monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
+
+    c = LiteLLMClient("https://example.com", "sk-test", model="gpt-4o")
+    text = c.create_response(
+        "짜장면의 역사",
+        tools=[{"type": "web_search_preview"}],
+    )
+
+    assert text == "search result"
+    body = captured["body"]
+    assert isinstance(body, dict)
+    assert body["tools"] == [{"type": "web_search_preview"}]
+
+
+def test_responses_api_omits_tools_when_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """tools is NOT included in the request body when None."""
+    captured: dict[str, object] = {}
+
+    def fake_urlopen(req, timeout=None, context=None):  # type: ignore[override]
+        captured["body"] = json.loads(req.data.decode("utf-8"))  # type: ignore[attr-defined]
+        body = json.dumps({"output_text": "no-tools result"}).encode()
+        return FakeResponse(body, status=200)
+
+    from litellm_example import client as client_module
+
+    monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
+
+    c = LiteLLMClient("https://example.com", "sk-test", model="gpt-4o")
+    c.create_response("Hello", tools=None)
+
+    assert "tools" not in captured["body"]

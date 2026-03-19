@@ -84,6 +84,44 @@ class MainTest {
                 () -> Main.main(new String[] {"--timeout"}));
     }
 
+    @Test
+    void webSearchFlagRequiresResponsesApi() {
+        // --web-search without --api responses must fail fast.
+        assertThrows(IllegalArgumentException.class,
+                () -> Main.main(new String[] {"--web-search", "some prompt"}));
+    }
+
+    @Test
+    void webSearchFlagSendsWebSearchPreviewTool() throws Exception {
+        // Verify the web-search routing by exercising LiteLlmClient directly
+        // (same pattern as other routing tests - Main.main env-var coupling
+        // cannot be controlled in-process).
+        java.util.concurrent.atomic.AtomicReference<String> capturedBody =
+                new java.util.concurrent.atomic.AtomicReference<>();
+
+        server.createContext("/v1/responses", exchange -> {
+            capturedBody.set(new String(exchange.getRequestBody().readAllBytes(),
+                    java.nio.charset.StandardCharsets.UTF_8));
+            writeJson(exchange, 200,
+                    "{\"output\":[{\"content\":[{\"type\":\"output_text\","
+                            + "\"text\":\"짜장면 결과\"}]}]}");
+        });
+
+        EnvConfig cfg = EnvConfig.load(
+                tempDir.resolve(".env"),
+                java.util.Map.of("LITELLM_BASE_URL", baseUrl, "LITELLM_API_KEY", "sk-test"));
+        LiteLlmClient client = new LiteLlmClient(cfg.baseUrl(), cfg.apiKey(), cfg.model());
+
+        // Same logic as Main.main's --web-search branch
+        String result = client.createResponse(
+                "짜장면의 역사",
+                false,
+                java.util.List.of(java.util.Map.of("type", "web_search_preview")));
+
+        assertEquals("짜장면 결과", result);
+        assertEquals(true, capturedBody.get().contains("web_search_preview"));
+    }
+
     private void writeDotenv(String content) throws java.io.IOException {
         java.nio.file.Files.writeString(tempDir.resolve(".env"), content, StandardCharsets.UTF_8);
     }

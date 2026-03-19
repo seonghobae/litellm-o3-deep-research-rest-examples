@@ -23,6 +23,16 @@ def main(argv: list[str] | None = None) -> int:
         help="Request server-side background processing for the responses API.",
     )
     parser.add_argument(
+        "--web-search",
+        action="store_true",
+        dest="web_search",
+        help=(
+            "Attach the web_search_preview tool to a responses API call.  "
+            "Requires --api responses.  Enables real-time web search on "
+            "models that support it (e.g. gpt-4o)."
+        ),
+    )
+    parser.add_argument(
         "--timeout",
         type=float,
         default=30.0,
@@ -41,6 +51,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.background and args.api != "responses":
             raise ValueError("--background can only be used with --api responses.")
+        if args.web_search and args.api != "responses":
+            raise ValueError("--web-search can only be used with --api responses.")
 
         settings = load_settings()
         client = LiteLLMClient(
@@ -50,7 +62,10 @@ def main(argv: list[str] | None = None) -> int:
             timeout=args.timeout,
         )
         if args.api == "responses":
-            content = client.create_response(args.prompt, background=args.background)
+            tools = [{"type": "web_search_preview"}] if args.web_search else None
+            content = client.create_response(
+                args.prompt, background=args.background, tools=tools
+            )
         else:
             content = client.create_chat_completion(args.prompt)
     except (RuntimeError, ValueError, LiteLLMError) as exc:

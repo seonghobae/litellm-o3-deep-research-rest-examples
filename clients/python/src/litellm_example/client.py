@@ -113,21 +113,33 @@ class LiteLLMClient:
         parsed = self._post_json(self._chat_url(), payload)
         return self._extract_content(parsed)
 
-    def create_response(self, prompt: str, background: bool = False) -> str:
+    def create_response(
+        self,
+        prompt: str,
+        background: bool = False,
+        tools: list[Dict[str, Any]] | None = None,
+    ) -> str:
         """Send a minimal OpenAI-compatible responses API request.
 
         This uses ``POST /v1/responses`` with a small payload that LiteLLM can
         proxy for the configured model. The first usable text output is returned
         for foreground execution. When ``background=True`` is set, the raw JSON
         response is returned so callers can inspect identifiers and status.
+
+        Pass ``tools=[{"type": "web_search_preview"}]`` to enable live web
+        search on models that support it (e.g. ``gpt-4o``).  The LiteLLM Proxy
+        must also have the ``web_search_preview`` tool enabled for the target
+        model.
         """
 
-        payload = {
+        payload: Dict[str, Any] = {
             "model": self._model,
             "input": prompt,
         }
         if background:
             payload["background"] = True
+        if tools:
+            payload["tools"] = tools
 
         parsed = self._post_json(self._responses_url(), payload)
         if background:
