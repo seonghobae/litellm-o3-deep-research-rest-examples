@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from litellm_relay.__main__ import build_hypercorn_config
+from litellm_relay.__main__ import build_hypercorn_config, main
 from litellm_relay.config import RelaySettings, load_settings
 
 
@@ -101,3 +102,29 @@ def test_main_builds_hypercorn_bind_from_settings() -> None:
     config = build_hypercorn_config(settings)
 
     assert config.bind == ["0.0.0.0:9090"]
+
+
+def test_main_starts_hypercorn_and_returns_zero(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Verify that main() wires load_settings -> create_app -> serve correctly.
+
+    We do not start a real server; asyncio.run and serve are replaced with
+    lightweight stubs.
+    """
+    dotenv = tmp_path / ".env"
+    dotenv.write_text(
+        "LITELLM_BASE_URL=https://dummy.test/v1\nLITELLM_API_KEY=sk-dummy\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("LITELLM_BASE_URL", "https://dummy.test/v1")
+    monkeypatch.setenv("LITELLM_API_KEY", "sk-dummy")
+
+    serve_mock = MagicMock(return_value=AsyncMock())
+
+    with patch("litellm_relay.__main__.serve", serve_mock):
+        with patch("litellm_relay.__main__.asyncio.run") as run_mock:
+            result = main()
+
+    assert result == 0
+    run_mock.assert_called_once()

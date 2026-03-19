@@ -94,6 +94,53 @@ class RelayClientTest {
         assertEquals("Hello world", streamed);
     }
 
+    @Test
+    void streams_text_ignores_non_output_text_sse_events() throws Exception {
+        server.createContext("/api/v1/tool-invocations", exchange -> writeJson(exchange, 202, """
+                {"invocation_id":"inv_ignore_123","mode":"stream","status":"pending","deliverable_format":"markdown_brief"}
+                """));
+        server.createContext("/api/v1/tool-invocations/inv_ignore_123/events", exchange -> writeText(exchange, 200, "text/event-stream", """
+                event: status
+                data: {"invocation_id":"inv_ignore_123","type":"status","status":"pending","data":{"mode":"stream"}}
+
+                event: output_text
+                data: {"invocation_id":"inv_ignore_123","type":"output_text","status":"running","data":{"text":"Only this"}}
+
+                event: completed
+                data: {"invocation_id":"inv_ignore_123","type":"completed","status":"completed","data":{"output_text":"Only this"}}
+
+                """));
+
+        example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
+        String streamed = client.invokeDeepResearch("Stream relay ignoring events", "markdown_brief", false, true);
+
+        // status and completed events have no "text" field; only the output_text event contributes text.
+        assertEquals("Only this", streamed);
+    }
+
+    @Test
+    void streams_text_raises_api_exception_on_malformed_json_sse_frame() throws Exception {
+        server.createContext("/api/v1/tool-invocations", exchange -> writeJson(exchange, 202, """
+                {"invocation_id":"inv_malformed_123","mode":"stream","status":"pending","deliverable_format":"markdown_brief"}
+                """));
+        server.createContext("/api/v1/tool-invocations/inv_malformed_123/events", exchange -> writeText(exchange, 200, "text/event-stream", """
+                event: output_text
+                data: {this is not valid json}
+
+                """));
+
+        example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
+
+        var exception = org.junit.jupiter.api.Assertions.assertThrows(
+                ApiException.class,
+                () -> client.invokeDeepResearch("Trigger malformed SSE", "markdown_brief", false, true)
+        );
+
+        assertEquals("Relay returned invalid SSE JSON.", exception.getMessage());
+        // Sensitive payload must be redacted in the body exposed by the exception.
+        assertEquals("[redacted]", exception.responseBody());
+    }
+
     private static void writeJson(HttpExchange exchange, int status, String payload) throws IOException {
         writeText(exchange, status, "application/json", payload);
     }

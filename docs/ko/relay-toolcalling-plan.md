@@ -424,3 +424,11 @@ mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--target rel
 
 즉, 단순히 설계 문서만 있는 상태가 아니라,
 **실제 코드 + 테스트 + CI + 문서 + 런타임 검증**까지 모두 닫혀야 완료입니다.
+
+---
+
+> ✅ **구현 완료 (2026-03-19)**
+>
+> 위 완료 기준이 모두 충족되었습니다. `relay/` 예제는 현재 `main` 브랜치에
+> 구현·테스트·CI·문서화까지 완전히 통합된 상태입니다. 최신 사용법과 API 계약은
+> `docs/ko/relay-example.md`와 `docs/ko/manual.md`를 참고하세요.
