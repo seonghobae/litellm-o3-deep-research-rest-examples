@@ -1529,6 +1529,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#13-5-timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13-5. Timeout 설정 (중요)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2481,6 +2492,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#13-5-timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13-5. Timeout 설정 (중요)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3224,6 +3246,31 @@
 <li><strong>o3-deep-research</strong> (실제 연구): function calling 미지원 — 항상 피호출자</li>
 <li>orchestration 모델은 <code>LITELLM_CHAT_MODEL</code> 환경변수로 지정 (기본 <code>gpt-4o</code>)</li>
 </ul>
+<h3 id="13-5-timeout">13-5. Timeout 설정 (중요)<a class="headerlink" href="#13-5-timeout" title="Permanent link">&para;</a></h3>
+<p><code>/api/v1/chat</code>은 두 가지 독립 timeout을 사용합니다.</p>
+<table>
+<thead>
+<tr>
+<th>환경변수</th>
+<th>기본값</th>
+<th>적용 대상</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>RELAY_TIMEOUT_SECONDS</code></td>
+<td><code>30</code></td>
+<td>Chat Completions turns</td>
+</tr>
+<tr>
+<td><code>RELAY_RESEARCH_TIMEOUT_SECONDS</code></td>
+<td><code>300</code></td>
+<td>deep_research 실행</td>
+</tr>
+</tbody>
+</table>
+<p>relay 기동 시 <code>RELAY_RESEARCH_TIMEOUT_SECONDS</code>를 모델 특성에 맞게 조정하세요.
+<code>o3-deep-research</code>는 최대 10분 이상 소요될 수 있습니다.</p>
 
 
 
