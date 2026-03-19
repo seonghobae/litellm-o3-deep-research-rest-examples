@@ -203,7 +203,86 @@ curl -X POST http://127.0.0.1:8080/api/v1/chat \
 
 `context` 배열은 user 메시지 앞에 붙어서 모델에게 추가 맥락을 제공합니다.
 
-### 4-4. Java relay 클라이언트에서 사용
+### 4-4. system_prompt — deep_research에 페르소나·언어·형식 주입
+
+`system_prompt` 필드는 deep_research 실행 시 Responses API `instructions` 필드로 전달됩니다. 모델이 연구 결과를 생성할 때 페르소나·출력 언어·형식을 강제할 때 사용합니다.
+
+```bash
+# 항상 영어로 답변하도록 강제
+curl -X POST http://127.0.0.1:8080/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "짜장면의 역사를 자세히 알려줘",
+    "auto_tool_call": true,
+    "system_prompt": "Always answer in English only."
+  }'
+```
+
+**응답 예시:**
+```json
+{
+  "content": "The history of Jajangmyeon originates from the late 19th to early 20th centuries...",
+  "tool_called": true,
+  "tool_name": "deep_research",
+  "research_summary": "The history of Jajangmyeon originates from..."
+}
+```
+
+```bash
+# 초등학생 페르소나로 답변 요청
+curl -X POST http://127.0.0.1:8080/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "짜장면의 역사를 알려줘",
+    "auto_tool_call": true,
+    "system_prompt": "당신은 초등학생에게 설명하는 선생님입니다. 쉬운 말로 2문장으로만 답하세요."
+  }'
+```
+
+**응답 예시:**
+```json
+{
+  "content": "옛날 중국에서 먹던 작장면이 한국에 들어와 바뀌며 짜장면이 되었어요. 1900년대 초반 인천 차이나타운에서 처음 만들어졌답니다!",
+  "tool_called": true,
+  "tool_name": "deep_research",
+  "research_summary": "..."
+}
+```
+
+> **주의**: `system_prompt`는 deep_research tool이 실제로 호출될 때만 적용됩니다. 모델이 tool 없이 직접 답변하는 경우에는 영향을 주지 않습니다.
+
+| `system_prompt` 활용 패턴 | 예시 |
+|--------------------------|------|
+| 출력 언어 강제 | `"Always answer in English only."` |
+| 페르소나 주입 | `"당신은 초등학생 선생님입니다. 쉬운 말로 설명하세요."` |
+| 출력 길이 제한 | `"Answer in exactly two sentences."` |
+| 형식 강제 | `"Respond only with a numbered list. No prose."` |
+| 도메인 전문성 | `"You are a Korean food historian. Emphasize cultural context."` |
+
+### 4-5. deliverable_format — 산출물 형식 폴백 지정
+
+`deliverable_format` 필드는 deep_research 실행 시 산출물 형식의 **폴백** 값입니다. 모델이 tool call 인자에서 형식을 직접 지정하면 그 값이 우선됩니다.
+
+```bash
+# 상세 보고서 형식으로 요청
+curl -X POST http://127.0.0.1:8080/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "짜장면의 역사와 사회적 영향을 상세히 알려줘",
+    "auto_tool_call": true,
+    "deliverable_format": "markdown_report"
+  }'
+```
+
+| `deliverable_format` 값 | 설명 |
+|------------------------|------|
+| `"markdown_brief"` (기본값) | 간략한 마크다운 보고서 |
+| `"markdown_report"` | 상세 마크다운 보고서 |
+| `"json_outline"` | JSON 구조의 개요 |
+
+모델이 tool call 인자에서 `deliverable_format`을 지정하면 모델 지정값이 우선됩니다. 지정하지 않으면 이 필드의 값이 폴백으로 사용됩니다.
+
+### 4-6. Java relay 클라이언트에서 사용
 
 ```bash
 RELAY_BASE_URL=http://127.0.0.1:8080 \
@@ -211,7 +290,7 @@ mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
   -Dexec.args="--target relay --timeout 120 짜장면의 역사를 알려줘"
 ```
 
-또는 Java 코드에서 직접:
+또는 Java 코드에서 직접 (기본 2-인자 버전):
 
 ```java
 import example.litellm.relay.RelayClient;
@@ -225,7 +304,20 @@ if (result.toolCalled()) {
 }
 ```
 
-### 4-5. Relay 설정 — chat model과 timeout
+`system_prompt`와 `deliverable_format`을 지정하는 4-인자 버전:
+
+```java
+RelayClient client = new RelayClient("http://127.0.0.1:8080", Duration.ofSeconds(120));
+RelayClient.ChatResult result = client.invokeChat(
+    "짜장면의 역사를 자세히 알려줘",
+    true,                                  // auto_tool_call
+    "Always answer in English only.",      // system_prompt
+    "markdown_report"                      // deliverable_format (폴백)
+);
+System.out.println(result.content());
+```
+
+### 4-7. Relay 설정 — chat model과 timeout
 
 relay의 chat orchestration에 사용하는 모델은 `LITELLM_CHAT_MODEL` 환경변수로 지정합니다 (기본값 `gpt-4o`). deep_research 수행에는 기존 `LITELLM_MODEL`을 사용합니다.
 
@@ -235,7 +327,7 @@ LITELLM_MODEL=o3-deep-research \  # 실제 deep research용
 uv run python -m litellm_relay
 ```
 
-### 4-6. Timeout 설정 — chat timeout vs research timeout
+### 4-8. Timeout 설정 — chat timeout vs research timeout
 
 `/api/v1/chat` 엔드포인트는 두 가지 단계를 거치므로 timeout이 분리됩니다.
 
@@ -254,7 +346,7 @@ uv run python -m litellm_relay
 
 > **중요**: `RELAY_TIMEOUT_SECONDS`만 늘리면 Chat Completions는 빨라지지만 deep_research timeout은 여전히 기본 300초입니다. o3-deep-research를 사용할 때는 `RELAY_RESEARCH_TIMEOUT_SECONDS`를 조정하세요.
 
-### 4-7. 에러 처리
+### 4-9. 에러 처리
 
 deep_research 실행 중 오류가 발생하더라도 relay는 HTTP 500 대신 구조화된 `ChatResponse`를 반환합니다.
 
@@ -405,3 +497,5 @@ ChatOrchestrator.research_timeout_seconds → deep_research 실행 (300s 기본)
 | tool 호출 여부를 감추고 싶을 때 | Approach C |
 | deep_research가 필요한지 불확실한 대화 | Approach C (auto_tool_call=true) |
 | 항상 deep_research를 쓰고 싶을 때 | 기존 `POST /api/v1/tool-invocations` |
+| 연구 결과의 언어·페르소나를 제어하고 싶을 때 | Approach C + `system_prompt` |
+| 상세 보고서 형식을 원할 때 | Approach C + `deliverable_format="markdown_report"` |
