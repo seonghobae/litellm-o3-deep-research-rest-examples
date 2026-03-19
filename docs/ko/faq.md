@@ -59,7 +59,7 @@ relay의 `DeepResearchArguments.system_prompt`는 Responses API의 `instructions
 
 ## text_format 은 무엇인가요?
 
-relay의 `arguments.text_format`은 Responses API의 `text.format`에 매핑됩니다. API 레벨에서 JSON 출력을 강제합니다. `gpt-4o` 같은 호환 모델에서 지원되며, 기본 `o3-deep-research` 경로에서는 `json_object`, `json_schema` 모두 API 400 오류가 발생합니다.
+relay의 `arguments.text_format`은 Responses API의 `text.format`에 매핑됩니다. `gpt-4o` 같은 호환 모델에서는 JSON 출력을 강하게 제어할 수 있습니다. `o3-deep-research`는 `json_schema`를 API 400으로 거부하고, `json_object`는 API 레벨에서 수용될 수 있지만 실제 JSON object 준수는 보장되지 않습니다.
 
 ```json
 {

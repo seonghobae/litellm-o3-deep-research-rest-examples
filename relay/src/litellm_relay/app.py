@@ -1,3 +1,5 @@
+"""LiteLLM 릴레이용 FastAPI 애플리케이션을 구성한다."""
+
 from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException
@@ -19,17 +21,7 @@ def create_app(
     service: RelayService | None = None,
     settings: RelaySettings | None = None,
 ) -> FastAPI:
-    """Build and return the FastAPI application for the LiteLLM relay example.
-
-    Parameters
-    ----------
-    service:
-        Optional pre-built ``RelayService``.  Primarily used in tests to inject
-        a fake gateway without live credentials.
-    settings:
-        Optional pre-loaded settings.  When omitted, ``load_settings()`` is
-        called so that environment variables or ``~/.env`` are used.
-    """
+    """LiteLLM 릴레이 예제용 FastAPI 애플리케이션을 생성한다."""
     settings = settings or load_settings()
     service = service or RelayService(
         LiteLLMRelayGateway(
@@ -56,6 +48,7 @@ def create_app(
     async def create_tool_invocation(
         payload: ToolInvocationRequest,
     ) -> JSONResponse | ToolInvocationView:
+        """도구 호출을 생성하고 즉시 반환 가능한 상태를 응답한다."""
         status_code, result = await service.create_invocation(payload)
         if status_code == 200:
             return result
@@ -65,6 +58,7 @@ def create_app(
         "/api/v1/tool-invocations/{invocation_id}", response_model=ToolInvocationView
     )
     async def get_tool_invocation(invocation_id: str) -> ToolInvocationView:
+        """현재 도구 호출 상태를 조회한다."""
         try:
             return await service.get_invocation(invocation_id)
         except InvocationNotFoundError as exc:
@@ -75,6 +69,7 @@ def create_app(
         response_model=ToolInvocationView,
     )
     async def wait_for_tool_invocation(invocation_id: str) -> ToolInvocationView:
+        """도구 호출이 끝날 때까지 기다린 뒤 최종 상태를 반환한다."""
         try:
             return await service.wait_for_invocation(invocation_id)
         except InvocationNotFoundError as exc:
@@ -82,6 +77,7 @@ def create_app(
 
     @app.get("/api/v1/tool-invocations/{invocation_id}/events")
     async def stream_tool_invocation_events(invocation_id: str) -> StreamingResponse:
+        """도구 호출의 SSE 이벤트 스트림을 연다."""
         try:
             await service.get_invocation(invocation_id)
         except InvocationNotFoundError as exc:
@@ -93,6 +89,7 @@ def create_app(
 
     @app.post("/api/v1/chat", response_model=ChatResponse)
     async def chat(payload: ChatRequest) -> ChatResponse:
+        """자동 도구 호출을 포함한 채팅 요청을 처리한다."""
         return await orchestrator_instance.chat(payload)
 
     return app

@@ -1,3 +1,5 @@
+"""LiteLLM 릴레이의 요청·응답 계약 모델을 정의한다."""
+
 from __future__ import annotations
 
 from typing import Any, Literal
@@ -15,22 +17,13 @@ InvocationStatus = Literal["pending", "queued", "running", "completed", "failed"
 
 
 class TextFormatJsonObject(BaseModel):
-    """Request JSON-object mode: the model MUST return a valid JSON object.
-
-    Supported by: gpt-4o and most chat models via the Responses API.
-    **Not** supported by o3-deep-research (raises 400 if used with that model).
-    """
+    """유효한 JSON 객체 응답을 요구하는 출력 형식이다."""
 
     type: Literal["json_object"] = "json_object"
 
 
 class TextFormatJsonSchema(BaseModel):
-    """Request strict JSON schema mode: the model output must validate against
-    the supplied JSON Schema.
-
-    Supported by: gpt-4o and compatible models.
-    **Not** supported by o3-deep-research (raises 400 if used with that model).
-    """
+    """지정된 JSON 스키마를 강제하는 구조화 출력 형식이다."""
 
     type: Literal["json_schema"] = "json_schema"
     name: str
@@ -41,7 +34,7 @@ class TextFormatJsonSchema(BaseModel):
 
 
 class TextFormatText(BaseModel):
-    """Explicit plain-text mode (default when omitted)."""
+    """명시적인 일반 텍스트 출력 형식이다."""
 
     type: Literal["text"] = "text"
 
@@ -50,46 +43,7 @@ TextFormat = TextFormatJsonObject | TextFormatJsonSchema | TextFormatText
 
 
 class DeepResearchArguments(BaseModel):
-    """Structured arguments for a deep-research tool invocation.
-
-    These fields form the public contract exposed by the relay.  The relay
-    translates them into a LiteLLM Responses API request internally so that
-    callers never need to know the upstream ``input`` string format.
-
-    Prompt construction
-    -------------------
-    The relay uses the Responses API, which separates model-level instructions
-    from the user-facing question:
-
-    * **system_prompt** maps to the Responses API ``instructions`` field (the
-      system / developer layer that shapes model behaviour, e.g. persona,
-      output language, answer format).  When omitted the relay sends no
-      ``instructions`` and the model uses its default behaviour.
-
-    * **research_question** (+ ``context``, ``constraints``,
-      ``deliverable_format``, ``require_citations``) are rendered into the
-      ``input`` string, which is the user turn passed to the model.
-
-    This separation is semantically equivalent to the ``system`` / ``user``
-    split in the Chat Completions API and the ``developer`` / ``user`` roles
-    in the Responses API message-array format.
-
-    Structured output (text_format)
-    --------------------------------
-    ``text_format`` maps directly to the Responses API ``text.format`` object.
-    Use this when you need machine-readable JSON instead of markdown prose.
-
-    * ``{"type": "json_object"}`` — the model MUST return a valid JSON object.
-      Supported by gpt-4o and similar models.  **Not** supported by
-      o3-deep-research (the upstream API returns HTTP 400).
-    * ``{"type": "json_schema", "name": "...", "schema": {...}, "strict": true}``
-      — strict schema validation.  Same model support constraints as
-      ``json_object``.
-    * ``null`` (default) — plain text / markdown.
-
-    When ``text_format`` is set the relay passes
-    ``text={"format": <text_format_dict>}`` to ``litellm.responses()``.
-    """
+    """deep_research 도구 호출에 사용되는 구조화 인자다."""
 
     research_question: str
     system_prompt: str | None = Field(
@@ -120,20 +74,21 @@ class DeepResearchArguments(BaseModel):
 
     @model_validator(mode="after")
     def validate_execution_mode(self) -> DeepResearchArguments:
+        """background와 stream이 동시에 켜지지 않았는지 검증한다."""
         if self.background and self.stream:
             raise ValueError("background and stream cannot both be true")
         return self
 
 
 class ToolInvocationRequest(BaseModel):
-    """Inbound request payload for ``POST /api/v1/tool-invocations``."""
+    """``POST /api/v1/tool-invocations`` 요청 본문이다."""
 
     tool_name: Literal["deep_research"]
     arguments: DeepResearchArguments
 
 
 class ToolInvocationView(BaseModel):
-    """Outbound response shape for all tool-invocation endpoints."""
+    """도구 호출 관련 모든 응답 엔드포인트의 공통 응답 모델이다."""
 
     model_config = ConfigDict(extra="ignore")
 
@@ -149,7 +104,7 @@ class ToolInvocationView(BaseModel):
 
 
 class ToolInvocationEvent(BaseModel):
-    """A single SSE frame emitted by ``GET /api/v1/tool-invocations/{id}/events``."""
+    """도구 호출 이벤트 스트림에서 방출되는 단일 SSE 프레임이다."""
 
     invocation_id: str
     type: Literal["status", "output_text", "completed", "error"]
@@ -158,23 +113,7 @@ class ToolInvocationEvent(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    """Inbound payload for ``POST /api/v1/chat``.
-
-    The relay uses the ``message`` as the user turn in a Chat Completions
-    request with a ``deep_research`` function tool attached.  When the model
-    decides the question warrants deep research it returns a tool call; the
-    relay executes the research and performs a second completions turn to
-    produce the final natural-language answer.
-
-    Optional fields ``system_prompt`` and ``deliverable_format`` let callers
-    control the deep_research invocation when the model triggers it:
-
-    * **system_prompt** is forwarded to ``DeepResearchArguments.system_prompt``
-      which maps to the Responses API ``instructions`` field.  Use it to set
-      a persona, output language, or answer format for the research step.
-    * **deliverable_format** is used as the fallback format when the Chat
-      Completions model does not specify one in its tool-call arguments.
-    """
+    """``POST /api/v1/chat`` 요청 본문이다."""
 
     message: str
     context: list[str] = Field(default_factory=list)
@@ -198,7 +137,7 @@ class ChatRequest(BaseModel):
 
 
 class ChatResponse(BaseModel):
-    """Outbound payload for ``POST /api/v1/chat``."""
+    """``POST /api/v1/chat`` 응답 본문이다."""
 
     content: str
     tool_called: bool

@@ -29,11 +29,11 @@ Work in this repository is complete only when all of the following are true:
 
 ## text_format (structured output)
 
-11. The relay wrapper supports `text_format` (`json_object` or `json_schema`) mapped to the Responses API `text.format` field for machine-readable JSON output. gpt-4o fully supports both; o3-deep-research does not support `json_schema` (API 400).
+11. The relay wrapper supports `text_format` (`json_object` or `json_schema`) mapped to the Responses API `text.format` field for machine-readable JSON output. gpt-4o fully supports both; o3-deep-research rejects `json_schema` with API 400, while `json_object` may be accepted at the API layer without guaranteed model compliance.
 
 ## Auto tool-calling (function calling)
 
-12. Python and Java direct clients support `--auto-tool-call` flag: the client sends a Chat Completions request with the `deep_research` function schema attached; if the model calls it, the client invokes the relay (`POST /api/v1/chat`) to execute the research and then runs a second completions turn.
+12. Python and Java direct clients support `--auto-tool-call` flag: the client sends a Chat Completions request with the `deep_research` function schema attached; if the model calls it, the client delegates to relay-side chat orchestration via `POST /api/v1/chat` and then runs a second completions turn.
 13. The relay exposes `POST /api/v1/chat` which internally performs relay-side orchestration: 1st Chat Completions turn → tool call detection → deep_research execution → 2nd completions turn → structured `ChatResponse`. The relay uses `LITELLM_CHAT_MODEL` (default `gpt-4o`) for orchestration turns and `LITELLM_MODEL` for deep research.
 14. The relay `ChatOrchestrator` uses separate timeouts: `RELAY_TIMEOUT_SECONDS` (default 30 s) for Chat Completions turns and `RELAY_RESEARCH_TIMEOUT_SECONDS` (default 300 s) for deep_research execution.
 15. Upstream errors in auto tool-calling are caught and returned as a structured `ChatResponse` (not bare HTTP 500).

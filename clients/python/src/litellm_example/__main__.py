@@ -1,3 +1,5 @@
+"""LiteLLM 예제 클라이언트 CLI 진입점을 제공한다."""
+
 from __future__ import annotations
 
 import argparse
@@ -9,6 +11,7 @@ from .client import LiteLLMClient, LiteLLMError
 
 
 def main(argv: list[str] | None = None) -> int:
+    """명령줄 인자를 파싱해 LiteLLM 요청을 실행한다."""
     parser = argparse.ArgumentParser(
         description="Call a LiteLLM o3-deep-research model via REST.",
     )

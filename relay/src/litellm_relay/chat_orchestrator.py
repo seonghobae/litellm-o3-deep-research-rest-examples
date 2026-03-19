@@ -1,3 +1,5 @@
+"""채팅과 deep_research 도구 호출 흐름을 조율한다."""
+
 from __future__ import annotations
 
 import asyncio
@@ -39,45 +41,7 @@ DEEP_RESEARCH_TOOL_SCHEMA: dict[str, Any] = {
 
 
 class ChatOrchestrator:
-    """Relay-side orchestration for automatic deep_research tool calling.
-
-    Flow
-    ----
-    1. Build a Chat Completions request with the ``deep_research`` function
-       tool attached (when ``request.auto_tool_call`` is True).
-    2. If the model responds with ``finish_reason == "tool_calls"`` for
-       ``deep_research``, execute the research via the upstream relay gateway.
-    3. Append the tool result to the conversation and send a second Chat
-       Completions request to obtain the final natural-language answer.
-    4. Return a :class:`~litellm_relay.contracts.ChatResponse` capturing
-       whether a tool was called and, if so, the research summary.
-
-    Timeout split
-    -------------
-    ``timeout_seconds`` governs Chat Completions turns (fast, typically <30 s).
-    ``research_timeout_seconds`` governs the deep_research invocation
-    (slow — ``o3-deep-research`` regularly takes 2–10 minutes).  The default
-    for ``research_timeout_seconds`` is 300 s but can be raised via
-    ``RELAY_RESEARCH_TIMEOUT_SECONDS``.
-
-    Error handling
-    --------------
-    Upstream errors during research are caught and returned as a
-    :class:`~litellm_relay.contracts.ChatResponse` with ``tool_called=True``
-    and an ``error_detail`` payload in ``research_summary`` so callers receive
-    a structured response rather than a bare HTTP 500.
-
-    system_prompt and deliverable_format passthrough
-    ------------------------------------------------
-    ``ChatRequest.system_prompt`` is forwarded to ``DeepResearchArguments``
-    when the model triggers the deep_research tool call.  It maps to the
-    Responses API ``instructions`` field so the research step can be given
-    a persona, output language, or format constraint.
-
-    ``ChatRequest.deliverable_format`` is used as the *fallback* when the
-    Chat Completions model does not specify a format in its tool-call
-    arguments.  The model's chosen format always takes precedence.
-    """
+    """자동 ``deep_research`` 도구 호출이 포함된 채팅 흐름을 조율한다."""
 
     def __init__(
         self,
@@ -88,6 +52,7 @@ class ChatOrchestrator:
         timeout_seconds: float = 30.0,
         research_timeout_seconds: float = 300.0,
     ) -> None:
+        """채팅 모델과 연구 모델에 필요한 연결 정보를 초기화한다."""
         self._base_url = base_url
         self._api_key = api_key
         self._chat_model = chat_model
@@ -101,7 +66,7 @@ class ChatOrchestrator:
         )
 
     async def chat(self, request: ChatRequest) -> ChatResponse:
-        """Perform an orchestrated chat turn, optionally invoking deep_research."""
+        """필요하면 ``deep_research``를 호출하는 채팅 턴을 수행한다."""
         user_content = self._build_user_content(request)
         messages: list[dict[str, Any]] = [{"role": "user", "content": user_content}]
 
@@ -198,10 +163,12 @@ class ChatOrchestrator:
     async def _invoke_deep_research(
         self, args: DeepResearchArguments
     ) -> UpstreamInvocationResult:
+        """게이트웨이를 통해 deep_research 실행을 위임한다."""
         return await self._gateway.invoke_deep_research(args)
 
     @staticmethod
     def _build_user_content(request: ChatRequest) -> str:
+        """문맥 목록을 포함한 최종 사용자 메시지 문자열을 만든다."""
         if not request.context:
             return request.message
         context_block = "\n".join(f"- {item}" for item in request.context)
@@ -209,13 +176,7 @@ class ChatOrchestrator:
 
     @staticmethod
     def _extract_tool_calls(message: dict[str, Any]) -> list[dict[str, Any]]:
-        """Normalise tool_calls from a message dict into a list of plain dicts.
-
-        The LiteLLM SDK may return ``tool_calls`` as:
-        - ``None`` / missing
-        - a list of plain dicts
-        - a list of Pydantic-like objects with ``model_dump()``
-        """
+        """메시지의 ``tool_calls`` 값을 일반 딕셔너리 목록으로 정규화한다."""
         raw = message.get("tool_calls")
         if not raw:
             return []
@@ -231,6 +192,7 @@ class ChatOrchestrator:
 
     @staticmethod
     def _extract_choice(response: Any) -> dict[str, Any]:
+        """LiteLLM 응답에서 첫 번째 choice를 딕셔너리로 꺼낸다."""
         if isinstance(response, dict):
             choices = response.get("choices") or []
         elif hasattr(response, "choices"):

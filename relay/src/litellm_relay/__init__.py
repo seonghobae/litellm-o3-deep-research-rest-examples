@@ -1,4 +1,4 @@
-"""LiteLLM relay example package."""
+"""LiteLLM 릴레이 예제 패키지다."""
 
 from .app import create_app
 from .config import RelaySettings, load_settings

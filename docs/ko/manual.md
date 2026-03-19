@@ -206,6 +206,8 @@ relay는 공통 upstream 설정 외에도 다음 값을 쓸 수 있습니다.
 - `RELAY_HOST` (기본 `127.0.0.1`)
 - `RELAY_PORT` (기본 `8080`)
 - `RELAY_TIMEOUT_SECONDS` (기본 `30`)
+- `RELAY_RESEARCH_TIMEOUT_SECONDS` (기본 `300`) - `POST /api/v1/chat`에서 deep_research 실행에 사용하는 timeout
+- `LITELLM_CHAT_MODEL` (기본 `gpt-4o`) - `POST /api/v1/chat` orchestration에 사용하는 chat 모델
 
 ### 실행
 
@@ -221,6 +223,7 @@ uv run python -m litellm_relay
 - `GET /api/v1/tool-invocations/{invocation_id}`
 - `GET /api/v1/tool-invocations/{invocation_id}/wait`
 - `GET /api/v1/tool-invocations/{invocation_id}/events`
+- `POST /api/v1/chat`
 
 ### 공개 계약 예시
 
@@ -574,7 +577,7 @@ curl -X POST .../api/v1/tool-invocations -d '{"arguments":{"deliverable_format":
 | text_format 값 | 의미 | gpt-4o | o3-deep-research |
 |---------------|------|--------|-----------------|
 | 없음 (기본값) | plain text / Markdown | ✅ | ✅ |
-| `{"type":"json_object"}` | 유효한 JSON 객체 강제 | ✅ | ❌ **API 400 오류** |
+| `{"type":"json_object"}` | JSON object 응답 요청 | ✅ | △ **API 레벨 수용 가능, 모델 준수는 비보장** |
 | `{"type":"json_schema","name":"...","schema":{...},"strict":true}` | 스키마 준수 JSON 강제 | ✅ | ❌ **API 400 오류** |
 
 ### 10-3. 사용 방법
@@ -657,16 +660,17 @@ curl -X POST http://127.0.0.1:8080/api/v1/tool-invocations \
 - `json_schema`: strict mode로 스키마 100% 준수
 - 둘 다 `deliverable_format`과 무관하게 동작 (`json_outline` 아니어도 됨)
 
-#### o3-deep-research (❌ 미지원)
+#### o3-deep-research (부분 지원 / 주의 필요)
 
 ```
 ❌ json_schema: API 레벨에서 즉시 오류 반환
    "Invalid parameter: 'text.format' of type 'json_schema' is not supported
-    with model version o3-deep-research-2025-06-26"
+     with model version o3-deep-research-2025-06-26"
 
-❌ json_object: API 레벨에서 즉시 오류 반환
-   - structured `text.format` 자체가 기본 o3-deep-research 경로에서 지원되지 않음
-   - JSON이 꼭 필요하면 gpt-4o 같은 호환 모델을 사용해야 함
+△ json_object: API 레벨에서 수용될 수 있음
+   - relay는 `text={"format": {"type": "json_object"}}`를 그대로 upstream에 전달함
+   - 다만 o3-deep-research가 실제로 JSON object만 반환한다고 보장할 수는 없음
+   - machine-readable JSON이 꼭 필요하면 gpt-4o 같은 호환 모델을 사용해야 함
 ```
 
 **권장 패턴 (JSON 출력이 꼭 필요할 때):**
@@ -682,7 +686,7 @@ curl -X POST http://127.0.0.1:8080/api/v1/tool-invocations \
 }
 ```
 
-→ API 레벨 JSON 강제가 꼭 필요하면 `gpt-4o` 같은 호환 모델을 사용하세요. 기본 `o3-deep-research` 경로는 plain text / markdown 출력만 지원한다고 보는 편이 안전합니다.
+→ `json_schema`가 필요하거나 `json_object` 준수가 꼭 보장돼야 하면 `gpt-4o` 같은 호환 모델을 사용하세요. `o3-deep-research`에서는 `json_object`가 API 레벨에서 수용되더라도 실제 출력은 best-effort로 보는 편이 안전합니다.
 
 ### 10-5. 내부 동작
 
@@ -709,9 +713,9 @@ extra_kwargs["text"] = {
 | | `deliverable_format` | `text_format` |
 |-|---------------------|---------------|
 | 위치 | `_render_input()` → input 문자열 | `text.format` → API 파라미터 |
-| 강제력 | **텍스트 힌트** (모델이 무시 가능) | **API 레벨 강제** (위반 시 오류) |
-| 지원 모델 | 모든 모델 | gpt-4o 계열 (o3-deep-research 미지원) |
-| JSON 보장 | ❌ | ✅ (json_object/json_schema) |
+| 강제력 | **텍스트 힌트** (모델이 무시 가능) | **API 레벨 structured output 요청** (모델별로 오류 또는 best-effort) |
+| 지원 모델 | 모든 모델 | gpt-4o 계열 완전 지원, o3-deep-research는 `json_schema` 미지원 / `json_object` 비보장 |
+| JSON 보장 | ❌ | 모델별 상이 (`gpt-4o`는 강함, `o3-deep-research`는 비보장) |
 
 **둘을 같이 쓰는 권장 패턴:**
 
@@ -809,7 +813,7 @@ LITELLM_MODEL=gpt-4o mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
 - `--web-search` 플래그로 `web_search_preview` tool을 켜면 일반 모델(gpt-4o 등)에도 실시간 웹 검색을 추가할 수 있습니다.
 - `--timeout <초>`로 응답 대기 시간을 조정할 수 있습니다 (기본값 30초, o3-deep-research는 300초 이상 권장).
 - relay `deep_research` wrapper는 `arguments.system_prompt` 필드를 통해 모델 수준 지시문(페르소나, 출력 언어, 형식)을 Responses API `instructions` 필드로 전달합니다.
-- `arguments.text_format`으로 API 레벨 JSON 강제가 가능합니다: `json_object`(자유 JSON), `json_schema`(스키마 강제). gpt-4o에서 완전 지원되며, 기본 o3-deep-research 경로에서는 둘 다 지원되지 않습니다.
+- `arguments.text_format`은 Responses API의 `text.format`에 매핑됩니다. `gpt-4o`는 `json_object`/`json_schema`를 완전 지원하고, `o3-deep-research`는 `json_schema`를 거부하며 `json_object`는 API 레벨 수용 가능하더라도 실제 JSON 준수는 보장되지 않습니다.
 - relay 예제는 LiteLLM Python SDK + FastAPI + Hypercorn으로 구현되어 있습니다.
 - Java는 `--target relay` 모드로 relay를 호출할 수 있습니다.
 - relay 외부 계약은 `tool_name` + 구조화된 `arguments` 중심이며, raw upstream `input`은 내부에만 존재합니다.

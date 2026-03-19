@@ -1,3 +1,5 @@
+"""LiteLLM 예제 클라이언트의 HTTP 호출과 응답 해석을 담당한다."""
+
 from __future__ import annotations
 
 import json
@@ -40,27 +42,17 @@ DEEP_RESEARCH_FUNCTION_TOOL: Dict[str, Any] = {
 
 
 class LiteLLMError(Exception):
-    """Represents an error response or network failure when talking to LiteLLM."""
+    """LiteLLM 호출 중 발생한 HTTP 또는 네트워크 오류를 나타낸다."""
 
     def __init__(self, status: int, message: str, body: str | None = None) -> None:
+        """상태 코드와 응답 본문을 포함한 예외 객체를 초기화한다."""
         super().__init__(message)
         self.status = status
         self.body = body
 
 
 def _normalize_base_url(raw: str) -> str:
-    """Normalise the configured base URL to a predictable /v1/ API root.
-
-    Accepted forms:
-
-    - https://host:4000
-    - https://host:4000/
-    - https://host:4000/v1
-    - https://host:4000/v1/
-
-    All of these are normalised to ``https://host:4000/v1/``. Other paths are
-    rejected so that the example behaves predictably.
-    """
+    """설정된 기본 URL을 일관된 ``/v1/`` API 루트로 정규화한다."""
 
     parsed = urlparse(raw)
     if not parsed.scheme or not parsed.netloc:
@@ -93,14 +85,14 @@ def _normalize_base_url(raw: str) -> str:
 
 @dataclass
 class ChatMessage:
-    """A single message in a chat conversation."""
+    """채팅 대화의 단일 메시지를 표현한다."""
 
     role: str
     content: str
 
 
 class LiteLLMClient:
-    """Small wrapper around a LiteLLM chat completions endpoint."""
+    """LiteLLM OpenAI 호환 엔드포인트를 감싸는 작은 클라이언트다."""
 
     def __init__(
         self,
@@ -109,28 +101,26 @@ class LiteLLMClient:
         model: str = "o3-deep-research",
         timeout: float = 30.0,
     ) -> None:
+        """기본 URL, 인증 정보, 모델, 타임아웃으로 클라이언트를 초기화한다."""
         self._base_url = _normalize_base_url(base_url)
         self._api_key = api_key
         self._model = model
         self._timeout = timeout
 
     def _chat_url(self) -> str:
+        """채팅 완성 엔드포인트 URL을 반환한다."""
         return self._base_url.rstrip("/") + "/chat/completions"
 
     def _responses_url(self) -> str:
+        """Responses API 엔드포인트 URL을 반환한다."""
         return self._base_url.rstrip("/") + "/responses"
 
     def _ssl_context(self) -> ssl.SSLContext:
+        """certifi 번들을 사용하는 SSL 컨텍스트를 생성한다."""
         return ssl.create_default_context(cafile=certifi.where())
 
     def create_chat_completion(self, prompt: str) -> str:
-        """Send a minimal chat completion request and return the assistant text.
-
-        This method uses the non-streaming OpenAI-compatible chat completions
-        API and only extracts the first assistant message's content. It raises
-        :class:`LiteLLMError` when the request fails, the response is invalid,
-        or does not contain a usable assistant message.
-        """
+        """최소한의 채팅 완성 요청을 보내고 첫 번째 답변 텍스트를 돌려준다."""
 
         payload = {
             "model": self._model,
@@ -148,18 +138,7 @@ class LiteLLMClient:
         background: bool = False,
         tools: list[Dict[str, Any]] | None = None,
     ) -> str:
-        """Send a minimal OpenAI-compatible responses API request.
-
-        This uses ``POST /v1/responses`` with a small payload that LiteLLM can
-        proxy for the configured model. The first usable text output is returned
-        for foreground execution. When ``background=True`` is set, the raw JSON
-        response is returned so callers can inspect identifiers and status.
-
-        Pass ``tools=[{"type": "web_search_preview"}]`` to enable live web
-        search on models that support it (e.g. ``gpt-4o``).  The LiteLLM Proxy
-        must also have the ``web_search_preview`` tool enabled for the target
-        model.
-        """
+        """Responses API 요청을 보내고 사용 가능한 텍스트 결과를 반환한다."""
 
         payload: Dict[str, Any] = {
             "model": self._model,
@@ -180,32 +159,7 @@ class LiteLLMClient:
         prompt: str,
         relay_base_url: str | None = None,
     ) -> tuple[str, bool]:
-        """Send a chat completions request with the deep_research function tool.
-
-        Returns ``(answer_text, tool_was_called)``.
-
-        When the model decides to call deep_research, this method:
-
-        1. Sends the first Chat Completions turn with the ``deep_research``
-           function tool attached.
-        2. If the model returns ``finish_reason == "tool_calls"`` for
-           ``deep_research``, calls the relay ``POST /api/v1/chat`` endpoint to
-           execute the research (the relay handles actual deep research internally).
-        3. Sends a second Chat Completions turn that includes the tool result so
-           the model can synthesise a final natural-language answer.
-        4. Returns ``(final_answer, True)``.
-
-        When the model answers directly (no tool call), returns
-        ``(answer, False)``.
-
-        Parameters
-        ----------
-        prompt:
-            The user message.
-        relay_base_url:
-            Base URL of the relay server (e.g. ``http://127.0.0.1:8080``).
-            Defaults to ``http://127.0.0.1:8080`` when not provided.
-        """
+        """deep_research 도구 호출을 포함한 채팅 요청을 수행한다."""
         # First turn: chat completions with tool schema
         payload: Dict[str, Any] = {
             "model": self._model,
@@ -291,7 +245,7 @@ class LiteLLMClient:
         return final_content, True
 
     def _post_json(self, url: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """POST *payload* as JSON to *url* and return the parsed response dict."""
+        """JSON 본문을 POST하고 파싱된 응답 딕셔너리를 반환한다."""
         data = json.dumps(payload).encode("utf-8")
         req = request.Request(
             url,
@@ -341,7 +295,7 @@ class LiteLLMClient:
 
     @staticmethod
     def _extract_error_message(text: str) -> str:
-        """Try to extract a human-readable error message from a JSON error body."""
+        """JSON 오류 본문에서 사람이 읽을 메시지를 추출한다."""
         try:
             data = json.loads(text)
         except json.JSONDecodeError:
@@ -357,7 +311,7 @@ class LiteLLMClient:
 
     @staticmethod
     def _extract_content(payload: Dict[str, Any]) -> str:
-        """Extract the first assistant message text from a chat completions response."""
+        """채팅 완성 응답에서 첫 번째 어시스턴트 텍스트를 추출한다."""
         choices = payload.get("choices") or []
         if not isinstance(choices, list) or not choices:
             raise LiteLLMError(
@@ -400,7 +354,7 @@ class LiteLLMClient:
 
     @staticmethod
     def _extract_response_content(payload: Dict[str, Any]) -> str:
-        """Extract text from a LiteLLM responses API result payload."""
+        """Responses API 결과 페이로드에서 텍스트를 추출한다."""
         output_text = payload.get("output_text")
         if isinstance(output_text, str) and output_text.strip():
             return output_text

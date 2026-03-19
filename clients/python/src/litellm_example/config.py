@@ -1,3 +1,5 @@
+"""LiteLLM 예제 클라이언트 설정 로딩을 담당한다."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -9,7 +11,7 @@ from dotenv import load_dotenv
 
 @dataclass(frozen=True)
 class Settings:
-    """Resolved configuration for talking to a LiteLLM proxy."""
+    """LiteLLM 프록시 호출에 필요한 해석된 설정이다."""
 
     base_url: str
     api_key: str
@@ -17,19 +19,12 @@ class Settings:
 
 
 def _is_blank(value: str | None) -> bool:
+    """값이 없거나 공백뿐인지 확인한다."""
     return value is None or not value.strip()
 
 
 def load_settings(dotenv_path: Path | None = None) -> Settings:
-    """Load settings from the environment and an optional ~/.env file.
-
-    Precedence:
-
-    1. Real environment variables (LITELLM_*)
-    2. Values from the specified dotenv file, or ~/.env by default
-
-    Environment variables never get overwritten by values from the dotenv file.
-    """
+    """환경 변수와 선택적 ``~/.env`` 파일에서 설정을 읽어온다."""
 
     if dotenv_path is None:
         dotenv_path = Path.home() / ".env"
