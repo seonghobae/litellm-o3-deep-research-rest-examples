@@ -185,3 +185,106 @@ def test_client_raises_on_error_response(monkeypatch: pytest.MonkeyPatch) -> Non
     err = excinfo.value
     assert err.status == 400
     assert "bad request" in str(err).lower()
+
+
+# --------------------------------------------------------------------------- #
+# _extract_response_content: top-level output_text path (H-5)                #
+# --------------------------------------------------------------------------- #
+
+
+def test_responses_api_returns_top_level_output_text_string(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cover the isinstance(output_text, str) early-return in _extract_response_content."""
+
+    def fake_urlopen(req, timeout=None, context=None):  # type: ignore[override]
+        body = json.dumps({"output_text": "top-level text value"}).encode("utf-8")
+        return FakeResponse(body, status=200)
+
+    from litellm_example import client as client_module
+
+    monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
+
+    c = LiteLLMClient("https://example.com", "sk-test", model="o3-deep-research")
+    text = c.create_response("Top-level output question")  # type: ignore[attr-defined]
+
+    assert text == "top-level text value"
+
+
+def test_responses_api_raises_on_empty_output(monkeypatch: pytest.MonkeyPatch) -> None:
+    """_extract_response_content raises LiteLLMError when no output items exist."""
+
+    def fake_urlopen(req, timeout=None, context=None):  # type: ignore[override]
+        body = json.dumps({"output": []}).encode("utf-8")
+        return FakeResponse(body, status=200)
+
+    from litellm_example import client as client_module
+
+    monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
+
+    c = LiteLLMClient("https://example.com", "sk-test", model="o3-deep-research")
+    with pytest.raises(LiteLLMError) as excinfo:
+        c.create_response("No output question")  # type: ignore[attr-defined]
+
+    assert excinfo.value.status == 200
+
+
+# --------------------------------------------------------------------------- #
+# _extract_content: list-of-blocks branch (H-6) and 200-no-content (H-7)     #
+# --------------------------------------------------------------------------- #
+
+
+def test_chat_completion_handles_list_of_content_blocks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cover the isinstance(content, list) branch in _extract_content."""
+
+    def fake_urlopen(req, timeout=None, context=None):  # type: ignore[override]
+        body = json.dumps(
+            {
+                "choices": [
+                    {
+                        "message": {
+                            "role": "assistant",
+                            "content": [
+                                {"type": "text", "text": "block-"},
+                                {"type": "text", "text": "answer"},
+                            ],
+                        }
+                    }
+                ]
+            }
+        ).encode("utf-8")
+        return FakeResponse(body, status=200)
+
+    from litellm_example import client as client_module
+
+    monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
+
+    c = LiteLLMClient("https://example.com", "sk-test", model="o3-deep-research")
+    text = c.create_chat_completion("Blocks question")
+
+    assert text == "block-answer"
+
+
+def test_chat_completion_raises_when_content_is_empty_string(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cover the LiteLLMError raise in _extract_content when content is empty."""
+
+    def fake_urlopen(req, timeout=None, context=None):  # type: ignore[override]
+        body = json.dumps(
+            {"choices": [{"message": {"role": "assistant", "content": ""}}]}
+        ).encode("utf-8")
+        return FakeResponse(body, status=200)
+
+    from litellm_example import client as client_module
+
+    monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
+
+    c = LiteLLMClient("https://example.com", "sk-test", model="o3-deep-research")
+    with pytest.raises(LiteLLMError) as excinfo:
+        c.create_chat_completion("Empty content question")
+
+    assert excinfo.value.status == 200
+    assert "usable" in str(excinfo.value).lower()

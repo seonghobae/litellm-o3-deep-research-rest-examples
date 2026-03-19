@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from litellm_relay.contracts import DeepResearchArguments
-from litellm_relay.upstream import LiteLLMRelayGateway
+from litellm_relay.upstream import LiteLLMRelayGateway, UpstreamInvocationResult
 
 
 @pytest.mark.asyncio
@@ -261,3 +261,118 @@ async def test_wait_for_response_raises_timeout_error_when_response_stays_queued
             timeout_seconds=0.01,
             poll_interval_seconds=0.001,
         )
+
+
+# --------------------------------------------------------------------------- #
+# Static helper unit tests                                                     #
+# --------------------------------------------------------------------------- #
+
+
+def test_extract_response_text_returns_top_level_output_text_string() -> None:
+    result = LiteLLMRelayGateway._extract_response_text(
+        {"output_text": "top-level text"}
+    )
+    assert result == "top-level text"
+
+
+def test_extract_response_text_returns_plain_string_text_field() -> None:
+    """Cover the isinstance(text, str) branch inside output[].content[]."""
+    result = LiteLLMRelayGateway._extract_response_text(
+        {
+            "output": [
+                {"content": [{"type": "output_text", "text": "plain string text"}]}
+            ]
+        }
+    )
+    assert result == "plain string text"
+
+
+def test_extract_response_text_skips_non_output_type_blocks() -> None:
+    result = LiteLLMRelayGateway._extract_response_text(
+        {
+            "output": [
+                {
+                    "content": [
+                        {"type": "reasoning", "text": "should be ignored"},
+                        {"type": "output_text", "text": "included"},
+                    ]
+                }
+            ]
+        }
+    )
+    assert result == "included"
+
+
+def test_extract_response_text_returns_empty_string_when_output_empty() -> None:
+    assert LiteLLMRelayGateway._extract_response_text({}) == ""
+    assert LiteLLMRelayGateway._extract_response_text({"output": []}) == ""
+
+
+def test_extract_stream_text_returns_none_when_delta_absent() -> None:
+    assert (
+        LiteLLMRelayGateway._extract_stream_text({"type": "response.output_text.delta"})
+        is None
+    )
+
+
+def test_extract_stream_text_returns_none_when_delta_is_empty_string() -> None:
+    assert (
+        LiteLLMRelayGateway._extract_stream_text(
+            {"type": "response.output_text.delta", "delta": ""}
+        )
+        is None
+    )
+
+
+def test_extract_stream_text_returns_none_for_non_delta_event_type() -> None:
+    assert (
+        LiteLLMRelayGateway._extract_stream_text(
+            {"type": "response.done", "delta": "ignored"}
+        )
+        is None
+    )
+
+
+def test_maybe_str_returns_none_for_none_input() -> None:
+    assert LiteLLMRelayGateway._maybe_str(None) is None
+
+
+def test_maybe_str_returns_none_for_empty_string() -> None:
+    assert LiteLLMRelayGateway._maybe_str("") is None
+
+
+def test_maybe_str_returns_none_for_non_string() -> None:
+    assert LiteLLMRelayGateway._maybe_str(42) is None  # type: ignore[arg-type]
+
+
+def test_maybe_str_returns_value_for_non_empty_string() -> None:
+    assert LiteLLMRelayGateway._maybe_str("resp_1") == "resp_1"
+
+
+def test_render_input_includes_context_and_constraints() -> None:
+    args = DeepResearchArguments(
+        research_question="What is relay?",
+        context=["Azure Landing Zone", "LiteLLM Proxy"],
+        constraints=["Use markdown", "Cite sources"],
+        deliverable_format="markdown_brief",
+    )
+    rendered = LiteLLMRelayGateway._render_input(args)
+
+    assert "Research question: What is relay?" in rendered
+    assert "Context:" in rendered
+    assert "- Azure Landing Zone" in rendered
+    assert "- LiteLLM Proxy" in rendered
+    assert "Constraints:" in rendered
+    assert "- Use markdown" in rendered
+    assert "- Cite sources" in rendered
+
+
+def test_render_input_omits_context_and_constraints_sections_when_empty() -> None:
+    args = DeepResearchArguments(
+        research_question="Minimal question",
+        deliverable_format="markdown_brief",
+    )
+    rendered = LiteLLMRelayGateway._render_input(args)
+
+    assert "Context:" not in rendered
+    assert "Constraints:" not in rendered

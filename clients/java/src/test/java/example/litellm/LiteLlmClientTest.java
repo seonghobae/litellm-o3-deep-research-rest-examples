@@ -123,6 +123,22 @@ class LiteLlmClientTest {
     }
 
     @Test
+    void sendsResponsesApiRequestAndParsesTopLevelOutputText() throws Exception {
+        // H-8: cover the early-return path in extractResponseText() for a
+        // top-level "output_text" string (most concise Responses API shape).
+        server.createContext("/v1/responses", exchange -> {
+            exchange.getRequestBody().readAllBytes(); // drain
+            writeJson(exchange, 200,
+                    "{\"id\":\"resp_top_1\",\"object\":\"response\",\"status\":\"completed\",\"output_text\":\"top-level answer\"}");
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "sk-test", "o3-deep-research");
+        String text = client.createResponse("top-level output question", false);
+
+        assertEquals("top-level answer", text);
+    }
+
+    @Test
     void ioExceptionDoesNotInterruptCallingThread() {
         AtomicBoolean called = new AtomicBoolean(false);
         HttpClientStub stub = new HttpClientStub(() -> {

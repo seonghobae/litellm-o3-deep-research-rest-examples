@@ -141,6 +141,36 @@ class RelayClientTest {
         assertEquals("[redacted]", exception.responseBody());
     }
 
+    // H-9: extractOutputText – nested response.output_text path -------------------
+
+    @Test
+    void wait_endpoint_reads_nested_response_output_text() throws Exception {
+        // The relay wait endpoint may return a payload where output_text is nested
+        // inside a "response" object rather than at the top level.
+        server.createContext("/api/v1/tool-invocations/inv_nested/wait", exchange -> writeJson(exchange, 200, """
+                {"invocation_id":"inv_nested","mode":"background","status":"completed","deliverable_format":"markdown_brief","response":{"output_text":"nested answer"}}
+                """));
+
+        example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
+        String result = client.waitForInvocation("inv_nested");
+
+        assertEquals("nested answer", result);
+    }
+
+    @Test
+    void wait_endpoint_reads_output_array_with_content_blocks() throws Exception {
+        // The relay wait endpoint may return an OpenAI-style output[] array with
+        // content blocks of type "output_text".  extractOutputText must traverse it.
+        server.createContext("/api/v1/tool-invocations/inv_output_array/wait", exchange -> writeJson(exchange, 200, """
+                {"invocation_id":"inv_output_array","mode":"background","status":"completed","deliverable_format":"markdown_brief","output":[{"content":[{"type":"output_text","text":{"value":"array answer"}}]}]}
+                """));
+
+        example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
+        String result = client.waitForInvocation("inv_output_array");
+
+        assertEquals("array answer", result);
+    }
+
     private static void writeJson(HttpExchange exchange, int status, String payload) throws IOException {
         writeText(exchange, status, "application/json", payload);
     }
