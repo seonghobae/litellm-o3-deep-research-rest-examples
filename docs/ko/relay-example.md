@@ -6,14 +6,17 @@
 
 외부 계약은 raw `input` 문자열이 아니라 다음과 같은 구조화된 tool invocation 형식입니다.
 
-- `tool_name`
-- `arguments.research_question`
-- `arguments.context`
-- `arguments.constraints`
-- `arguments.deliverable_format`
-- `arguments.require_citations`
-- `arguments.background`
-- `arguments.stream`
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `tool_name` | `"deep_research"` | 고정값 |
+| `arguments.research_question` | `string` | 조사할 주제·질문 |
+| `arguments.system_prompt` | `string?` | 모델 수준 지시문 (system/developer prompt). 미설정 시 생략 |
+| `arguments.context` | `string[]` | 추가 배경 정보 |
+| `arguments.constraints` | `string[]` | 출력 형식·범위 제약 |
+| `arguments.deliverable_format` | `"markdown_brief" \| "markdown_report" \| "json_outline"` | 산출물 형식 |
+| `arguments.require_citations` | `bool` | 인용 요구 여부 (기본 `true`) |
+| `arguments.background` | `bool` | 비동기 제출 여부 |
+| `arguments.stream` | `bool` | SSE 스트림 사용 여부 |
 
 즉, Java 호출자는 relay에 도메인 지향적인 요청만 보내고, relay 내부에서만 LiteLLM SDK 호출로 번역합니다.
 
@@ -52,6 +55,8 @@ uv run python -m litellm_relay
 
 ## 요청 예시
 
+### 기본 호출
+
 ```json
 {
   "tool_name": "deep_research",
@@ -66,6 +71,22 @@ uv run python -m litellm_relay
   }
 }
 ```
+
+### system_prompt 포함 호출
+
+```json
+{
+  "tool_name": "deep_research",
+  "arguments": {
+    "research_question": "짜장면의 역사를 설명해줘",
+    "deliverable_format": "markdown_brief",
+    "system_prompt": "당신은 초등학생에게 설명하는 선생님입니다. 최대 2문장으로 쉬운 말로 설명하세요.",
+    "require_citations": false
+  }
+}
+```
+
+`system_prompt`는 Responses API의 `instructions` 필드로 전달됩니다. 모델이 **user 질문과 별개로** 페르소나·출력 언어·형식을 지키도록 강제할 때 사용합니다.
 
 ## Java에서 relay 호출
 

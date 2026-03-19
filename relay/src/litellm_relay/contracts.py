@@ -16,9 +16,36 @@ class DeepResearchArguments(BaseModel):
     These fields form the public contract exposed by the relay.  The relay
     translates them into a LiteLLM Responses API request internally so that
     callers never need to know the upstream ``input`` string format.
+
+    Prompt construction
+    -------------------
+    The relay uses the Responses API, which separates model-level instructions
+    from the user-facing question:
+
+    * **system_prompt** maps to the Responses API ``instructions`` field (the
+      system / developer layer that shapes model behaviour, e.g. persona,
+      output language, answer format).  When omitted the relay sends no
+      ``instructions`` and the model uses its default behaviour.
+
+    * **research_question** (+ ``context``, ``constraints``,
+      ``deliverable_format``, ``require_citations``) are rendered into the
+      ``input`` string, which is the user turn passed to the model.
+
+    This separation is semantically equivalent to the ``system`` / ``user``
+    split in the Chat Completions API and the ``developer`` / ``user`` roles
+    in the Responses API message-array format.
     """
 
     research_question: str
+    system_prompt: str | None = Field(
+        default=None,
+        description=(
+            "Optional model-level instructions (maps to the Responses API "
+            "``instructions`` field / system prompt).  Use this to set a "
+            "persona, output language, or answer format without polluting the "
+            "research question."
+        ),
+    )
     context: list[str] = Field(default_factory=list)
     constraints: list[str] = Field(default_factory=list)
     deliverable_format: DeliverableFormat

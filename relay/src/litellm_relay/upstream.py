@@ -46,7 +46,15 @@ class LiteLLMRelayGateway:
         Foreground calls block until the response is ready.  Background calls
         return immediately with a queued-status result containing the upstream
         response id.
+
+        When ``args.system_prompt`` is set it is forwarded to the Responses API
+        ``instructions`` field so the model treats it as a system-level
+        directive rather than part of the user question.
         """
+        extra_kwargs: dict[str, Any] = {}
+        if args.system_prompt:
+            extra_kwargs["instructions"] = args.system_prompt
+
         payload = await asyncio.to_thread(
             litellm.responses,
             model=self._model,
@@ -55,6 +63,7 @@ class LiteLLMRelayGateway:
             api_key=self._api_key,
             timeout=self._timeout_seconds,
             background=args.background,
+            **extra_kwargs,
         )
         response = self._to_dict(payload)
 
@@ -110,6 +119,10 @@ class LiteLLMRelayGateway:
         self, args: DeepResearchArguments
     ) -> AsyncIterator[str]:
         """Async-generator that yields text-delta chunks from a streaming response."""
+        extra_kwargs: dict[str, Any] = {}
+        if args.system_prompt:
+            extra_kwargs["instructions"] = args.system_prompt
+
         response = await litellm.aresponses(
             model=self._model,
             input=self._render_input(args),
@@ -117,6 +130,7 @@ class LiteLLMRelayGateway:
             api_key=self._api_key,
             timeout=self._timeout_seconds,
             stream=True,
+            **extra_kwargs,
         )
 
         async for event in response:

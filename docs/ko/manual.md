@@ -358,7 +358,171 @@ System.out.println(result);
 
 ---
 
-## 9. 작업 검증 이력 — '짜장면의 역사' 실호출
+## 9. deep_research Wrapper의 Prompt 구조와 system_prompt
+
+### 9-1. 현재 구조
+
+relay의 `deep_research` wrapper는 모든 요청을 Responses API의 **단일 `input` 문자열**로 조립해서 보냅니다.
+
+```
+Tool: deep_research
+Research question: {research_question}
+Deliverable format: {deliverable_format}
+Require citations: yes/no
+Context:
+- ...
+Constraints:
+- ...
+```
+
+이 문자열이 모델의 user turn으로 전달됩니다.
+
+### 9-2. 문제: 시스템 프롬프트(지시문)를 어디에 넣어야 하나?
+
+**잘못된 방법** — `research_question` 안에 섞기:
+
+```json
+{
+  "research_question": "System: 반드시 영어로만 답하라.\n\n짜장면의 역사를 설명해줘"
+}
+```
+
+이렇게 하면 "System:"이 그냥 user 메시지의 일부로 처리되어 모델에 대한 **강제력이 없습니다**. 모델이 무시하거나 그대로 출력에 포함할 수 있습니다.
+
+**올바른 방법** — `system_prompt` 필드 사용:
+
+```json
+{
+  "tool_name": "deep_research",
+  "arguments": {
+    "research_question": "짜장면의 역사를 설명해줘",
+    "deliverable_format": "markdown_brief",
+    "system_prompt": "반드시 영어로만 답하라."
+  }
+}
+```
+
+relay는 `system_prompt`를 Responses API의 **`instructions`** 필드로 전달합니다. 이것이 Chat Completions의 `system` role, Responses API의 `developer` role과 동등한 **모델 수준 지시문**입니다.
+
+### 9-3. Responses API의 prompt 레이어 구조
+
+```
+┌─────────────────────────────────────────────┐
+│  instructions (system/developer layer)      │  ← system_prompt 매핑
+│  "반드시 영어로만 답하라."                   │
+├─────────────────────────────────────────────┤
+│  input (user turn)                          │  ← _render_input() 결과
+│  "Tool: deep_research                       │
+│   Research question: 짜장면의 역사를 설명해줘│
+│   Deliverable format: markdown_brief        │
+│   Require citations: yes"                   │
+└─────────────────────────────────────────────┘
+```
+
+- **`instructions`** (= `system_prompt`): 페르소나, 출력 언어, 형식 강제 등 모델 행동을 제어
+- **`input`** (= research_question + 나머지): 실제 조사 요청
+
+### 9-4. 실제 테스트 결과
+
+**아무 system_prompt 없을 때 (한국어 질문 → 한국어 답변):**
+
+```bash
+curl -X POST http://127.0.0.1:8080/api/v1/tool-invocations \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool_name": "deep_research",
+    "arguments": {
+      "research_question": "짜장면의 역사를 한 문장으로 설명해줘",
+      "deliverable_format": "markdown_brief"
+    }
+  }'
+```
+
+```
+짜장면의 역사는 19세기 말 중국 산둥 지방 출신 이민자들이 인천
+차이나타운에서 중국 요리인 '작장면'을 한국화하며 시작되었다.
+```
+
+**`system_prompt`로 영어 강제:**
+
+```bash
+curl -X POST http://127.0.0.1:8080/api/v1/tool-invocations \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool_name": "deep_research",
+    "arguments": {
+      "research_question": "짜장면의 역사를 한 문장으로 설명해줘",
+      "deliverable_format": "markdown_brief",
+      "system_prompt": "You are a food historian. Always answer in English only."
+    }
+  }'
+```
+
+```
+The history of Jajangmyeon originates from the late 19th to early 20th
+centuries, evolving from a Shandong-style Chinese noodle dish and
+adapting to Korean tastes in Incheon's Chinese immigrant community.
+```
+
+**`system_prompt`로 페르소나 주입 (초등학생 선생님):**
+
+```bash
+curl -X POST http://127.0.0.1:8080/api/v1/tool-invocations \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool_name": "deep_research",
+    "arguments": {
+      "research_question": "짜장면의 역사를 설명해줘",
+      "deliverable_format": "markdown_brief",
+      "system_prompt": "당신은 초등학생에게 설명하는 선생님입니다. 최대 2문장으로, 쉬운 말로 설명하세요.",
+      "require_citations": false
+    }
+  }'
+```
+
+```
+옛날 중국에서 먹던 "작장면"이라는 요리가 한국에 들어와 조금씩 바뀌며
+우리가 아는 짜장면이 되었어요. 한국에서는 1900년대 초반 인천
+차이나타운에서 처음 만들어지며 지금까지 사랑받는 음식이 되었답니다!
+```
+
+### 9-5. system_prompt 활용 패턴 정리
+
+| 목적 | system_prompt 예시 |
+|------|--------------------|
+| 출력 언어 강제 | `"Always answer in English only."` |
+| 페르소나 주입 | `"당신은 초등학생 선생님입니다. 쉬운 말로 설명하세요."` |
+| 출력 길이 제한 | `"Answer in exactly one sentence."` |
+| 형식 강제 | `"Respond only with a numbered list. No prose."` |
+| 도메인 전문성 | `"You are a Korean food historian. Emphasize cultural context."` |
+| 인용 스타일 제어 | `"Use APA citation style for all references."` |
+
+### 9-6. Chat Completions API와의 비교
+
+| | Chat Completions | Responses API (relay 사용 시) |
+|-|-----------------|-------------------------------|
+| system prompt | `messages[{role:"system", content:...}]` | `instructions` 필드 (= `system_prompt`) |
+| user prompt | `messages[{role:"user", content:...}]` | `input` 필드 (= `_render_input()` 결과) |
+| developer prompt | `messages[{role:"developer", content:...}]` | `instructions` 필드 |
+| relay 외부 계약 | 해당 없음 | `arguments.system_prompt` |
+
+### 9-7. `system_prompt`가 없을 때와 있을 때의 흐름
+
+```
+system_prompt 없음:
+  relay → litellm.responses(input="Tool: deep_research\nResearch question: ...", ...)
+
+system_prompt 있음:
+  relay → litellm.responses(
+    input="Tool: deep_research\nResearch question: ...",
+    instructions="페르소나/언어/형식 지시",
+    ...
+  )
+```
+
+---
+
+## 10. 작업 검증 이력 — '짜장면의 역사' 실호출 (5가지 경로 + web_search + system_prompt)
 
 이 저장소가 실제로 동작함을 검증하기 위해 다음 5가지 경로로 모두 성공 확인했습니다.
 
@@ -435,11 +599,12 @@ LITELLM_MODEL=gpt-4o mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
 
 ---
 
-## 10. 요약
+## 11. 요약
 
 - direct Python/Java 예제는 OpenAI 호환 `chat/completions`, `responses`, `background: true`를 지원합니다.
 - `--web-search` 플래그로 `web_search_preview` tool을 켜면 일반 모델(gpt-4o 등)에도 실시간 웹 검색을 추가할 수 있습니다.
 - `--timeout <초>`로 응답 대기 시간을 조정할 수 있습니다 (기본값 30초, o3-deep-research는 300초 이상 권장).
+- relay `deep_research` wrapper는 `arguments.system_prompt` 필드를 통해 모델 수준 지시문(페르소나, 출력 언어, 형식)을 Responses API `instructions` 필드로 전달합니다.
 - relay 예제는 LiteLLM Python SDK + FastAPI + Hypercorn으로 구현되어 있습니다.
 - Java는 `--target relay` 모드로 relay를 호출할 수 있습니다.
 - relay 외부 계약은 `tool_name` + 구조화된 `arguments` 중심이며, raw upstream `input`은 내부에만 존재합니다.

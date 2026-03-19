@@ -171,6 +171,93 @@ async def test_builds_streaming_responses_request(
     assert chunks == ["Hello", " world"]
 
 
+@pytest.mark.asyncio
+async def test_invoke_deep_research_passes_system_prompt_as_instructions(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """system_prompt is forwarded as the ``instructions`` kwarg (line 56)."""
+    captured: dict[str, object] = {}
+
+    def fake_responses(**kwargs: object) -> dict[str, object]:
+        captured.update(kwargs)
+        return {"id": "resp_sys_1", "status": "completed", "output_text": "sys-ok"}
+
+    monkeypatch.setattr("litellm_relay.upstream.litellm.responses", fake_responses)
+
+    gateway = LiteLLMRelayGateway(
+        base_url="https://proxy.example/v1",
+        api_key="sk-relay",
+        model="o3-deep-research",
+        timeout_seconds=12.0,
+    )
+
+    result = await gateway.invoke_deep_research(
+        DeepResearchArguments(
+            research_question="Test system prompt forwarding.",
+            deliverable_format="markdown_brief",
+            system_prompt="You are a concise assistant. Answer in one sentence.",
+        )
+    )
+
+    assert (
+        captured.get("instructions")
+        == "You are a concise assistant. Answer in one sentence."
+    )
+    assert result.output_text == "sys-ok"
+
+
+@pytest.mark.asyncio
+async def test_stream_deep_research_passes_system_prompt_as_instructions(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """system_prompt is forwarded as the ``instructions`` kwarg in stream mode (line 124)."""
+    captured: dict[str, object] = {}
+
+    class FakeStream:
+        def __init__(self, events: list[dict[str, object]]) -> None:
+            self._events = events
+
+        def __aiter__(self) -> FakeStream:
+            self._iter = iter(self._events)
+            return self
+
+        async def __anext__(self) -> dict[str, object]:
+            try:
+                return next(self._iter)
+            except StopIteration:
+                raise StopAsyncIteration
+
+    async def fake_aresponses(**kwargs: object) -> FakeStream:
+        captured.update(kwargs)
+        return FakeStream(
+            [{"type": "response.output_text.delta", "delta": "stream-ok"}]
+        )
+
+    monkeypatch.setattr("litellm_relay.upstream.litellm.aresponses", fake_aresponses)
+
+    gateway = LiteLLMRelayGateway(
+        base_url="https://proxy.example/v1",
+        api_key="sk-relay",
+        model="o3-deep-research",
+        timeout_seconds=12.0,
+    )
+
+    chunks = [
+        chunk
+        async for chunk in gateway.stream_deep_research(
+            DeepResearchArguments(
+                research_question="Test system prompt in stream mode.",
+                deliverable_format="markdown_brief",
+                stream=True,
+                system_prompt="Answer in one English sentence only.",
+            )
+        )
+    ]
+
+    assert captured.get("instructions") == "Answer in one English sentence only."
+    assert chunks == ["stream-ok"]
+
+
 def test_to_dict_returns_dict_unchanged() -> None:
     payload = {"id": "resp_1", "status": "completed"}
     result = LiteLLMRelayGateway._to_dict(payload)
