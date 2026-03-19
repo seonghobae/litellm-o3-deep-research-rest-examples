@@ -1,7 +1,10 @@
 package example.litellm;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -446,6 +449,43 @@ class RelayClientTest {
         ApiException ex = assertThrows(ApiException.class,
                 () -> client.invokeDeepResearch("blank id", "markdown_brief", false, true));
         assertEquals(true, ex.getMessage().toLowerCase().contains("invocation_id"));
+    }
+
+    // ---- invokeChat tests ---------------------------------------------------
+
+    @Test
+    void invokeChat_returns_direct_answer_when_no_tool_called() throws Exception {
+        String json = """
+                {"content":"안녕하세요","tool_called":false,"tool_name":null,"research_summary":null}
+                """;
+        server.createContext("/api/v1/chat", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200, json);
+        });
+
+        example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
+        example.litellm.relay.RelayClient.ChatResult result = client.invokeChat("안녕", false);
+        assertEquals("안녕하세요", result.content());
+        assertFalse(result.toolCalled());
+        assertNull(result.toolName());
+        assertNull(result.researchSummary());
+    }
+
+    @Test
+    void invokeChat_returns_tool_metadata_when_tool_called() throws Exception {
+        String json = """
+                {"content":"역사 답변","tool_called":true,"tool_name":"deep_research","research_summary":"요약"}
+                """;
+        server.createContext("/api/v1/chat", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200, json);
+        });
+
+        example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
+        example.litellm.relay.RelayClient.ChatResult result = client.invokeChat("짜장면의 역사", true);
+        assertTrue(result.toolCalled());
+        assertEquals("deep_research", result.toolName());
+        assertEquals("요약", result.researchSummary());
     }
 
     private static void writeJson(HttpExchange exchange, int status, String payload) throws IOException {

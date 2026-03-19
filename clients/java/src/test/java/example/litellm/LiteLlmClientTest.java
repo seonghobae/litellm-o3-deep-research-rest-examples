@@ -2,6 +2,7 @@ package example.litellm;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -16,9 +17,11 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
@@ -480,6 +483,150 @@ class LiteLlmClientTest {
         ApiException ex = assertThrows(ApiException.class,
                 () -> client.createChatCompletion("no text in blocks"));
         assertEquals(true, ex.getMessage().toLowerCase().contains("usable"));
+    }
+
+    // ---- createChatWithToolCalling tests ------------------------------------
+
+    @Test
+    void createChatWithToolCalling_no_tool_call_returns_direct_answer() throws Exception {
+        String firstJson = """
+                {"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"Direct answer.","tool_calls":null}}]}
+                """;
+        server.createContext("/v1/chat/completions", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200, firstJson);
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "key", "gpt-4o");
+        String[] result = client.createChatWithToolCalling("Hello", "http://127.0.0.1:9999");
+        assertEquals("Direct answer.", result[0]);
+        assertEquals("false", result[1]);
+    }
+
+    @Test
+    void createChatWithToolCalling_with_tool_call_executes_research() throws Exception {
+        // Three sequential responses: tool_calls → relay response → second turn
+        // We need separate contexts for chat/completions (called twice) and relay api/v1/chat
+        AtomicInteger chatCallCount = new AtomicInteger(0);
+
+        String firstChatJson = """
+                {"choices":[{"finish_reason":"tool_calls","message":{"role":"assistant","content":null,
+                "tool_calls":[{"id":"call_1","type":"function","function":{"name":"deep_research",
+                "arguments":"{\\"research_question\\":\\"test q\\",\\"deliverable_format\\":\\"markdown_brief\\"}"}}]}}]}
+                """;
+        String secondChatJson = """
+                {"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"Final answer.","tool_calls":null}}]}
+                """;
+        String relayJson = """
+                {"content":"relay answer","tool_called":true,"tool_name":"deep_research","research_summary":"summary text"}
+                """;
+
+        server.createContext("/v1/chat/completions", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            int call = chatCallCount.incrementAndGet();
+            writeJson(exchange, 200, call == 1 ? firstChatJson : secondChatJson);
+        });
+        server.createContext("/api/v1/chat", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200, relayJson);
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "key", "gpt-4o");
+        String[] result = client.createChatWithToolCalling("짜장면 역사", baseUrl);
+        assertEquals("Final answer.", result[0]);
+        assertEquals("true", result[1]);
+    }
+
+    @Test
+    void createChatWithToolCalling_no_choices_throws() throws Exception {
+        server.createContext("/v1/chat/completions", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200, "{\"choices\":[]}");
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "key", "gpt-4o");
+        assertThrows(ApiException.class, () -> client.createChatWithToolCalling("Hello", "http://127.0.0.1:9999"));
+    }
+
+    @Test
+    void createChatWithToolCalling_second_turn_no_choices_returns_summary() throws Exception {
+        AtomicInteger chatCallCount = new AtomicInteger(0);
+
+        String firstChatJson = """
+                {"choices":[{"finish_reason":"tool_calls","message":{"role":"assistant","content":null,
+                "tool_calls":[{"id":"call_1","type":"function","function":{"name":"deep_research",
+                "arguments":"{\\"research_question\\":\\"q\\",\\"deliverable_format\\":\\"markdown_brief\\"}"}}]}}]}
+                """;
+        String secondChatJson = """
+                {"choices":[]}
+                """;
+        String relayJson = """
+                {"content":"rc","tool_called":true,"research_summary":"summary fallback"}
+                """;
+
+        server.createContext("/v1/chat/completions", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            int call = chatCallCount.incrementAndGet();
+            writeJson(exchange, 200, call == 1 ? firstChatJson : secondChatJson);
+        });
+        server.createContext("/api/v1/chat", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200, relayJson);
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "key", "gpt-4o");
+        String[] result = client.createChatWithToolCalling("Q", baseUrl);
+        assertEquals("summary fallback", result[0]);
+        assertEquals("true", result[1]);
+    }
+
+    @Test
+    void createChatWithToolCalling_non_deep_research_tool_treated_as_no_call() throws Exception {
+        String firstJson = """
+                {"choices":[{"finish_reason":"tool_calls","message":{"role":"assistant","content":"direct",
+                "tool_calls":[{"id":"call_x","type":"function","function":{"name":"other_tool","arguments":"{}"}}]}}]}
+                """;
+        server.createContext("/v1/chat/completions", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200, firstJson);
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "key", "gpt-4o");
+        String[] result = client.createChatWithToolCalling("Q", "http://127.0.0.1:9999");
+        assertEquals("direct", result[0]);
+        assertEquals("false", result[1]);
+    }
+
+    @Test
+    void createChatWithToolCalling_invalid_json_args_falls_back_to_prompt() throws Exception {
+        AtomicInteger chatCallCount = new AtomicInteger(0);
+
+        String firstChatJson = """
+                {"choices":[{"finish_reason":"tool_calls","message":{"role":"assistant","content":null,
+                "tool_calls":[{"id":"call_1","type":"function","function":{"name":"deep_research",
+                "arguments":"INVALID"}}]}}]}
+                """;
+        String secondChatJson = """
+                {"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"done","tool_calls":null}}]}
+                """;
+        String relayJson = """
+                {"content":"rc","tool_called":true,"research_summary":"s"}
+                """;
+
+        server.createContext("/v1/chat/completions", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            int call = chatCallCount.incrementAndGet();
+            writeJson(exchange, 200, call == 1 ? firstChatJson : secondChatJson);
+        });
+        server.createContext("/api/v1/chat", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200, relayJson);
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "key", "gpt-4o");
+        String[] result = client.createChatWithToolCalling("my prompt", baseUrl);
+        assertEquals("done", result[0]);
+        assertEquals("true", result[1]);
     }
 
     private static void writeJson(HttpExchange exchange, int status, String payload) throws IOException {

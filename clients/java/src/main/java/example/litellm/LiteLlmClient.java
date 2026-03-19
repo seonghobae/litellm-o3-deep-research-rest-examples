@@ -125,6 +125,133 @@ public final class LiteLlmClient {
         return extractResponseText(payload);
     }
 
+    private static final java.util.Map<String, Object> DEEP_RESEARCH_TOOL_SCHEMA;
+
+    static {
+        java.util.Map<String, Object> params = new java.util.LinkedHashMap<>();
+        params.put("type", "object");
+        java.util.Map<String, Object> props = new java.util.LinkedHashMap<>();
+        props.put("research_question", java.util.Map.of("type", "string"));
+        props.put("deliverable_format", java.util.Map.of(
+            "type", "string",
+            "enum", java.util.List.of("markdown_brief", "markdown_report", "json_outline")
+        ));
+        params.put("properties", props);
+        params.put("required", java.util.List.of("research_question", "deliverable_format"));
+
+        java.util.Map<String, Object> fn = new java.util.LinkedHashMap<>();
+        fn.put("name", "deep_research");
+        fn.put("description", "Conduct in-depth research on a topic and return a detailed report.");
+        fn.put("parameters", params);
+
+        java.util.Map<String, Object> tool = new java.util.LinkedHashMap<>();
+        tool.put("type", "function");
+        tool.put("function", fn);
+
+        DEEP_RESEARCH_TOOL_SCHEMA = java.util.Collections.unmodifiableMap(tool);
+    }
+
+    /**
+     * Chat completions with automatic deep_research function calling.
+     *
+     * <p>Flow:
+     * <ol>
+     *   <li>First Chat Completions turn with the {@code deep_research} tool schema.</li>
+     *   <li>If finish_reason is {@code tool_calls} for {@code deep_research}, calls the
+     *       relay {@code POST /api/v1/chat} to execute the research.</li>
+     *   <li>Second Chat Completions turn synthesises the final answer from the tool result.</li>
+     * </ol>
+     *
+     * @param prompt       the user message
+     * @param relayBaseUrl relay server base URL (e.g. {@code http://127.0.0.1:8080});
+     *                     must NOT be null
+     * @return array of length 2: {@code [finalAnswer, "true"|"false"]}
+     */
+    public String[] createChatWithToolCalling(String prompt, String relayBaseUrl) {
+        // First turn
+        java.util.Map<String, Object> payload = new java.util.LinkedHashMap<>();
+        payload.put("model", model);
+        payload.put("messages", java.util.List.of(java.util.Map.of("role", "user", "content", prompt)));
+        payload.put("tools", java.util.List.of(DEEP_RESEARCH_TOOL_SCHEMA));
+
+        JsonNode first = postJson(baseUrl.resolve("chat/completions"), payload);
+        JsonNode choices = first.path("choices");
+        if (!choices.isArray() || choices.isEmpty()) {
+            throw new ApiException(200, "No choices in response.", first.toString());
+        }
+        JsonNode firstChoice = choices.get(0);
+        String finishReason = firstChoice.path("finish_reason").asText("stop");
+        JsonNode firstMessage = firstChoice.path("message");
+        JsonNode toolCallsNode = firstMessage.path("tool_calls");
+
+        // Locate the deep_research tool call
+        JsonNode deepResearchCall = null;
+        if ("tool_calls".equals(finishReason) && toolCallsNode.isArray()) {
+            for (JsonNode tc : toolCallsNode) {
+                if ("function".equals(tc.path("type").asText())
+                        && "deep_research".equals(tc.path("function").path("name").asText())) {
+                    deepResearchCall = tc;
+                    break;
+                }
+            }
+        }
+
+        if (deepResearchCall == null) {
+            // No tool call — return direct answer
+            return new String[]{firstMessage.path("content").asText(""), "false"};
+        }
+
+        String toolCallId = deepResearchCall.path("id").asText("call_0");
+        String rawArgs = deepResearchCall.path("function").path("arguments").asText("{}");
+        JsonNode argsNode;
+        try {
+            argsNode = MAPPER.readTree(rawArgs);
+        } catch (JsonProcessingException e) {
+            argsNode = MAPPER.createObjectNode();
+        }
+        String researchQuestion = argsNode.path("research_question").asText(prompt);
+
+        // Call relay /api/v1/chat
+        String relayUrl = relayBaseUrl.endsWith("/") ? relayBaseUrl : relayBaseUrl + "/";
+        URI relayUri = URI.create(relayUrl);
+        java.util.Map<String, Object> relayBody = new java.util.LinkedHashMap<>();
+        relayBody.put("message", researchQuestion);
+        relayBody.put("auto_tool_call", true);
+        JsonNode relayResp = postJson(relayUri.resolve("api/v1/chat"), relayBody);
+        String researchSummary = relayResp.path("research_summary").isMissingNode() || relayResp.path("research_summary").isNull()
+            ? relayResp.path("content").asText("")
+            : relayResp.path("research_summary").asText("");
+
+        // Second turn
+        java.util.List<java.util.Map<String, Object>> messages2 = java.util.List.of(
+            java.util.Map.of("role", "user", "content", prompt),
+            buildAssistantWithToolCall(toolCallId, rawArgs),
+            java.util.Map.of("role", "tool", "tool_call_id", toolCallId, "content", researchSummary)
+        );
+        java.util.Map<String, Object> second = new java.util.LinkedHashMap<>();
+        second.put("model", model);
+        second.put("messages", messages2);
+        JsonNode secondResp = postJson(baseUrl.resolve("chat/completions"), second);
+        JsonNode secondChoices = secondResp.path("choices");
+        if (!secondChoices.isArray() || secondChoices.isEmpty()) {
+            return new String[]{researchSummary, "true"};
+        }
+        String finalContent = secondChoices.get(0).path("message").path("content").asText(researchSummary);
+        return new String[]{finalContent, "true"};
+    }
+
+    private static java.util.Map<String, Object> buildAssistantWithToolCall(String toolCallId, String rawArgs) {
+        java.util.Map<String, Object> tc = new java.util.LinkedHashMap<>();
+        tc.put("id", toolCallId);
+        tc.put("type", "function");
+        tc.put("function", java.util.Map.of("name", "deep_research", "arguments", rawArgs));
+        java.util.Map<String, Object> msg = new java.util.LinkedHashMap<>();
+        msg.put("role", "assistant");
+        msg.put("content", "");
+        msg.put("tool_calls", java.util.List.of(tc));
+        return msg;
+    }
+
     private JsonNode postJson(URI target, Map<String, Object> payload) {
         String body;
         try {

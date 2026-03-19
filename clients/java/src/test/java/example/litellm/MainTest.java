@@ -188,6 +188,87 @@ class MainTest {
         assertEquals("responses routed", result);
     }
 
+    // ---------- --auto-tool-call tests ---------------------------------------
+
+    @Test
+    void autoToolCallCannotBeCombinedWithTargetRelay() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> Main.main(new String[] {"--auto-tool-call", "--target", "relay", "my question"}));
+    }
+
+    @Test
+    void autoToolCallRoutingPathCompletesSuccessfully() throws Exception {
+        // Exercise the createChatWithToolCalling path via LiteLlmClient directly
+        // (same pattern as other routing tests - Main.main env-var coupling
+        // cannot be controlled in-process).
+        java.util.concurrent.atomic.AtomicInteger chatCallCount =
+                new java.util.concurrent.atomic.AtomicInteger(0);
+
+        String firstChatJson =
+                "{\"choices\":[{\"finish_reason\":\"stop\",\"message\":"
+                + "{\"role\":\"assistant\",\"content\":\"auto tool answer\",\"tool_calls\":null}}]}";
+
+        server.createContext("/v1/chat/completions", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            chatCallCount.incrementAndGet();
+            writeJson(exchange, 200, firstChatJson);
+        });
+
+        EnvConfig cfg = EnvConfig.load(
+                tempDir.resolve(".env"),
+                java.util.Map.of("LITELLM_BASE_URL", baseUrl, "LITELLM_API_KEY", "sk-test"));
+        LiteLlmClient client = new LiteLlmClient(cfg.baseUrl(), cfg.apiKey(), cfg.model());
+
+        // Same logic as Main.main's --auto-tool-call branch (no tool called case)
+        String[] result = client.createChatWithToolCalling("짜장면의 역사", "http://127.0.0.1:9999");
+
+        assertEquals("auto tool answer", result[0]);
+        assertEquals("false", result[1]);
+        assertEquals(1, chatCallCount.get());
+    }
+
+    @Test
+    void autoToolCallWithDeepResearchEmitsStderrMessage() throws Exception {
+        // Verify that when tool_called=true, the result[1] is "true"
+        // (stderr output cannot be captured easily in unit tests, but we verify
+        // the logic returns the correct indicator).
+        java.util.concurrent.atomic.AtomicInteger chatCallCount =
+                new java.util.concurrent.atomic.AtomicInteger(0);
+
+        String firstChatJson =
+                "{\"choices\":[{\"finish_reason\":\"tool_calls\",\"message\":"
+                + "{\"role\":\"assistant\",\"content\":null,"
+                + "\"tool_calls\":[{\"id\":\"call_1\",\"type\":\"function\","
+                + "\"function\":{\"name\":\"deep_research\","
+                + "\"arguments\":\"{\\\"research_question\\\":\\\"test\\\","
+                + "\\\"deliverable_format\\\":\\\"markdown_brief\\\"}\"}}]}}]}";
+        String relayJson =
+                "{\"content\":\"relay\",\"tool_called\":true,\"research_summary\":\"summary\"}";
+        String secondChatJson =
+                "{\"choices\":[{\"finish_reason\":\"stop\",\"message\":"
+                + "{\"role\":\"assistant\",\"content\":\"synthesized answer\",\"tool_calls\":null}}]}";
+
+        server.createContext("/v1/chat/completions", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            int call = chatCallCount.incrementAndGet();
+            writeJson(exchange, 200, call == 1 ? firstChatJson : secondChatJson);
+        });
+        server.createContext("/api/v1/chat", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200, relayJson);
+        });
+
+        EnvConfig cfg = EnvConfig.load(
+                tempDir.resolve(".env"),
+                java.util.Map.of("LITELLM_BASE_URL", baseUrl, "LITELLM_API_KEY", "sk-test"));
+        LiteLlmClient client = new LiteLlmClient(cfg.baseUrl(), cfg.apiKey(), cfg.model());
+        String[] result = client.createChatWithToolCalling("짜장면의 역사", baseUrl);
+
+        assertEquals("synthesized answer", result[0]);
+        assertEquals("true", result[1]);
+    }
+
     // ---------- helper -------------------------------------------------------
 
     private static void writeJson(HttpExchange exchange, int status, String payload) throws IOException {

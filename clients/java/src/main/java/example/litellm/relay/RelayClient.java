@@ -219,6 +219,40 @@ public final class RelayClient {
         throw new ApiException(200, "Relay response did not include " + fieldName + ".", payload.toString());
     }
 
+    /**
+     * Result from the relay {@code POST /api/v1/chat} endpoint.
+     *
+     * @param content          the assistant reply text
+     * @param toolCalled       whether a tool was automatically invoked
+     * @param toolName         the name of the tool that was called, or {@code null}
+     * @param researchSummary  the research summary returned by the tool, or {@code null}
+     */
+    public record ChatResult(String content, boolean toolCalled, String toolName, String researchSummary) {}
+
+    /**
+     * POST /api/v1/chat — relay-side orchestration with optional deep_research tool.
+     *
+     * @param message      user message
+     * @param autoToolCall whether to enable automatic deep_research tool calling
+     * @return ChatResult with content and tool metadata
+     */
+    public ChatResult invokeChat(String message, boolean autoToolCall) {
+        java.util.Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("message", message);
+        body.put("auto_tool_call", autoToolCall);
+        JsonNode result = postJson(chatUrl(), body);
+        String content = result.path("content").asText("");
+        boolean toolCalled = result.path("tool_called").asBoolean(false);
+        String toolName = result.hasNonNull("tool_name") ? result.get("tool_name").asText() : null;
+        String summary = result.hasNonNull("research_summary") ? result.get("research_summary").asText() : null;
+        return new ChatResult(content, toolCalled, toolName, summary);
+    }
+
+    private URI chatUrl() {
+        // baseUrl is like http://127.0.0.1:8080/ (trailing slash)
+        return baseUrl.resolve("api/v1/chat");
+    }
+
     private static String extractOutputText(JsonNode payload) {
         JsonNode outputText = payload.get("output_text");
         if (outputText != null && outputText.isTextual() && !outputText.asText().isBlank()) {
