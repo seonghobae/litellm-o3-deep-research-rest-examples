@@ -11,6 +11,7 @@
 | `tool_name` | `"deep_research"` | 고정값 |
 | `arguments.research_question` | `string` | 조사할 주제·질문 |
 | `arguments.system_prompt` | `string?` | 모델 수준 지시문 (system/developer prompt). 미설정 시 생략 |
+| `arguments.text_format` | `object?` | API 레벨 JSON 강제. `{"type":"json_object"}` 또는 `{"type":"json_schema",...}`. 미설정 시 plain text |
 | `arguments.context` | `string[]` | 추가 배경 정보 |
 | `arguments.constraints` | `string[]` | 출력 형식·범위 제약 |
 | `arguments.deliverable_format` | `"markdown_brief" \| "markdown_report" \| "json_outline"` | 산출물 형식 |
@@ -87,6 +88,51 @@ uv run python -m litellm_relay
 ```
 
 `system_prompt`는 Responses API의 `instructions` 필드로 전달됩니다. 모델이 **user 질문과 별개로** 페르소나·출력 언어·형식을 지키도록 강제할 때 사용합니다.
+
+### text_format 포함 호출 — json_object
+
+```json
+{
+  "tool_name": "deep_research",
+  "arguments": {
+    "research_question": "짜장면의 기원을 JSON으로: origin_country, year_introduced, main_ingredient 키 포함",
+    "deliverable_format": "json_outline",
+    "text_format": {"type": "json_object"},
+    "require_citations": false
+  }
+}
+```
+
+### text_format 포함 호출 — json_schema (strict)
+
+```json
+{
+  "tool_name": "deep_research",
+  "arguments": {
+    "research_question": "짜장면의 역사를 JSON으로 반환해줘",
+    "deliverable_format": "json_outline",
+    "text_format": {
+      "type": "json_schema",
+      "name": "food_history",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "origin_country":      {"type": "string"},
+          "introduced_to_korea": {"type": "integer"},
+          "key_milestone":       {"type": "string"},
+          "is_fusion":           {"type": "boolean"}
+        },
+        "required": ["origin_country","introduced_to_korea","key_milestone","is_fusion"],
+        "additionalProperties": false
+      }
+    },
+    "require_citations": false
+  }
+}
+```
+
+> **주의:** `text_format`은 gpt-4o 계열에서만 완전 지원됩니다. o3-deep-research는 `json_schema` 미지원(API 400), `json_object`는 수락되나 JSON 출력이 보장되지 않습니다.
 
 ## Java에서 relay 호출
 

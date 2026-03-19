@@ -522,7 +522,183 @@ system_prompt 있음:
 
 ---
 
-## 10. 작업 검증 이력 — '짜장면의 역사' 실호출 (5가지 경로 + web_search + system_prompt)
+## 10. deep_research Wrapper에서 JSON 출력 강제 (text_format)
+
+### 10-1. 배경
+
+relay wrapper의 `_render_input()`은 모든 요청을 Markdown 형식의 문자열로 조립해 Responses API의 `input` 필드로 보냅니다. 모델은 기본적으로 plain text / Markdown으로 답합니다.
+
+`deliverable_format: "json_outline"`을 지정해도 이것은 **텍스트 힌트에 불과**합니다. 모델이 무시하거나, JSON을 코드 블럭(```json```)으로 감싸서 반환할 수 있습니다.
+
+```bash
+# 현재 json_outline 동작 예
+curl -X POST .../api/v1/tool-invocations -d '{"arguments":{"deliverable_format":"json_outline", ...}}'
+# 결과: ```json\n{"title": ...}\n```  ← 마크다운 코드 블럭, JSON.parse 불가
+```
+
+**API 레벨에서 JSON을 강제**하려면 `text_format` 필드를 사용해야 합니다.
+
+### 10-2. text_format 필드
+
+`text_format`은 Responses API의 `text.format` 객체에 직접 매핑됩니다.
+
+| text_format 값 | 의미 | gpt-4o | o3-deep-research |
+|---------------|------|--------|-----------------|
+| 없음 (기본값) | plain text / Markdown | ✅ | ✅ |
+| `{"type":"json_object"}` | 유효한 JSON 객체 강제 | ✅ | ⚠️ queued는 됨 (결과 보장 불명확) |
+| `{"type":"json_schema","name":"...","schema":{...},"strict":true}` | 스키마 준수 JSON 강제 | ✅ | ❌ **API 400 오류** |
+
+### 10-3. 사용 방법
+
+#### json_object 모드 (자유 형식 JSON)
+
+```bash
+curl -X POST http://127.0.0.1:8080/api/v1/tool-invocations \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool_name": "deep_research",
+    "arguments": {
+      "research_question": "짜장면의 기원을 JSON으로: origin_country, year_introduced, main_ingredient 키 포함",
+      "deliverable_format": "json_outline",
+      "text_format": {"type": "json_object"},
+      "require_citations": false
+    }
+  }'
+```
+
+**실제 결과 (gpt-4o):**
+
+```json
+{
+  "origin_country": "China",
+  "year_introduced": "Early 20th century (to Korea)",
+  "main_ingredient": "Fermented black soybeans, wheat noodles, pork, vegetables"
+}
+```
+
+#### json_schema 모드 (스키마 강제 JSON)
+
+```bash
+curl -X POST http://127.0.0.1:8080/api/v1/tool-invocations \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool_name": "deep_research",
+    "arguments": {
+      "research_question": "짜장면의 역사를 JSON으로 반환해줘",
+      "deliverable_format": "json_outline",
+      "text_format": {
+        "type": "json_schema",
+        "name": "food_history",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "origin_country":      {"type": "string"},
+            "introduced_to_korea": {"type": "integer"},
+            "key_milestone":       {"type": "string"},
+            "is_fusion":           {"type": "boolean"}
+          },
+          "required": ["origin_country","introduced_to_korea","key_milestone","is_fusion"],
+          "additionalProperties": false
+        }
+      },
+      "require_citations": false
+    }
+  }'
+```
+
+**실제 결과 (gpt-4o):**
+
+```json
+{
+  "origin_country": "China",
+  "introduced_to_korea": 1905,
+  "key_milestone": "Adjusted recipe to Korean tastes",
+  "is_fusion": true
+}
+```
+
+모든 필드가 스키마 타입과 정확히 일치합니다.
+
+### 10-4. 모델별 지원 현황과 제약
+
+#### gpt-4o (✅ 완전 지원)
+
+- `json_object`: 항상 valid JSON 반환
+- `json_schema`: strict mode로 스키마 100% 준수
+- 둘 다 `deliverable_format`과 무관하게 동작 (`json_outline` 아니어도 됨)
+
+#### o3-deep-research (❌/⚠️ 제한적)
+
+```
+❌ json_schema: API 레벨에서 즉시 오류 반환
+   "Invalid parameter: 'text.format' of type 'json_schema' is not supported
+    with model version o3-deep-research-2025-06-26"
+
+⚠️ json_object: API는 queued로 수락 (HTTP 200)
+   - 실제 연구가 끝난 뒤 JSON 형식으로 반환되는지는 보장되지 않음
+   - 긴 분석 결과를 단일 JSON 객체로 강제하기가 어려움
+   - 실용적으로는 background=true + 폴링 후 결과 확인 필요
+```
+
+**권장 패턴 (o3-deep-research + JSON 필요 시):**
+
+```json
+{
+  "arguments": {
+    "research_question": "짜장면의 역사를 JSON 형식으로 정리해줘. 필드: origin, period, modernization",
+    "deliverable_format": "json_outline",
+    "system_prompt": "Return ONLY a JSON object. No prose, no markdown, no code fences.",
+    "background": true
+  }
+}
+```
+
+→ `system_prompt`로 JSON 출력을 유도하고, `background=true`로 제출한 뒤 결과를 폴링합니다. API 레벨 강제는 없지만 실용적입니다.
+
+### 10-5. 내부 동작
+
+relay는 `text_format`을 다음과 같이 변환합니다.
+
+```python
+# contracts.py
+text_format = TextFormatJsonObject()   # {"type": "json_object"}
+text_format = TextFormatJsonSchema(    # {"type": "json_schema", "name": ..., "schema": {...}}
+    name="food_history",
+    schema={...},
+    strict=True,
+)
+
+# upstream.py
+extra_kwargs["text"] = {
+    "format": args.text_format.model_dump(by_alias=True, exclude_none=True)
+}
+# → litellm.responses(..., text={"format": {"type": "json_object"}}, ...)
+```
+
+### 10-6. deliverable_format vs text_format
+
+| | `deliverable_format` | `text_format` |
+|-|---------------------|---------------|
+| 위치 | `_render_input()` → input 문자열 | `text.format` → API 파라미터 |
+| 강제력 | **텍스트 힌트** (모델이 무시 가능) | **API 레벨 강제** (위반 시 오류) |
+| 지원 모델 | 모든 모델 | gpt-4o 계열 (o3-deep-research 제한) |
+| JSON 보장 | ❌ | ✅ (json_object/json_schema) |
+
+**둘을 같이 쓰는 권장 패턴:**
+
+```json
+{
+  "deliverable_format": "json_outline",
+  "text_format": {"type": "json_object"}
+}
+```
+
+`deliverable_format: "json_outline"`은 모델이 "JSON 구조로 답하려는 의도"를 인지하는 힌트이고, `text_format`은 API 레벨에서 JSON을 실제로 강제합니다.
+
+---
+
+## 11. 작업 검증 이력 — '짜장면의 역사' 실호출 (5가지 경로 + web_search + system_prompt)
 
 이 저장소가 실제로 동작함을 검증하기 위해 다음 5가지 경로로 모두 성공 확인했습니다.
 
@@ -599,12 +775,13 @@ LITELLM_MODEL=gpt-4o mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
 
 ---
 
-## 11. 요약
+## 12. 요약
 
 - direct Python/Java 예제는 OpenAI 호환 `chat/completions`, `responses`, `background: true`를 지원합니다.
 - `--web-search` 플래그로 `web_search_preview` tool을 켜면 일반 모델(gpt-4o 등)에도 실시간 웹 검색을 추가할 수 있습니다.
 - `--timeout <초>`로 응답 대기 시간을 조정할 수 있습니다 (기본값 30초, o3-deep-research는 300초 이상 권장).
 - relay `deep_research` wrapper는 `arguments.system_prompt` 필드를 통해 모델 수준 지시문(페르소나, 출력 언어, 형식)을 Responses API `instructions` 필드로 전달합니다.
+- `arguments.text_format`으로 API 레벨 JSON 강제가 가능합니다: `json_object`(자유 JSON), `json_schema`(스키마 강제). gpt-4o에서 완전 지원, o3-deep-research는 `json_schema` 미지원(400 오류), `json_object`는 수락되나 결과 보장 없음.
 - relay 예제는 LiteLLM Python SDK + FastAPI + Hypercorn으로 구현되어 있습니다.
 - Java는 `--target relay` 모드로 relay를 호출할 수 있습니다.
 - relay 외부 계약은 `tool_name` + 구조화된 `arguments` 중심이며, raw upstream `input`은 내부에만 존재합니다.

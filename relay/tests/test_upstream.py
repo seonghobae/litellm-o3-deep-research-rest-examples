@@ -172,6 +172,139 @@ async def test_builds_streaming_responses_request(
 
 
 @pytest.mark.asyncio
+async def test_invoke_deep_research_passes_text_format_json_object(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """text_format=json_object is forwarded as text={"format":...} (line 58)."""
+    captured: dict[str, object] = {}
+
+    def fake_responses(**kwargs: object) -> dict[str, object]:
+        captured.update(kwargs)
+        return {"id": "resp_fmt_1", "status": "completed", "output_text": '{"a":1}'}
+
+    monkeypatch.setattr("litellm_relay.upstream.litellm.responses", fake_responses)
+
+    gateway = LiteLLMRelayGateway(
+        base_url="https://proxy.example/v1",
+        api_key="sk-relay",
+        model="gpt-4o",
+        timeout_seconds=12.0,
+    )
+
+    from litellm_relay.contracts import TextFormatJsonObject
+
+    result = await gateway.invoke_deep_research(
+        DeepResearchArguments(
+            research_question="Return JSON.",
+            deliverable_format="markdown_brief",
+            text_format=TextFormatJsonObject(),
+        )
+    )
+
+    assert captured.get("text") == {"format": {"type": "json_object"}}
+    assert result.output_text == '{"a":1}'
+
+
+@pytest.mark.asyncio
+async def test_invoke_deep_research_passes_text_format_json_schema(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """text_format=json_schema serialises the schema with correct alias."""
+    captured: dict[str, object] = {}
+
+    def fake_responses(**kwargs: object) -> dict[str, object]:
+        captured.update(kwargs)
+        return {"id": "resp_schema_1", "status": "completed", "output_text": '{"x":1}'}
+
+    monkeypatch.setattr("litellm_relay.upstream.litellm.responses", fake_responses)
+
+    gateway = LiteLLMRelayGateway(
+        base_url="https://proxy.example/v1",
+        api_key="sk-relay",
+        model="gpt-4o",
+        timeout_seconds=12.0,
+    )
+
+    from litellm_relay.contracts import TextFormatJsonSchema
+
+    result = await gateway.invoke_deep_research(
+        DeepResearchArguments(
+            research_question="Return schema-valid JSON.",
+            deliverable_format="markdown_brief",
+            text_format=TextFormatJsonSchema(
+                name="my_schema",
+                schema={
+                    "type": "object",
+                    "properties": {"x": {"type": "integer"}},
+                    "required": ["x"],
+                    "additionalProperties": False,
+                },
+            ),
+        )
+    )
+
+    text_arg = captured.get("text")
+    assert isinstance(text_arg, dict)
+    fmt = text_arg["format"]
+    assert fmt["type"] == "json_schema"
+    assert fmt["name"] == "my_schema"
+    assert "schema" in fmt  # aliased from schema_
+    assert result.output_text == '{"x":1}'
+
+
+@pytest.mark.asyncio
+async def test_stream_deep_research_passes_text_format(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """text_format is forwarded in stream mode too (line 130)."""
+    captured: dict[str, object] = {}
+
+    class FakeStream:
+        def __init__(self, events: list[dict[str, object]]) -> None:
+            self._events = events
+
+        def __aiter__(self) -> FakeStream:
+            self._iter = iter(self._events)
+            return self
+
+        async def __anext__(self) -> dict[str, object]:
+            try:
+                return next(self._iter)
+            except StopIteration:
+                raise StopAsyncIteration
+
+    async def fake_aresponses(**kwargs: object) -> FakeStream:
+        captured.update(kwargs)
+        return FakeStream([{"type": "response.output_text.delta", "delta": '{"q":1}'}])
+
+    monkeypatch.setattr("litellm_relay.upstream.litellm.aresponses", fake_aresponses)
+
+    gateway = LiteLLMRelayGateway(
+        base_url="https://proxy.example/v1",
+        api_key="sk-relay",
+        model="gpt-4o",
+        timeout_seconds=12.0,
+    )
+
+    from litellm_relay.contracts import TextFormatJsonObject
+
+    chunks = [
+        chunk
+        async for chunk in gateway.stream_deep_research(
+            DeepResearchArguments(
+                research_question="JSON stream.",
+                deliverable_format="markdown_brief",
+                stream=True,
+                text_format=TextFormatJsonObject(),
+            )
+        )
+    ]
+
+    assert captured.get("text") == {"format": {"type": "json_object"}}
+    assert chunks == ['{"q":1}']
+
+
+@pytest.mark.asyncio
 async def test_invoke_deep_research_passes_system_prompt_as_instructions(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

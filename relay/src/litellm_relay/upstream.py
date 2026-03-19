@@ -54,6 +54,10 @@ class LiteLLMRelayGateway:
         extra_kwargs: dict[str, Any] = {}
         if args.system_prompt:
             extra_kwargs["instructions"] = args.system_prompt
+        if args.text_format is not None:
+            extra_kwargs["text"] = {
+                "format": args.text_format.model_dump(by_alias=True, exclude_none=True)
+            }
 
         payload = await asyncio.to_thread(
             litellm.responses,
@@ -122,6 +126,10 @@ class LiteLLMRelayGateway:
         extra_kwargs: dict[str, Any] = {}
         if args.system_prompt:
             extra_kwargs["instructions"] = args.system_prompt
+        if args.text_format is not None:
+            extra_kwargs["text"] = {
+                "format": args.text_format.model_dump(by_alias=True, exclude_none=True)
+            }
 
         response = await litellm.aresponses(
             model=self._model,
