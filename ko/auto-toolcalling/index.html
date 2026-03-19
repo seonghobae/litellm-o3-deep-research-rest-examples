@@ -739,10 +739,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-4-java-relay" class="md-nav__link">
+  <a href="#4-4-system_prompt-deep_research" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4-4. Java relay 클라이언트에서 사용
+        4-4. system_prompt — deep_research에 페르소나·언어·형식 주입
       
     </span>
   </a>
@@ -750,10 +750,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-5-relay-chat-model-timeout" class="md-nav__link">
+  <a href="#4-5-deliverable_format" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4-5. Relay 설정 — chat model과 timeout
+        4-5. deliverable_format — 산출물 형식 폴백 지정
       
     </span>
   </a>
@@ -761,10 +761,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-6-timeout-chat-timeout-vs-research-timeout" class="md-nav__link">
+  <a href="#4-6-java-relay" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4-6. Timeout 설정 — chat timeout vs research timeout
+        4-6. Java relay 클라이언트에서 사용
       
     </span>
   </a>
@@ -772,10 +772,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-7" class="md-nav__link">
+  <a href="#4-7-relay-chat-model-timeout" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4-7. 에러 처리
+        4-7. Relay 설정 — chat model과 timeout
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-8-timeout-chat-timeout-vs-research-timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-8. Timeout 설정 — chat timeout vs research timeout
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-9. 에러 처리
       
     </span>
   </a>
@@ -1251,10 +1273,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-4-java-relay" class="md-nav__link">
+  <a href="#4-4-system_prompt-deep_research" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4-4. Java relay 클라이언트에서 사용
+        4-4. system_prompt — deep_research에 페르소나·언어·형식 주입
       
     </span>
   </a>
@@ -1262,10 +1284,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-5-relay-chat-model-timeout" class="md-nav__link">
+  <a href="#4-5-deliverable_format" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4-5. Relay 설정 — chat model과 timeout
+        4-5. deliverable_format — 산출물 형식 폴백 지정
       
     </span>
   </a>
@@ -1273,10 +1295,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-6-timeout-chat-timeout-vs-research-timeout" class="md-nav__link">
+  <a href="#4-6-java-relay" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4-6. Timeout 설정 — chat timeout vs research timeout
+        4-6. Java relay 클라이언트에서 사용
       
     </span>
   </a>
@@ -1284,10 +1306,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-7" class="md-nav__link">
+  <a href="#4-7-relay-chat-model-timeout" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4-7. 에러 처리
+        4-7. Relay 설정 — chat model과 timeout
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-8-timeout-chat-timeout-vs-research-timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-8. Timeout 설정 — chat timeout vs research timeout
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-9. 에러 처리
       
     </span>
   </a>
@@ -1631,29 +1675,142 @@ deep research가 실행됐습니다.</p>
 <a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="s1">  }&#39;</span>
 </code></pre></div>
 <p><code>context</code> 배열은 user 메시지 앞에 붙어서 모델에게 추가 맥락을 제공합니다.</p>
-<h3 id="4-4-java-relay">4-4. Java relay 클라이언트에서 사용<a class="headerlink" href="#4-4-java-relay" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--target relay --timeout 120 짜장면의 역사를 알려줘&quot;</span>
+<h3 id="4-4-system_prompt-deep_research">4-4. system_prompt — deep_research에 페르소나·언어·형식 주입<a class="headerlink" href="#4-4-system_prompt-deep_research" title="Permanent link">&para;</a></h3>
+<p><code>system_prompt</code> 필드는 deep_research 실행 시 Responses API <code>instructions</code> 필드로 전달됩니다. 모델이 연구 결과를 생성할 때 페르소나·출력 언어·형식을 강제할 때 사용합니다.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># 항상 영어로 답변하도록 강제</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8080/api/v1/chat<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="s1">    &quot;message&quot;: &quot;짜장면의 역사를 자세히 알려줘&quot;,</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="s1">    &quot;auto_tool_call&quot;: true,</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="s1">    &quot;system_prompt&quot;: &quot;Always answer in English only.&quot;</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="s1">  }&#39;</span>
 </code></pre></div>
-<p>또는 Java 코드에서 직접:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">example.litellm.relay.RelayClient</span><span class="p">;</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">java.time.Duration</span><span class="p">;</span>
-<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
-<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="n">RelayClient</span><span class="w"> </span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">RelayClient</span><span class="p">(</span><span class="s">&quot;http://127.0.0.1:8080&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Duration</span><span class="p">.</span><span class="na">ofSeconds</span><span class="p">(</span><span class="mi">120</span><span class="p">));</span>
-<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="n">RelayClient</span><span class="p">.</span><span class="na">ChatResult</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="na">invokeChat</span><span class="p">(</span><span class="s">&quot;짜장면의 역사를 자세히 알려줘&quot;</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">);</span>
-<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="na">content</span><span class="p">());</span>
-<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="na">toolCalled</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="w">    </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&quot;[연구 도구 호출됨: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">result</span><span class="p">.</span><span class="na">toolName</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;]&quot;</span><span class="p">);</span>
-<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="p">}</span>
+<p><strong>응답 예시:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="p">{</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;The history of Jajangmyeon originates from the late 19th to early 20th centuries...&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span><span class="nt">&quot;tool_called&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span><span class="nt">&quot;tool_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deep_research&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">  </span><span class="nt">&quot;research_summary&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;The history of Jajangmyeon originates from...&quot;</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="p">}</span>
+</code></pre></div></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># 초등학생 페르소나로 답변 요청</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8080/api/v1/chat<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="s1">    &quot;message&quot;: &quot;짜장면의 역사를 알려줘&quot;,</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="s1">    &quot;auto_tool_call&quot;: true,</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="s1">    &quot;system_prompt&quot;: &quot;당신은 초등학생에게 설명하는 선생님입니다. 쉬운 말로 2문장으로만 답하세요.&quot;</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="s1">  }&#39;</span>
 </code></pre></div>
-<h3 id="4-5-relay-chat-model-timeout">4-5. Relay 설정 — chat model과 timeout<a class="headerlink" href="#4-5-relay-chat-model-timeout" title="Permanent link">&para;</a></h3>
+<p><strong>응답 예시:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="p">{</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;옛날 중국에서 먹던 작장면이 한국에 들어와 바뀌며 짜장면이 되었어요. 1900년대 초반 인천 차이나타운에서 처음 만들어졌답니다!&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span><span class="nt">&quot;tool_called&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span><span class="nt">&quot;tool_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deep_research&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">  </span><span class="nt">&quot;research_summary&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="p">}</span>
+</code></pre></div></p>
+<blockquote>
+<p><strong>주의</strong>: <code>system_prompt</code>는 deep_research tool이 실제로 호출될 때만 적용됩니다. 모델이 tool 없이 직접 답변하는 경우에는 영향을 주지 않습니다.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th><code>system_prompt</code> 활용 패턴</th>
+<th>예시</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>출력 언어 강제</td>
+<td><code>"Always answer in English only."</code></td>
+</tr>
+<tr>
+<td>페르소나 주입</td>
+<td><code>"당신은 초등학생 선생님입니다. 쉬운 말로 설명하세요."</code></td>
+</tr>
+<tr>
+<td>출력 길이 제한</td>
+<td><code>"Answer in exactly two sentences."</code></td>
+</tr>
+<tr>
+<td>형식 강제</td>
+<td><code>"Respond only with a numbered list. No prose."</code></td>
+</tr>
+<tr>
+<td>도메인 전문성</td>
+<td><code>"You are a Korean food historian. Emphasize cultural context."</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="4-5-deliverable_format">4-5. deliverable_format — 산출물 형식 폴백 지정<a class="headerlink" href="#4-5-deliverable_format" title="Permanent link">&para;</a></h3>
+<p><code>deliverable_format</code> 필드는 deep_research 실행 시 산출물 형식의 <strong>폴백</strong> 값입니다. 모델이 tool call 인자에서 형식을 직접 지정하면 그 값이 우선됩니다.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># 상세 보고서 형식으로 요청</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8080/api/v1/chat<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="s1">    &quot;message&quot;: &quot;짜장면의 역사와 사회적 영향을 상세히 알려줘&quot;,</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="s1">    &quot;auto_tool_call&quot;: true,</span>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="s1">    &quot;deliverable_format&quot;: &quot;markdown_report&quot;</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="s1">  }&#39;</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th><code>deliverable_format</code> 값</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>"markdown_brief"</code> (기본값)</td>
+<td>간략한 마크다운 보고서</td>
+</tr>
+<tr>
+<td><code>"markdown_report"</code></td>
+<td>상세 마크다운 보고서</td>
+</tr>
+<tr>
+<td><code>"json_outline"</code></td>
+<td>JSON 구조의 개요</td>
+</tr>
+</tbody>
+</table>
+<p>모델이 tool call 인자에서 <code>deliverable_format</code>을 지정하면 모델 지정값이 우선됩니다. 지정하지 않으면 이 필드의 값이 폴백으로 사용됩니다.</p>
+<h3 id="4-6-java-relay">4-6. Java relay 클라이언트에서 사용<a class="headerlink" href="#4-6-java-relay" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--target relay --timeout 120 짜장면의 역사를 알려줘&quot;</span>
+</code></pre></div>
+<p>또는 Java 코드에서 직접 (기본 2-인자 버전):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">example.litellm.relay.RelayClient</span><span class="p">;</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">java.time.Duration</span><span class="p">;</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="n">RelayClient</span><span class="w"> </span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">RelayClient</span><span class="p">(</span><span class="s">&quot;http://127.0.0.1:8080&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Duration</span><span class="p">.</span><span class="na">ofSeconds</span><span class="p">(</span><span class="mi">120</span><span class="p">));</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="n">RelayClient</span><span class="p">.</span><span class="na">ChatResult</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="na">invokeChat</span><span class="p">(</span><span class="s">&quot;짜장면의 역사를 자세히 알려줘&quot;</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">);</span>
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="na">content</span><span class="p">());</span>
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="na">toolCalled</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="w">    </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&quot;[연구 도구 호출됨: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">result</span><span class="p">.</span><span class="na">toolName</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;]&quot;</span><span class="p">);</span>
+<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="p">}</span>
+</code></pre></div>
+<p><code>system_prompt</code>와 <code>deliverable_format</code>을 지정하는 4-인자 버전:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="n">RelayClient</span><span class="w"> </span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">RelayClient</span><span class="p">(</span><span class="s">&quot;http://127.0.0.1:8080&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Duration</span><span class="p">.</span><span class="na">ofSeconds</span><span class="p">(</span><span class="mi">120</span><span class="p">));</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="n">RelayClient</span><span class="p">.</span><span class="na">ChatResult</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="na">invokeChat</span><span class="p">(</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="w">    </span><span class="s">&quot;짜장면의 역사를 자세히 알려줘&quot;</span><span class="p">,</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">    </span><span class="kc">true</span><span class="p">,</span><span class="w">                                  </span><span class="c1">// auto_tool_call</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="w">    </span><span class="s">&quot;Always answer in English only.&quot;</span><span class="p">,</span><span class="w">      </span><span class="c1">// system_prompt</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="w">    </span><span class="s">&quot;markdown_report&quot;</span><span class="w">                      </span><span class="c1">// deliverable_format (폴백)</span>
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="p">);</span>
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="na">content</span><span class="p">());</span>
+</code></pre></div>
+<h3 id="4-7-relay-chat-model-timeout">4-7. Relay 설정 — chat model과 timeout<a class="headerlink" href="#4-7-relay-chat-model-timeout" title="Permanent link">&para;</a></h3>
 <p>relay의 chat orchestration에 사용하는 모델은 <code>LITELLM_CHAT_MODEL</code> 환경변수로 지정합니다 (기본값 <code>gpt-4o</code>). deep_research 수행에는 기존 <code>LITELLM_MODEL</code>을 사용합니다.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nv">LITELLM_CHAT_MODEL</span><span class="o">=</span>gpt-4o-mini<span class="w"> </span><span class="se">\ </span><span class="w"> </span><span class="c1"># orchestration용 (function calling 지원 필요)</span>
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>o3-deep-research<span class="w"> </span><span class="se">\ </span><span class="w"> </span><span class="c1"># 실제 deep research용</span>
-<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_relay
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="nv">LITELLM_CHAT_MODEL</span><span class="o">=</span>gpt-4o-mini<span class="w"> </span><span class="se">\ </span><span class="w"> </span><span class="c1"># orchestration용 (function calling 지원 필요)</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>o3-deep-research<span class="w"> </span><span class="se">\ </span><span class="w"> </span><span class="c1"># 실제 deep research용</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_relay
 </code></pre></div>
-<h3 id="4-6-timeout-chat-timeout-vs-research-timeout">4-6. Timeout 설정 — chat timeout vs research timeout<a class="headerlink" href="#4-6-timeout-chat-timeout-vs-research-timeout" title="Permanent link">&para;</a></h3>
+<h3 id="4-8-timeout-chat-timeout-vs-research-timeout">4-8. Timeout 설정 — chat timeout vs research timeout<a class="headerlink" href="#4-8-timeout-chat-timeout-vs-research-timeout" title="Permanent link">&para;</a></h3>
 <p><code>/api/v1/chat</code> 엔드포인트는 두 가지 단계를 거치므로 timeout이 분리됩니다.</p>
 <table>
 <thead>
@@ -1676,34 +1833,34 @@ deep research가 실행됐습니다.</p>
 </tr>
 </tbody>
 </table>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># o3-deep-research는 최대 10분 이상 소요될 수 있음</span>
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="nv">RELAY_RESEARCH_TIMEOUT_SECONDS</span><span class="o">=</span><span class="m">600</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="nv">LITELLM_CHAT_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>o3-deep-research<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_relay
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="c1"># o3-deep-research는 최대 10분 이상 소요될 수 있음</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="nv">RELAY_RESEARCH_TIMEOUT_SECONDS</span><span class="o">=</span><span class="m">600</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="nv">LITELLM_CHAT_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>o3-deep-research<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_relay
 </code></pre></div>
 <blockquote>
 <p><strong>중요</strong>: <code>RELAY_TIMEOUT_SECONDS</code>만 늘리면 Chat Completions는 빨라지지만 deep_research timeout은 여전히 기본 300초입니다. o3-deep-research를 사용할 때는 <code>RELAY_RESEARCH_TIMEOUT_SECONDS</code>를 조정하세요.</p>
 </blockquote>
-<h3 id="4-7">4-7. 에러 처리<a class="headerlink" href="#4-7" title="Permanent link">&para;</a></h3>
+<h3 id="4-9">4-9. 에러 처리<a class="headerlink" href="#4-9" title="Permanent link">&para;</a></h3>
 <p>deep_research 실행 중 오류가 발생하더라도 relay는 HTTP 500 대신 구조화된 <code>ChatResponse</code>를 반환합니다.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="p">{</span>
-<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deep_research failed: litellm.Timeout: Connection timed out after 30.0 seconds.&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">  </span><span class="nt">&quot;tool_called&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span><span class="nt">&quot;tool_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deep_research&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="w">  </span><span class="nt">&quot;research_summary&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deep_research failed: ...&quot;</span>
-<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="p">{</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="w">  </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deep_research failed: litellm.Timeout: Connection timed out after 30.0 seconds.&quot;</span><span class="p">,</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="w">  </span><span class="nt">&quot;tool_called&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="w">  </span><span class="nt">&quot;tool_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deep_research&quot;</span><span class="p">,</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="w">  </span><span class="nt">&quot;research_summary&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deep_research failed: ...&quot;</span>
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="p">}</span>
 </code></pre></div>
 <p>이를 통해 클라이언트가 오류 여부를 <code>tool_called</code> + <code>content</code> 내용으로 판단할 수 있습니다.</p>
 <hr />
 <h2 id="5-approach-b-responses-api-function-calling">5. Approach B — Responses API Function Calling (평가 결과)<a class="headerlink" href="#5-approach-b-responses-api-function-calling" title="Permanent link">&para;</a></h2>
 <p><code>POST /v1/responses</code>에 <code>tools=[{type:"function", ...}]</code>를 붙여 Responses API 레벨에서 function calling을 시도할 수 있습니다.</p>
 <h3 id="5-1">5-1. 평가 방법<a class="headerlink" href="#5-1" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="nb">cd</span><span class="w"> </span>clients/python
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="nv">LITELLM_BASE_URL</span><span class="o">=</span>https://your-host/v1<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="nv">LITELLM_API_KEY</span><span class="o">=</span>sk-...<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>scripts/eval_responses_function_calling.py
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="nb">cd</span><span class="w"> </span>clients/python
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="nv">LITELLM_BASE_URL</span><span class="o">=</span>https://your-host/v1<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="nv">LITELLM_API_KEY</span><span class="o">=</span>sk-...<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>scripts/eval_responses_function_calling.py
 </code></pre></div>
 <h3 id="5-2">5-2. 평가 결과<a class="headerlink" href="#5-2" title="Permanent link">&para;</a></h3>
 <blockquote>
@@ -1772,53 +1929,53 @@ deep research가 실행됐습니다.</p>
 <strong>relay 기동 명령</strong>: <code>LITELLM_CHAT_MODEL=gpt-4o RELAY_RESEARCH_TIMEOUT_SECONDS=300 uv run python -m litellm_relay</code></p>
 </blockquote>
 <h3 id="7-1-approach-c-relay-apiv1chat-tool">7-1. Approach C: relay <code>/api/v1/chat</code> — 단순 인사 (tool 미호출)<a class="headerlink" href="#7-1-approach-c-relay-apiv1chat-tool" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8080/api/v1/chat<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;message&quot;: &quot;안녕하세요, 오늘 날씨 어때요?&quot;, &quot;auto_tool_call&quot;: true}&#39;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8080/api/v1/chat<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;message&quot;: &quot;안녕하세요, 오늘 날씨 어때요?&quot;, &quot;auto_tool_call&quot;: true}&#39;</span>
 </code></pre></div>
 <p><strong>실제 응답:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="p">{</span>
-<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="w">  </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;안녕하세요! 현재는 날씨 정보를 제공할 수 있는 기능이 활성화되어 있지 않습니다...&quot;</span><span class="p">,</span>
-<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="w">  </span><span class="nt">&quot;tool_called&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">  </span><span class="nt">&quot;tool_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
-<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="w">  </span><span class="nt">&quot;research_summary&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
-<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="p">{</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="w">  </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;안녕하세요! 현재는 날씨 정보를 제공할 수 있는 기능이 활성화되어 있지 않습니다...&quot;</span><span class="p">,</span>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="w">  </span><span class="nt">&quot;tool_called&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="w">  </span><span class="nt">&quot;tool_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="w">  </span><span class="nt">&quot;research_summary&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a><span class="p">}</span>
 </code></pre></div></p>
 <p>→ 모델이 단순 인사에는 deep_research를 호출하지 않음. ✅</p>
 <h3 id="7-2-approach-c-relay-apiv1chat-tool">7-2. Approach C: relay <code>/api/v1/chat</code> — 역사 조사 (tool 자동 호출)<a class="headerlink" href="#7-2-approach-c-relay-apiv1chat-tool" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8080/api/v1/chat<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;message&quot;: &quot;짜장면의 역사와 기원에 대해 상세하게 조사해서 알려줘&quot;, &quot;auto_tool_call&quot;: true}&#39;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8080/api/v1/chat<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;message&quot;: &quot;짜장면의 역사와 기원에 대해 상세하게 조사해서 알려줘&quot;, &quot;auto_tool_call&quot;: true}&#39;</span>
 </code></pre></div>
 <p><strong>실제 응답:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="p">{</span>
-<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="w">  </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;짜장면은 중국에서 유래된 자장몐(炸酱面)을 바탕으로 한국에서 발전한 음식으로, 20세기 초반 중국 산둥 출신 이민자들에 의해 한국에 소개되었습니다...&quot;</span><span class="p">,</span>
-<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="w">  </span><span class="nt">&quot;tool_called&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="w">  </span><span class="nt">&quot;tool_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deep_research&quot;</span><span class="p">,</span>
-<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="w">  </span><span class="nt">&quot;research_summary&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;# 짜장면의 역사와 기원에 관한 상세 연구\n\n짜장면은 한국에서 매우 사랑받는 요리로...&quot;</span>
-<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="p">{</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="w">  </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;짜장면은 중국에서 유래된 자장몐(炸酱面)을 바탕으로 한국에서 발전한 음식으로, 20세기 초반 중국 산둥 출신 이민자들에 의해 한국에 소개되었습니다...&quot;</span><span class="p">,</span>
+<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="w">  </span><span class="nt">&quot;tool_called&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="w">  </span><span class="nt">&quot;tool_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deep_research&quot;</span><span class="p">,</span>
+<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a><span class="w">  </span><span class="nt">&quot;research_summary&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;# 짜장면의 역사와 기원에 관한 상세 연구\n\n짜장면은 한국에서 매우 사랑받는 요리로...&quot;</span>
+<a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a><span class="p">}</span>
 </code></pre></div></p>
 <p>→ 모델이 스스로 deep_research를 호출하고, relay가 o3-deep-research로 연구 수행 후 최종 답변 합성. ✅</p>
 <h3 id="7-3-approach-a-python-auto-tool-call">7-3. Approach A: Python <code>--auto-tool-call</code><a class="headerlink" href="#7-3-approach-a-python-auto-tool-call" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_example<span class="w"> </span>--auto-tool-call<span class="w"> </span>--timeout<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="w">  </span><span class="s2">&quot;BTS의 역사와 성공 요인에 대해 조사해줘&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>litellm_example<span class="w"> </span>--auto-tool-call<span class="w"> </span>--timeout<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="w">  </span><span class="s2">&quot;BTS의 역사와 성공 요인에 대해 조사해줘&quot;</span>
 </code></pre></div>
 <p><strong>실제 결과:</strong>
 - stderr: <code>[deep_research was called automatically]</code>
 - stdout: BTS 역사, 성공 요인, 주요 업적을 포함한 구조화된 마크다운 보고서 반환</p>
 <p>→ 단일 CLI 명령으로 function calling → deep research → 답변 합성까지 완전 자동화. ✅</p>
 <h3 id="7-4-approach-a-java-auto-tool-call">7-4. Approach A: Java <code>--auto-tool-call</code><a class="headerlink" href="#7-4-approach-a-java-auto-tool-call" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--auto-tool-call --timeout 300 짜장면의 역사를 자세히 알려줘&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="nv">LITELLM_MODEL</span><span class="o">=</span>gpt-4o<span class="w"> </span><span class="nv">RELAY_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8080<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>mvn<span class="w"> </span>-q<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span>example.litellm.Main<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a><span class="w">  </span>-Dexec.args<span class="o">=</span><span class="s2">&quot;--auto-tool-call --timeout 300 짜장면의 역사를 자세히 알려줘&quot;</span>
 </code></pre></div>
 <p>→ stdout: 최종 자연어 답변, stderr: <code>[deep_research was called automatically]</code> ✅</p>
 <h3 id="7-5">7-5. 타임아웃 분리 검증<a class="headerlink" href="#7-5" title="Permanent link">&para;</a></h3>
 <p>기존 버그: <code>RELAY_TIMEOUT_SECONDS=30</code> (기본값)을 research에도 적용해 30초 후 500 오류 발생.</p>
 <p>수정 후: <code>RELAY_RESEARCH_TIMEOUT_SECONDS=300</code> (기본값)이 deep_research에 독립적으로 적용됨.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>ChatOrchestrator.timeout_seconds          → Chat Completions turns (30s 기본)
-<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>ChatOrchestrator.research_timeout_seconds → deep_research 실행 (300s 기본)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>ChatOrchestrator.timeout_seconds          → Chat Completions turns (30s 기본)
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>ChatOrchestrator.research_timeout_seconds → deep_research 실행 (300s 기본)
 </code></pre></div>
 <p>→ 30초 타임아웃으로 인한 500 오류 해결. ✅</p>
 <hr />
@@ -1854,6 +2011,14 @@ deep research가 실행됐습니다.</p>
 <tr>
 <td>항상 deep_research를 쓰고 싶을 때</td>
 <td>기존 <code>POST /api/v1/tool-invocations</code></td>
+</tr>
+<tr>
+<td>연구 결과의 언어·페르소나를 제어하고 싶을 때</td>
+<td>Approach C + <code>system_prompt</code></td>
+</tr>
+<tr>
+<td>상세 보고서 형식을 원할 때</td>
+<td>Approach C + <code>deliverable_format="markdown_report"</code></td>
 </tr>
 </tbody>
 </table>
