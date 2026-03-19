@@ -1540,6 +1540,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#13-6-chatrequest-system_prompt-deliverable_format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13-6. ChatRequest 확장 필드 — system_prompt와 deliverable_format
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2503,6 +2514,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#13-6-chatrequest-system_prompt-deliverable_format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13-6. ChatRequest 확장 필드 — system_prompt와 deliverable_format
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3271,6 +3293,65 @@
 </table>
 <p>relay 기동 시 <code>RELAY_RESEARCH_TIMEOUT_SECONDS</code>를 모델 특성에 맞게 조정하세요.
 <code>o3-deep-research</code>는 최대 10분 이상 소요될 수 있습니다.</p>
+<h3 id="13-6-chatrequest-system_prompt-deliverable_format">13-6. ChatRequest 확장 필드 — system_prompt와 deliverable_format<a class="headerlink" href="#13-6-chatrequest-system_prompt-deliverable_format" title="Permanent link">&para;</a></h3>
+<p><code>POST /api/v1/chat</code>은 두 가지 추가 필드를 지원합니다.</p>
+<table>
+<thead>
+<tr>
+<th>필드</th>
+<th>타입</th>
+<th>기본값</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>system_prompt</code></td>
+<td><code>string \| null</code></td>
+<td><code>null</code></td>
+<td>deep_research 실행 시 Responses API <code>instructions</code> 필드로 전달. 페르소나·출력 언어·형식 강제에 사용.</td>
+</tr>
+<tr>
+<td><code>deliverable_format</code></td>
+<td><code>string</code></td>
+<td><code>"markdown_brief"</code></td>
+<td>deep_research 산출물 형식의 폴백. 모델이 tool call 인자로 형식을 지정하면 모델 지정값이 우선.</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>system_prompt</code> 활용 예:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-56-1" name="__codelineno-56-1" href="#__codelineno-56-1"></a><span class="c1"># deep_research가 영어로만 답변하도록 강제</span>
+<a id="__codelineno-56-2" name="__codelineno-56-2" href="#__codelineno-56-2"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8080/api/v1/chat<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-56-3" name="__codelineno-56-3" href="#__codelineno-56-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-56-4" name="__codelineno-56-4" href="#__codelineno-56-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-56-5" name="__codelineno-56-5" href="#__codelineno-56-5"></a><span class="s1">    &quot;message&quot;: &quot;짜장면의 역사를 알려줘&quot;,</span>
+<a id="__codelineno-56-6" name="__codelineno-56-6" href="#__codelineno-56-6"></a><span class="s1">    &quot;auto_tool_call&quot;: true,</span>
+<a id="__codelineno-56-7" name="__codelineno-56-7" href="#__codelineno-56-7"></a><span class="s1">    &quot;system_prompt&quot;: &quot;Always answer in English only.&quot;</span>
+<a id="__codelineno-56-8" name="__codelineno-56-8" href="#__codelineno-56-8"></a><span class="s1">  }&#39;</span>
+</code></pre></div>
+<p><strong><code>deliverable_format</code> 활용 예:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-57-1" name="__codelineno-57-1" href="#__codelineno-57-1"></a><span class="c1"># 상세 보고서 형식으로 요청</span>
+<a id="__codelineno-57-2" name="__codelineno-57-2" href="#__codelineno-57-2"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8080/api/v1/chat<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-57-3" name="__codelineno-57-3" href="#__codelineno-57-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-57-4" name="__codelineno-57-4" href="#__codelineno-57-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-57-5" name="__codelineno-57-5" href="#__codelineno-57-5"></a><span class="s1">    &quot;message&quot;: &quot;짜장면의 역사와 사회적 영향을 상세히 알려줘&quot;,</span>
+<a id="__codelineno-57-6" name="__codelineno-57-6" href="#__codelineno-57-6"></a><span class="s1">    &quot;auto_tool_call&quot;: true,</span>
+<a id="__codelineno-57-7" name="__codelineno-57-7" href="#__codelineno-57-7"></a><span class="s1">    &quot;deliverable_format&quot;: &quot;markdown_report&quot;</span>
+<a id="__codelineno-57-8" name="__codelineno-57-8" href="#__codelineno-57-8"></a><span class="s1">  }&#39;</span>
+</code></pre></div>
+<p><strong>Java 코드 예:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-58-1" name="__codelineno-58-1" href="#__codelineno-58-1"></a><span class="n">RelayClient</span><span class="w"> </span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">RelayClient</span><span class="p">(</span><span class="s">&quot;http://127.0.0.1:8080&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Duration</span><span class="p">.</span><span class="na">ofSeconds</span><span class="p">(</span><span class="mi">120</span><span class="p">));</span>
+<a id="__codelineno-58-2" name="__codelineno-58-2" href="#__codelineno-58-2"></a>
+<a id="__codelineno-58-3" name="__codelineno-58-3" href="#__codelineno-58-3"></a><span class="c1">// system_prompt와 deliverable_format 모두 지정 (4-인자 버전)</span>
+<a id="__codelineno-58-4" name="__codelineno-58-4" href="#__codelineno-58-4"></a><span class="n">RelayClient</span><span class="p">.</span><span class="na">ChatResult</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">client</span><span class="p">.</span><span class="na">invokeChat</span><span class="p">(</span>
+<a id="__codelineno-58-5" name="__codelineno-58-5" href="#__codelineno-58-5"></a><span class="w">    </span><span class="s">&quot;짜장면의 역사를 자세히 알려줘&quot;</span><span class="p">,</span>
+<a id="__codelineno-58-6" name="__codelineno-58-6" href="#__codelineno-58-6"></a><span class="w">    </span><span class="kc">true</span><span class="p">,</span><span class="w">                               </span><span class="c1">// auto_tool_call</span>
+<a id="__codelineno-58-7" name="__codelineno-58-7" href="#__codelineno-58-7"></a><span class="w">    </span><span class="s">&quot;Always answer in English only.&quot;</span><span class="p">,</span><span class="w">   </span><span class="c1">// system_prompt</span>
+<a id="__codelineno-58-8" name="__codelineno-58-8" href="#__codelineno-58-8"></a><span class="w">    </span><span class="s">&quot;markdown_report&quot;</span><span class="w">                   </span><span class="c1">// deliverable_format (폴백)</span>
+<a id="__codelineno-58-9" name="__codelineno-58-9" href="#__codelineno-58-9"></a><span class="p">);</span>
+<a id="__codelineno-58-10" name="__codelineno-58-10" href="#__codelineno-58-10"></a><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="na">content</span><span class="p">());</span>
+</code></pre></div>
+<p>자세한 내용은 → <a href="../auto-toolcalling/">자동 Tool Calling 가이드 — 4-5. deliverable_format</a></p>
 
 
 
