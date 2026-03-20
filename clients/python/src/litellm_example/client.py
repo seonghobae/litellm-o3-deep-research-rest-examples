@@ -37,6 +37,8 @@ DEEP_RESEARCH_FUNCTION_TOOL: Dict[str, Any] = {
     },
 }
 
+SAFE_FIRST_TURN_ERROR_MESSAGE = "The chat request failed. Please retry later."
+
 
 class LiteLLMError(Exception):
     """LiteLLM 호출 중 발생한 HTTP 또는 네트워크 오류를 나타낸다."""
@@ -178,7 +180,13 @@ class LiteLLMClient:
             "input": prompt,
             "tools": [DEEP_RESEARCH_FUNCTION_TOOL],
         }
-        first_response = self._post_json(self._responses_url(), payload)
+        try:
+            first_response = self._post_json(self._responses_url(), payload)
+        except LiteLLMError:
+            return ToolCallingResult(
+                final_text=SAFE_FIRST_TURN_ERROR_MESSAGE,
+                tool_called=False,
+            )
         first_response_id = self._maybe_str(first_response.get("id"))
         first_status = self._maybe_str(first_response.get("status"))
 
@@ -209,10 +217,14 @@ class LiteLLMClient:
                 response_status=first_status,
             )
 
+        first_response_id = self._extract_response_id(first_response)
+
         raw_args = str(deep_research_call.get("arguments", "{}"))
         try:
             tool_args = json.loads(raw_args)
         except json.JSONDecodeError:
+            tool_args = {}
+        if not isinstance(tool_args, dict):
             tool_args = {}
 
         research_question = tool_args.get("research_question", prompt)

@@ -38,6 +38,7 @@ DEEP_RESEARCH_TOOL_SCHEMA: dict[str, Any] = {
 }
 
 SAFE_CHAT_ERROR_MESSAGE = "deep_research failed. Please retry later."
+SAFE_FIRST_TURN_ERROR_MESSAGE = "The chat request failed. Please retry later."
 
 
 class ChatOrchestrator:
@@ -81,7 +82,9 @@ class ChatOrchestrator:
         try:
             first_response = await asyncio.to_thread(litellm.responses, **kwargs)
         except Exception:  # noqa: BLE001
-            return ChatResponse(content=SAFE_CHAT_ERROR_MESSAGE, tool_called=False)
+            return ChatResponse(
+                content=SAFE_FIRST_TURN_ERROR_MESSAGE, tool_called=False
+            )
 
         deep_research_call = self._extract_function_call(first_response)
 
@@ -93,6 +96,8 @@ class ChatOrchestrator:
         try:
             tool_args = json.loads(raw_args)
         except json.JSONDecodeError:
+            tool_args = {}
+        if not isinstance(tool_args, dict):
             tool_args = {}
 
         research_question = tool_args.get("research_question", request.message)

@@ -255,6 +255,52 @@ async def test_chat_tool_call_with_invalid_json_args(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_chat_tool_call_with_non_object_json_args(monkeypatch):
+    turn = 0
+
+    def fake_responses(**kwargs):
+        nonlocal turn
+        turn += 1
+        if turn == 1:
+            return {
+                "id": "resp_1",
+                "output": [
+                    {
+                        "type": "function_call",
+                        "name": "deep_research",
+                        "call_id": "call_non_object",
+                        "arguments": "null",
+                    }
+                ],
+            }
+        return {"id": "resp_2", "output_text": "final", "output": []}
+
+    monkeypatch.setattr(
+        "litellm_relay.chat_orchestrator.litellm.responses", fake_responses
+    )
+
+    orchestrator = ChatOrchestrator(
+        base_url="https://proxy.example/v1",
+        api_key="sk-test",
+    )
+
+    from litellm_relay.upstream import UpstreamInvocationResult
+
+    async def fake_invoke(args):
+        assert args.research_question == "fallback question"
+        assert args.deliverable_format == "markdown_brief"
+        return UpstreamInvocationResult(
+            mode="foreground", status="completed", output_text="summary"
+        )
+
+    orchestrator._invoke_deep_research = fake_invoke
+
+    result = await orchestrator.chat(ChatRequest(message="fallback question"))
+    assert result.tool_called is True
+    assert result.content == "final"
+
+
+@pytest.mark.asyncio
 async def test_extract_output_text_unknown_response_type(monkeypatch):
     """Unknown response shape falls back to empty content."""
 
@@ -412,7 +458,7 @@ async def test_chat_first_responses_exception_returns_safe_response(monkeypatch)
     )
 
     result = await orchestrator.chat(ChatRequest(message="will fail"))
-    assert result.content == "deep_research failed. Please retry later."
+    assert result.content == "The chat request failed. Please retry later."
     assert result.tool_called is False
 
 

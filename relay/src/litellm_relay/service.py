@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass, field
 from typing import Any
 from uuid import uuid4
@@ -17,6 +18,7 @@ from .contracts import (
 from .upstream import LiteLLMRelayGateway, UpstreamInvocationResult
 
 SAFE_STREAM_ERROR_MESSAGE = "deep_research stream failed. Please retry later."
+logger = logging.getLogger(__name__)
 
 
 class InvocationNotFoundError(KeyError):
@@ -171,6 +173,7 @@ class RelayService:
                 )
             )
         except Exception:
+            logger.exception("Stream failed for invocation %s", invocation_id)
             stored.status = "failed"
             stored.error_message = SAFE_STREAM_ERROR_MESSAGE
             yield self._to_sse(
