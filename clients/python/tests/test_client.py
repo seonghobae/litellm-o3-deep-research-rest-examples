@@ -803,6 +803,18 @@ def test_create_response_with_tool_calling_no_output_raises():
         client.create_response_with_tool_calling("Hello")
 
 
+def test_create_response_with_tool_calling_non_list_output_raises():
+    """Responses API 첫 응답의 output이 리스트가 아니면 예외를 발생시킨다."""
+    from litellm_example.client import LiteLLMClient, LiteLLMError
+
+    client = LiteLLMClient("https://h:4000", "key", "gpt-4o")
+    client._post_json = lambda url, payload, include_auth=True: {
+        "output": {"bad": True}
+    }
+    with pytest.raises(LiteLLMError):
+        client.create_response_with_tool_calling("Hello")
+
+
 def test_create_response_with_tool_calling_invalid_json_args():
     """function_call 인자 JSON이 깨져 있으면 prompt를 research_question으로 사용한다."""
     from litellm_example.client import LiteLLMClient
