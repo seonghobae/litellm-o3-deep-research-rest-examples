@@ -301,6 +301,7 @@ class LiteLLMClient:
 
     @staticmethod
     def _extract_function_call(payload: Dict[str, Any]) -> Dict[str, Any] | None:
+        """Return the first deep_research function-call item from a Responses payload."""
         output = payload.get("output") or []
         if not isinstance(output, list):
             raise LiteLLMError(
@@ -321,6 +322,7 @@ class LiteLLMClient:
 
     @staticmethod
     def _extract_response_id(payload: Dict[str, Any]) -> str:
+        """Return the non-empty Responses API response id or raise LiteLLMError."""
         response_id = payload.get("id")
         if isinstance(response_id, str) and response_id.strip():
             return response_id

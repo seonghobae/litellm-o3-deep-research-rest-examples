@@ -175,6 +175,7 @@ class ChatOrchestrator:
 
     @staticmethod
     def _extract_function_call(response: Any) -> dict[str, Any] | None:
+        """Return the deep_research function-call item from a Responses payload."""
         output = ChatOrchestrator._extract_output_items(response)
         for item in output:
             if item.get("type") != "function_call":
@@ -186,6 +187,7 @@ class ChatOrchestrator:
 
     @staticmethod
     def _extract_output_items(response: Any) -> list[dict[str, Any]]:
+        """Normalize a Responses object's output items into plain dictionaries."""
         if isinstance(response, dict):
             output = response.get("output") or []
         elif hasattr(response, "output"):
@@ -204,6 +206,7 @@ class ChatOrchestrator:
 
     @staticmethod
     def _extract_output_text(response: Any) -> str:
+        """Extract concatenated assistant text from a Responses payload or object."""
         if isinstance(response, dict):
             payload = response
         elif hasattr(response, "model_dump"):
@@ -239,6 +242,7 @@ class ChatOrchestrator:
 
     @staticmethod
     def _extract_response_id(response: Any) -> str:
+        """Return the response id from a Responses payload-like object or raise ValueError."""
         if isinstance(response, dict):
             payload = response
         elif hasattr(response, "model_dump"):
