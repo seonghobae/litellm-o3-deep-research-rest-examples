@@ -96,7 +96,20 @@ deep_research 자동 실행 (o3-deep-research)
 
 ### 5-2. Client-Side (--auto-tool-call)
 
-직접 클라이언트에서 3-turn function calling 흐름을 구현합니다.
+직접 클라이언트가 OpenAI 표준 Responses API function calling 흐름을 구현합니다.
+
+1. `POST /v1/responses` + `tools=[deep_research]`
+2. `output`에서 `function_call` 감지
+3. relay `POST /api/v1/tool-invocations`로 실제 deep_research 실행
+4. `previous_response_id` + `function_call_output`로 두 번째 `POST /v1/responses`
+
+도구가 실제로 호출되면 client는 다음 key를 함께 보존합니다.
+
+- `response_id`
+- `previous_response_id`
+- `tool_call_id`
+- `invocation_id`
+- `upstream_response_id`
 
 ```bash
 # relay 서버 먼저 시작

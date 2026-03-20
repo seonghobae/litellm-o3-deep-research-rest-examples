@@ -88,7 +88,7 @@ System.out.println(result);
 
 ## 자동 Tool Calling (--auto-tool-call)
 
-`--auto-tool-call`은 모델이 스스로 `deep_research` 도구 호출 필요성을 판단하게 합니다.
+`--auto-tool-call`은 OpenAI 표준 Responses API function calling을 사용해 모델이 스스로 `deep_research` 도구 호출 필요성을 판단하게 합니다.
 
 ```bash
 # 터미널 A: relay 서버 시작
@@ -101,19 +101,20 @@ mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
   -Dexec.args="--auto-tool-call --timeout 300 짜장면의 역사와 기원에 대해 상세히 조사해줘"
 ```
 
-deep_research가 자동으로 호출됐을 때 stderr에 `[deep_research was called automatically]`가 출력됩니다.
+deep_research가 자동으로 호출됐을 때 stderr에 `[deep_research was called automatically]`와 함께 `response_id`, `previous_response_id`, `tool_call_id`, `invocation_id`, `upstream_response_id`가 출력됩니다.
 
 코드에서 직접 사용:
 
 ```java
 LiteLlmClient client = new LiteLlmClient(baseUrl, apiKey, "gpt-4o", Duration.ofSeconds(300));
-String[] result = client.createChatWithToolCalling(
+LiteLlmClient.ToolCallingResult result = client.createResponseWithToolCalling(
     "짜장면의 역사와 기원에 대해 상세히 조사해줘",
     "http://127.0.0.1:8080"
 );
-System.out.println(result[0]);
-if ("true".equals(result[1])) {
+System.out.println(result.finalText());
+if (result.toolCalled()) {
     System.err.println("[deep_research가 자동으로 호출됐습니다]");
+    System.err.println(result.responseId());
 }
 ```
 
@@ -174,7 +175,7 @@ if (result.toolCalled()) {
 - background 모드에서는 원본 JSON 메타데이터를 반환합니다.
 - `--timeout`: 모델 응답 대기 시간 (초). 기본값 30초. 직접 호출과 relay 모두 지원
 - `--web-search`: `gpt-4o` 계열에서 실시간 웹 검색 활성화
-- `--auto-tool-call`: 3-turn function calling 흐름 (relay 서버 필요)
+- `--auto-tool-call`: Responses API 표준 function calling 흐름 (relay 서버 필요)
 - `--deliverable-format`: relay 호출 시 결과 형식 지정
 - 현재 Java 예제 역시 상시 서비스가 아니라 1회성 CLI입니다.
 - relay를 호출하려면 `--target relay`를 사용하고, 자세한 내용은 [Relay 중계 예제](relay-example.md)를 참고하세요.

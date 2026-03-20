@@ -843,7 +843,20 @@ mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
   -Dexec.args="--auto-tool-call --timeout 120 짜장면의 역사를 자세히 알려줘"
 ```
 
-클라이언트가 Chat Completions function calling 3-turn 흐름을 직접 처리합니다.
+클라이언트가 OpenAI 표준 Responses API function calling 흐름을 직접 처리합니다.
+
+1. `POST /v1/responses` + `tools=[deep_research]`
+2. `output`에서 `function_call` 감지
+3. relay `POST /api/v1/tool-invocations`로 실제 deep research 실행
+4. `previous_response_id` + `function_call_output`로 두 번째 `POST /v1/responses`
+
+이때 direct client는 다음 key를 함께 보존합니다.
+
+- `response_id`
+- `previous_response_id`
+- `tool_call_id`
+- `invocation_id`
+- `upstream_response_id`
 
 ### 13-3. Approach C: Relay-Side (`POST /api/v1/chat`)
 

@@ -87,9 +87,9 @@ print(result)
 
 ## 자동 Tool Calling (--auto-tool-call)
 
-`--auto-tool-call`은 모델이 스스로 `deep_research` 도구 호출 필요성을 판단하게 합니다.
+`--auto-tool-call`은 OpenAI 표준 Responses API function calling을 사용해 모델이 스스로 `deep_research` 도구 호출 필요성을 판단하게 합니다.
 - 단순 질문 → 모델이 직접 답변
-- 심층 조사가 필요한 질문 → relay를 통해 deep_research 자동 실행 → 최종 답변 합성
+- 심층 조사가 필요한 질문 → `function_call` 감지 → relay `tool-invocations`로 deep_research 실행 → `function_call_output` + `previous_response_id`로 최종 답변 합성
 
 이 플래그는 relay 서버(`RELAY_BASE_URL`)가 실행 중이어야 합니다.
 
@@ -106,7 +106,7 @@ uv run python -m litellm_example \
   "짜장면의 역사와 기원에 대해 상세히 조사해줘"
 ```
 
-deep_research가 자동으로 호출됐을 때 stderr에 `[deep_research was called automatically]`가 출력됩니다.
+deep_research가 자동으로 호출됐을 때 stderr에 `[deep_research was called automatically]`와 함께 `response_id`, `previous_response_id`, `tool_call_id`, `invocation_id`, `upstream_response_id`가 출력됩니다.
 
 **실제 결과:**
 
@@ -121,13 +121,14 @@ deep_research가 자동으로 호출됐을 때 stderr에 `[deep_research was cal
 from litellm_example.client import LiteLLMClient
 
 client = LiteLLMClient(base_url, api_key, model="gpt-4o")
-answer, tool_called = client.create_chat_with_tool_calling(
+result = client.create_response_with_tool_calling(
     "짜장면의 역사와 기원에 대해 상세히 조사해줘",
     relay_base_url="http://127.0.0.1:8080",
 )
-print(answer)
-if tool_called:
+print(result.final_text)
+if result.tool_called:
     print("[deep_research가 자동으로 호출됐습니다]", file=sys.stderr)
+    print(result.response_id, result.tool_call_id, result.invocation_id, file=sys.stderr)
 ```
 
 ## 해석 포인트
@@ -136,5 +137,5 @@ if tool_called:
 - background 호출: `id`, `status` 같은 메타데이터 중심 응답 (후속 폴링 필요)
 - `--timeout`: 모델 응답 대기 시간 (초). 기본값 30초
 - `--web-search`: `gpt-4o` 계열에서 실시간 웹 검색 활성화 (`o3-deep-research`는 자체적으로 조사하므로 불필요)
-- `--auto-tool-call`: 3-turn function calling 흐름 (1차 completions → tool call 감지 → relay 호출 → 2차 completions)
+- `--auto-tool-call`: Responses API 표준 function calling 흐름 (`/v1/responses` → `function_call` → relay `tool-invocations` → `function_call_output`)
 - 현재 Python 예제는 상시 실행 서버가 아니라 1회성 CLI입니다.

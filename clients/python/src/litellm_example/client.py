@@ -91,6 +91,22 @@ class ChatMessage:
     content: str
 
 
+@dataclass
+class ToolCallingResult:
+    """Responses API tool calling 결과와 deep_research 메타데이터를 담는다."""
+
+    final_text: str
+    tool_called: bool
+    response_id: str | None = None
+    previous_response_id: str | None = None
+    response_status: str | None = None
+    tool_name: str | None = None
+    tool_call_id: str | None = None
+    invocation_id: str | None = None
+    upstream_response_id: str | None = None
+    research_summary: str | None = None
+
+
 class LiteLLMClient:
     """LiteLLM OpenAI 호환 엔드포인트를 감싸는 작은 클라이언트다."""
 
@@ -154,108 +170,142 @@ class LiteLLMClient:
             return json.dumps(parsed, ensure_ascii=False)
         return self._extract_response_content(parsed)
 
-    def create_chat_with_tool_calling(
+    def create_response_with_tool_calling(
         self,
         prompt: str,
         relay_base_url: str | None = None,
-    ) -> tuple[str, bool]:
-        """deep_research 도구 호출을 포함한 채팅 요청을 수행한다."""
-        # First turn: chat completions with tool schema
+    ) -> ToolCallingResult:
+        """Responses API 표준 function calling으로 deep_research를 실행한다."""
         payload: Dict[str, Any] = {
             "model": self._model,
-            "messages": [{"role": "user", "content": prompt}],
+            "input": prompt,
             "tools": [DEEP_RESEARCH_FUNCTION_TOOL],
         }
-        first_response = self._post_json(self._chat_url(), payload)
+        first_response = self._post_json(self._responses_url(), payload)
+        first_response_id = self._maybe_str(first_response.get("id"))
+        first_status = self._maybe_str(first_response.get("status"))
 
-        choices = first_response.get("choices") or []
-        if not choices:
+        output = first_response.get("output") or []
+        if not isinstance(output, list):
             raise LiteLLMError(
-                200, "No choices in response.", json.dumps(first_response)
+                200,
+                "Response did not include any output items.",
+                json.dumps(first_response),
             )
 
-        first_choice = choices[0]
-        if not isinstance(first_choice, dict):
-            raise LiteLLMError(
-                200, "Unexpected choice format.", json.dumps(first_response)
-            )
-
-        finish_reason = first_choice.get("finish_reason", "stop")
-        first_message = first_choice.get("message") or {}
-        tool_calls = first_message.get("tool_calls") or []
-
-        # Find the deep_research tool call (if any)
         deep_research_call = next(
             (
-                tc
-                for tc in tool_calls
-                if isinstance(tc, dict)
-                and tc.get("type") == "function"
-                and (tc.get("function") or {}).get("name") == "deep_research"
+                item
+                for item in output
+                if isinstance(item, dict)
+                and item.get("type") == "function_call"
+                and item.get("name") == "deep_research"
             ),
             None,
         )
 
-        if finish_reason != "tool_calls" or deep_research_call is None:
-            # No tool call — return the direct assistant answer
-            content = first_message.get("content") or ""
-            return content, False
+        if deep_research_call is None:
+            return ToolCallingResult(
+                final_text=self._extract_response_content(first_response),
+                tool_called=False,
+                response_id=first_response_id,
+                response_status=first_status,
+            )
 
-        # Extract tool call metadata
-        raw_args = (deep_research_call.get("function") or {}).get("arguments", "{}")
+        raw_args = str(deep_research_call.get("arguments", "{}"))
         try:
             tool_args = json.loads(raw_args)
         except json.JSONDecodeError:
             tool_args = {}
 
         research_question = tool_args.get("research_question", prompt)
-        tool_call_id = deep_research_call.get("id", "call_0")
+        deliverable_format = tool_args.get("deliverable_format", "markdown_brief")
+        tool_call_id = self._maybe_str(deep_research_call.get("call_id")) or "call_0"
 
-        # Call relay /api/v1/chat to execute the deep research
         relay_url = (relay_base_url or "http://127.0.0.1:8080").rstrip("/")
-        relay_chat_url = relay_url + "/api/v1/chat"
+        relay_tool_url = relay_url + "/api/v1/tool-invocations"
         relay_payload: Dict[str, Any] = {
-            "message": research_question,
-            "auto_tool_call": True,
+            "tool_name": "deep_research",
+            "arguments": {
+                "research_question": research_question,
+                "deliverable_format": deliverable_format,
+                "background": False,
+                "stream": False,
+            },
         }
-        relay_response = self._post_json(relay_chat_url, relay_payload)
+        relay_response = self._post_json(
+            relay_tool_url, relay_payload, include_auth=False
+        )
         research_summary = (
-            relay_response.get("research_summary")
-            or relay_response.get("content")
+            relay_response.get("output_text")
+            or (
+                (relay_response.get("response") or {}).get("output_text")
+                if isinstance(relay_response.get("response"), dict)
+                else None
+            )
             or ""
         )
 
-        # Second turn: synthesise final answer with tool result
-        messages_with_result: list[Dict[str, Any]] = [
-            {"role": "user", "content": prompt},
-            {"role": "assistant", "content": None, "tool_calls": [deep_research_call]},
-            {"role": "tool", "tool_call_id": tool_call_id, "content": research_summary},
-        ]
         second_payload: Dict[str, Any] = {
             "model": self._model,
-            "messages": messages_with_result,
+            "previous_response_id": first_response_id,
+            "input": [
+                {
+                    "type": "function_call_output",
+                    "call_id": tool_call_id,
+                    "output": research_summary,
+                }
+            ],
         }
-        second_response = self._post_json(self._chat_url(), second_payload)
-        second_choices = second_response.get("choices") or []
-        if not second_choices:
-            # Fallback: return research summary if second turn produces no choices
-            return research_summary, True
-        second_message = (second_choices[0] or {}).get("message") or {}
-        final_content = second_message.get("content") or research_summary
-        return final_content, True
+        second_response = self._post_json(self._responses_url(), second_payload)
+        final_text = research_summary
+        try:
+            final_text = self._extract_response_content(second_response)
+        except LiteLLMError:
+            final_text = research_summary
 
-    def _post_json(self, url: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        return ToolCallingResult(
+            final_text=final_text,
+            tool_called=True,
+            response_id=self._maybe_str(second_response.get("id")),
+            previous_response_id=first_response_id,
+            response_status=self._maybe_str(second_response.get("status")),
+            tool_name="deep_research",
+            tool_call_id=tool_call_id,
+            invocation_id=self._maybe_str(relay_response.get("invocation_id")),
+            upstream_response_id=self._maybe_str(
+                relay_response.get("upstream_response_id")
+            ),
+            research_summary=research_summary,
+        )
+
+    def create_chat_with_tool_calling(
+        self,
+        prompt: str,
+        relay_base_url: str | None = None,
+    ) -> tuple[str, bool]:
+        """하위 호환을 위해 표준 Responses tool calling 결과를 튜플로 변환한다."""
+        result = self.create_response_with_tool_calling(
+            prompt, relay_base_url=relay_base_url
+        )
+        return result.final_text, result.tool_called
+
+    def _post_json(
+        self, url: str, payload: Dict[str, Any], include_auth: bool = True
+    ) -> Dict[str, Any]:
         """JSON 본문을 POST하고 파싱된 응답 딕셔너리를 반환한다."""
         data = json.dumps(payload).encode("utf-8")
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+        if include_auth:
+            headers["Authorization"] = f"Bearer {self._api_key}"
         req = request.Request(
             url,
             data=data,
             method="POST",
-            headers={
-                "Authorization": f"Bearer {self._api_key}",
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-            },
+            headers=headers,
         )
 
         try:
@@ -393,3 +443,8 @@ class LiteLLMClient:
             "Response did not include a usable text output.",
             json.dumps(payload),
         )
+
+    @staticmethod
+    def _maybe_str(value: Any) -> str | None:
+        """비어 있지 않은 문자열만 반환하고 나머지는 ``None``으로 바꾼다."""
+        return value if isinstance(value, str) and value else None

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 
@@ -41,9 +42,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         dest="auto_tool_call",
         help=(
-            "Use function-calling with the deep_research tool. "
-            "When the model decides to call deep_research, the relay server "
-            "executes the research automatically. "
+            "Use OpenAI-standard Responses API function calling with the "
+            "deep_research tool. When the model decides to call "
+            "deep_research, the relay server executes the research via "
+            "tool-invocations and the client sends a function_call_output "
+            "continuation automatically. "
             "Cannot be combined with --target relay."
         ),
     )
@@ -78,12 +81,20 @@ def main(argv: list[str] | None = None) -> int:
         )
         if args.auto_tool_call:
             relay_url = os.environ.get("RELAY_BASE_URL", "http://127.0.0.1:8080")
-            answer, tool_called = client.create_chat_with_tool_calling(
+            result = client.create_response_with_tool_calling(
                 args.prompt, relay_base_url=relay_url
             )
-            print(answer)
-            if tool_called:
+            print(result.final_text)
+            if result.tool_called:
                 print("[deep_research was called automatically]", file=sys.stderr)
+                debug = {
+                    "response_id": result.response_id,
+                    "previous_response_id": result.previous_response_id,
+                    "tool_call_id": result.tool_call_id,
+                    "invocation_id": result.invocation_id,
+                    "upstream_response_id": result.upstream_response_id,
+                }
+                print(json.dumps(debug, ensure_ascii=False), file=sys.stderr)
             return 0
         elif args.api == "responses":
             tools = [{"type": "web_search_preview"}] if args.web_search else None

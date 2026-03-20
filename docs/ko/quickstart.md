@@ -114,7 +114,7 @@ direct Python/Java 예제는 내부적으로 `/v1/` 루트로 정규화합니다
 | Background 제출 | ✅ | ✅ | `--background` |
 | 타임아웃 조정 | ✅ | ✅ | `--timeout <초>` |
 | Web 검색 | ✅ | ✅ | `--web-search` (requires `--api responses`) |
-| 자동 Tool Calling | ✅ | ✅ | `--auto-tool-call` (relay 서버 필요) |
+| 자동 Tool Calling | ✅ | ✅ | `--auto-tool-call` (Responses API 표준 function calling + relay 서버 필요) |
 
 ### Relay 서버 (FastAPI + Hypercorn)
 

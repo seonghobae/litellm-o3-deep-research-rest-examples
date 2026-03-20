@@ -43,7 +43,7 @@ deep research가 실행됐습니다.
 
 ## 3. Approach A — Client-Side Function Calling
 
-클라이언트가 Chat Completions에 `deep_research` function schema를 붙여서 1차 호출 → tool call 감지 → relay-side chat orchestration 위임 → 2차 완성 호출을 직접 수행합니다.
+클라이언트가 OpenAI 표준 Responses API function calling 패턴을 사용해 1차 `POST /v1/responses` 호출 → `function_call` 감지 → relay `POST /api/v1/tool-invocations`로 실제 deep_research 실행 → `function_call_output` + `previous_response_id`로 2차 `POST /v1/responses` 호출을 직접 수행합니다.
 
 ### 3-1. Python — `--auto-tool-call` 플래그
 
@@ -62,7 +62,7 @@ uv run python -m litellm_example \
   "짜장면의 역사를 자세히 알려줘"
 ```
 
-도구가 호출됐으면 stderr에 `[deep_research was called automatically]`가 출력됩니다.
+도구가 호출됐으면 stderr에 `[deep_research was called automatically]`가 출력되고, `response_id`, `previous_response_id`, `tool_call_id`, `invocation_id`, `upstream_response_id`가 함께 출력됩니다.
 
 코드에서 직접 사용:
 
@@ -70,13 +70,14 @@ uv run python -m litellm_example \
 from litellm_example.client import LiteLLMClient
 
 client = LiteLLMClient(base_url, api_key, model="gpt-4o")
-answer, tool_called = client.create_chat_with_tool_calling(
+result = client.create_response_with_tool_calling(
     "짜장면의 역사를 자세히 알려줘",
     relay_base_url="http://127.0.0.1:8080",
 )
-print(answer)
-if tool_called:
+print(result.final_text)
+if result.tool_called:
     print("[deep_research가 자동으로 호출됐습니다]")
+    print(result.response_id, result.tool_call_id, result.invocation_id)
 ```
 
 ### 3-2. Java — `--auto-tool-call` 플래그
@@ -95,35 +96,42 @@ mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
 
 ```java
 LiteLlmClient client = new LiteLlmClient(baseUrl, apiKey, "gpt-4o");
-String[] result = client.createChatWithToolCalling(
+LiteLlmClient.ToolCallingResult result = client.createResponseWithToolCalling(
     "짜장면의 역사를 자세히 알려줘",
     "http://127.0.0.1:8080"
 );
-System.out.println(result[0]);
-if ("true".equals(result[1])) {
+System.out.println(result.finalText());
+if (result.toolCalled()) {
     System.err.println("[deep_research가 자동으로 호출됐습니다]");
+    System.err.println(result.responseId());
 }
 ```
 
 ### 3-3. Approach A 내부 동작
 
 ```
-클라이언트 → POST /v1/chat/completions
-              {model, messages, tools: [deep_research schema]}
+클라이언트 → POST /v1/responses
+              {model, input, tools: [deep_research schema]}
                     ↓
-모델 응답: finish_reason="tool_calls"
-           tool_calls: [{function: {name: "deep_research", arguments: {...}}}]
+모델 응답: output=[{type: "function_call", name: "deep_research", call_id, arguments}]
                     ↓
-클라이언트 → POST /api/v1/chat (relay)
-              {message: "짜장면의 역사", auto_tool_call: true}
+클라이언트 → POST /api/v1/tool-invocations (relay)
+              {tool_name: "deep_research", arguments: {...}}
                     ↓
-relay가 chat orchestration을 다시 수행하고,
-필요하다고 판단하면 내부에서 deep_research 실행
+relay 응답: {invocation_id, upstream_response_id, output_text, status}
                     ↓
-클라이언트 → POST /v1/chat/completions (2nd turn)
-              {messages: [..., tool result]}
+클라이언트 → POST /v1/responses
+              {previous_response_id, input:[{type:"function_call_output", call_id, output}]}
                     ↓
 모델이 tool 결과를 읽고 최종 자연어 답변 합성
+
+이 경로에서 클라이언트는 다음 key를 그대로 보존합니다.
+
+- `response_id`: 최종 Responses API 응답 ID
+- `previous_response_id`: 첫 번째 Responses API 응답 ID
+- `tool_call_id`: 모델이 발급한 `function_call` ID
+- `invocation_id`: relay 내부 추적 ID
+- `upstream_response_id`: relay가 deep_research 업스트림에 붙인 응답 ID
 ```
 
 ---

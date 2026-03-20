@@ -202,16 +202,15 @@ class MainTest {
         // Exercise the createChatWithToolCalling path via LiteLlmClient directly
         // (same pattern as other routing tests - Main.main env-var coupling
         // cannot be controlled in-process).
-        java.util.concurrent.atomic.AtomicInteger chatCallCount =
+        java.util.concurrent.atomic.AtomicInteger responsesCallCount =
                 new java.util.concurrent.atomic.AtomicInteger(0);
 
         String firstChatJson =
-                "{\"choices\":[{\"finish_reason\":\"stop\",\"message\":"
-                + "{\"role\":\"assistant\",\"content\":\"auto tool answer\",\"tool_calls\":null}}]}";
+                "{\"id\":\"resp_direct\",\"status\":\"completed\",\"output_text\":\"auto tool answer\",\"output\":[]}";
 
-        server.createContext("/v1/chat/completions", exchange -> {
+        server.createContext("/v1/responses", exchange -> {
             exchange.getRequestBody().readAllBytes();
-            chatCallCount.incrementAndGet();
+            responsesCallCount.incrementAndGet();
             writeJson(exchange, 200, firstChatJson);
         });
 
@@ -225,7 +224,7 @@ class MainTest {
 
         assertEquals("auto tool answer", result[0]);
         assertEquals("false", result[1]);
-        assertEquals(1, chatCallCount.get());
+        assertEquals(1, responsesCallCount.get());
     }
 
     @Test
@@ -233,28 +232,22 @@ class MainTest {
         // Verify that when tool_called=true, the result[1] is "true"
         // (stderr output cannot be captured easily in unit tests, but we verify
         // the logic returns the correct indicator).
-        java.util.concurrent.atomic.AtomicInteger chatCallCount =
+        java.util.concurrent.atomic.AtomicInteger responsesCallCount =
                 new java.util.concurrent.atomic.AtomicInteger(0);
 
         String firstChatJson =
-                "{\"choices\":[{\"finish_reason\":\"tool_calls\",\"message\":"
-                + "{\"role\":\"assistant\",\"content\":null,"
-                + "\"tool_calls\":[{\"id\":\"call_1\",\"type\":\"function\","
-                + "\"function\":{\"name\":\"deep_research\","
-                + "\"arguments\":\"{\\\"research_question\\\":\\\"test\\\","
-                + "\\\"deliverable_format\\\":\\\"markdown_brief\\\"}\"}}]}}]}";
+                "{\"id\":\"resp_1\",\"status\":\"completed\",\"output\":[{\"type\":\"function_call\",\"name\":\"deep_research\",\"call_id\":\"call_1\",\"arguments\":\"{\\\"research_question\\\":\\\"test\\\",\\\"deliverable_format\\\":\\\"markdown_brief\\\"}\"}]}";
         String relayJson =
-                "{\"content\":\"relay\",\"tool_called\":true,\"research_summary\":\"summary\"}";
+                "{\"invocation_id\":\"inv_1\",\"upstream_response_id\":\"up_1\",\"status\":\"completed\",\"output_text\":\"summary\"}";
         String secondChatJson =
-                "{\"choices\":[{\"finish_reason\":\"stop\",\"message\":"
-                + "{\"role\":\"assistant\",\"content\":\"synthesized answer\",\"tool_calls\":null}}]}";
+                "{\"id\":\"resp_2\",\"status\":\"completed\",\"output\":[{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"synthesized answer\"}]}]}";
 
-        server.createContext("/v1/chat/completions", exchange -> {
+        server.createContext("/v1/responses", exchange -> {
             exchange.getRequestBody().readAllBytes();
-            int call = chatCallCount.incrementAndGet();
+            int call = responsesCallCount.incrementAndGet();
             writeJson(exchange, 200, call == 1 ? firstChatJson : secondChatJson);
         });
-        server.createContext("/api/v1/chat", exchange -> {
+        server.createContext("/api/v1/tool-invocations", exchange -> {
             exchange.getRequestBody().readAllBytes();
             writeJson(exchange, 200, relayJson);
         });
