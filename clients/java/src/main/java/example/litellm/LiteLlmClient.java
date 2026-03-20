@@ -139,21 +139,16 @@ public final class LiteLlmClient {
         params.put("properties", props);
         params.put("required", java.util.List.of("research_question", "deliverable_format"));
 
-        java.util.Map<String, Object> fn = new java.util.LinkedHashMap<>();
-        fn.put("name", "deep_research");
-        fn.put("description", "Conduct in-depth research on a topic and return a detailed report.");
-        fn.put("parameters", params);
-
         java.util.Map<String, Object> tool = new java.util.LinkedHashMap<>();
         tool.put("type", "function");
-        tool.put("function", fn);
+        tool.put("name", "deep_research");
+        tool.put("description", "Conduct in-depth research on a topic and return a detailed report.");
+        tool.put("parameters", params);
 
         DEEP_RESEARCH_TOOL_SCHEMA = java.util.Collections.unmodifiableMap(tool);
     }
 
-    /**
-     * Responses API 표준 function calling 결과와 deep_research 메타데이터를 담는다.
-     */
+    /** Responses API 표준 function calling 결과와 deep_research 메타데이터를 담는다. */
     public record ToolCallingResult(
             String finalText,
             boolean toolCalled,
@@ -269,7 +264,7 @@ public final class LiteLlmClient {
     }
 
     /**
-     * Chat completions with automatic deep_research function calling.
+     * Chat completions-style compatibility wrapper around the Responses API auto tool-calling flow.
      *
      * <p>Flow:
      * <ol>
@@ -290,16 +285,29 @@ public final class LiteLlmClient {
         return new String[] {result.finalText(), Boolean.toString(result.toolCalled())};
     }
 
-    private static java.util.Map<String, Object> buildAssistantWithToolCall(String toolCallId, String rawArgs) {
-        java.util.Map<String, Object> tc = new java.util.LinkedHashMap<>();
-        tc.put("id", toolCallId);
-        tc.put("type", "function");
-        tc.put("function", java.util.Map.of("name", "deep_research", "arguments", rawArgs));
-        java.util.Map<String, Object> msg = new java.util.LinkedHashMap<>();
-        msg.put("role", "assistant");
-        msg.put("content", "");
-        msg.put("tool_calls", java.util.List.of(tc));
-        return msg;
+    private static JsonNode extractFunctionCall(JsonNode payload) {
+        JsonNode output = payload.path("output");
+        if (!output.isArray()) {
+            throw new ApiException(200, "Response did not include any output items.", payload.toString());
+        }
+        for (JsonNode item : output) {
+            if (!"function_call".equals(item.path("type").asText())) {
+                continue;
+            }
+            if (!"deep_research".equals(item.path("name").asText())) {
+                continue;
+            }
+            return item;
+        }
+        return null;
+    }
+
+    private static String extractResponseId(JsonNode payload) {
+        JsonNode responseId = payload.get("id");
+        if (responseId != null && responseId.isTextual() && !responseId.asText().isBlank()) {
+            return responseId.asText();
+        }
+        throw new ApiException(200, "Response did not include a usable id.", payload.toString());
     }
 
     private JsonNode postJson(URI target, Map<String, Object> payload) {

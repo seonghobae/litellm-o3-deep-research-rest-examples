@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass, field
 from typing import Any
 from uuid import uuid4
@@ -15,6 +16,9 @@ from .contracts import (
     ToolInvocationView,
 )
 from .upstream import LiteLLMRelayGateway, UpstreamInvocationResult
+
+SAFE_STREAM_ERROR_MESSAGE = "deep_research stream failed. Please retry later."
+logger = logging.getLogger(__name__)
 
 
 class InvocationNotFoundError(KeyError):
@@ -116,9 +120,9 @@ class RelayService:
                     ToolInvocationEvent(
                         invocation_id=invocation_id,
                         type="output_text",
-                        status="running"
-                        if stored.status == "running"
-                        else stored.status,
+                        status=(
+                            "running" if stored.status == "running" else stored.status
+                        ),
                         data={"text": chunk},
                     )
                 )
@@ -168,9 +172,10 @@ class RelayService:
                     data={"output_text": stored.output_text},
                 )
             )
-        except Exception as exc:
+        except Exception:
+            logger.exception("Stream failed for invocation %s", invocation_id)
             stored.status = "failed"
-            stored.error_message = str(exc)
+            stored.error_message = SAFE_STREAM_ERROR_MESSAGE
             yield self._to_sse(
                 ToolInvocationEvent(
                     invocation_id=invocation_id,

@@ -64,6 +64,15 @@ direct Python/Java 예제는 `LITELLM_BASE_URL`을 `https://host:4000` 또는 `h
 
 ## 빠른 시작
 
+### Auto tool calling 기준
+
+- canonical auto tool calling 경로는 OpenAI-compatible `POST /v1/responses` 입니다.
+- Python/Java `--auto-tool-call`은 1차 `responses` 호출에서 `function_call`을 받고,
+  relay `POST /api/v1/tool-invocations`로 실제 `deep_research`를 실행한 뒤,
+  `previous_response_id` + `function_call_output`으로 2차 `responses` 호출을 완료합니다.
+- relay의 `POST /api/v1/chat`은 예제 편의를 위한 helper endpoint이며,
+  표준 OpenAI API surface 자체는 아닙니다.
+
 ### `uv` 설치 (Python / relay 예제)
 
 Python 예제와 relay 예제는 `uv`를 사용합니다.
@@ -205,9 +214,9 @@ curl -X POST http://127.0.0.1:8080/api/v1/chat \
 
 ### 자동 Tool Calling
 
-- direct Python / Java의 `--auto-tool-call`은 Chat Completions function calling을 사용합니다.
-- 모델이 `deep_research`가 필요하다고 판단하면 relay를 자동 호출합니다.
-- relay 자체도 `POST /api/v1/chat`으로 동일 개념의 server-side orchestration을 제공합니다.
+- direct Python / Java의 `--auto-tool-call`은 Responses API 표준 function calling을 사용합니다.
+- 모델이 `deep_research`가 필요하다고 판단하면 relay를 자동 호출하고, direct client가 `function_call_output` + `previous_response_id`로 두 번째 `responses` turn을 완료합니다.
+- relay 자체도 `POST /api/v1/chat`으로 동일 개념의 server-side orchestration helper를 제공합니다.
 
 ### `system_prompt` 와 `text_format`
 

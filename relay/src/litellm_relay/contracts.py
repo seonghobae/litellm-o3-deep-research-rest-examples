@@ -6,7 +6,6 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-
 DeliverableFormat = Literal["markdown_brief", "markdown_report", "json_outline"]
 InvocationMode = Literal["foreground", "background", "stream"]
 InvocationStatus = Literal["pending", "queued", "running", "completed", "failed"]
@@ -113,7 +112,14 @@ class ToolInvocationEvent(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    """``POST /api/v1/chat`` 요청 본문이다."""
+    """Inbound payload for ``POST /api/v1/chat``.
+
+    The relay uses the ``message`` as the first Responses API user turn with a
+    ``deep_research`` function tool attached. When the model decides the
+    question warrants deep research it returns a ``function_call`` output item;
+    the relay executes the research and performs a second Responses API turn
+    with ``function_call_output`` to produce the final natural-language answer.
+    """
 
     message: str
     context: list[str] = Field(default_factory=list)

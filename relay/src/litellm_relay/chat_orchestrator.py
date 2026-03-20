@@ -13,31 +13,32 @@ from .upstream import LiteLLMRelayGateway, UpstreamInvocationResult
 
 DEEP_RESEARCH_TOOL_SCHEMA: dict[str, Any] = {
     "type": "function",
-    "function": {
-        "name": "deep_research",
-        "description": (
-            "Conduct in-depth research on a topic and return a detailed report. "
-            "Use this when the user asks for detailed factual information, history, "
-            "analysis, or comprehensive explanations that require research beyond "
-            "general knowledge."
-        ),
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "research_question": {
-                    "type": "string",
-                    "description": "The specific research question or topic to investigate",
-                },
-                "deliverable_format": {
-                    "type": "string",
-                    "enum": ["markdown_brief", "markdown_report", "json_outline"],
-                    "description": "Format of the research output",
-                },
+    "name": "deep_research",
+    "description": (
+        "Conduct in-depth research on a topic and return a detailed report. "
+        "Use this when the user asks for detailed factual information, history, "
+        "analysis, or comprehensive explanations that require research beyond "
+        "general knowledge."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "research_question": {
+                "type": "string",
+                "description": "The specific research question or topic to investigate",
             },
-            "required": ["research_question", "deliverable_format"],
+            "deliverable_format": {
+                "type": "string",
+                "enum": ["markdown_brief", "markdown_report", "json_outline"],
+                "description": "Format of the research output",
+            },
         },
+        "required": ["research_question", "deliverable_format"],
     },
 }
+
+SAFE_CHAT_ERROR_MESSAGE = "deep_research failed. Please retry later."
+SAFE_FIRST_TURN_ERROR_MESSAGE = "The chat request failed. Please retry later."
 
 
 class ChatOrchestrator:
@@ -68,11 +69,9 @@ class ChatOrchestrator:
     async def chat(self, request: ChatRequest) -> ChatResponse:
         """필요하면 ``deep_research``를 호출하는 채팅 턴을 수행한다."""
         user_content = self._build_user_content(request)
-        messages: list[dict[str, Any]] = [{"role": "user", "content": user_content}]
-
         kwargs: dict[str, Any] = {
             "model": self._chat_model,
-            "messages": messages,
+            "input": user_content,
             "api_base": self._base_url,
             "api_key": self._api_key,
             "timeout": self._timeout_seconds,
@@ -80,30 +79,25 @@ class ChatOrchestrator:
         if request.auto_tool_call:
             kwargs["tools"] = [DEEP_RESEARCH_TOOL_SCHEMA]
 
-        first_response = await asyncio.to_thread(litellm.completion, **kwargs)
-        first_choice = self._extract_choice(first_response)
-        first_message = first_choice.get("message", {})
+        try:
+            first_response = await asyncio.to_thread(litellm.responses, **kwargs)
+        except Exception:  # noqa: BLE001
+            return ChatResponse(
+                content=SAFE_FIRST_TURN_ERROR_MESSAGE, tool_called=False
+            )
 
-        tool_calls = self._extract_tool_calls(first_message)
-        deep_research_call = next(
-            (
-                tc
-                for tc in tool_calls
-                if isinstance(tc, dict)
-                and tc.get("type") == "function"
-                and (tc.get("function") or {}).get("name") == "deep_research"
-            ),
-            None,
-        )
+        deep_research_call = self._extract_function_call(first_response)
 
         if deep_research_call is None:
-            content = first_message.get("content") or ""
+            content = self._extract_output_text(first_response)
             return ChatResponse(content=content, tool_called=False)
 
-        raw_args = (deep_research_call.get("function") or {}).get("arguments", "{}")
+        raw_args = str(deep_research_call.get("arguments") or "{}")
         try:
             tool_args = json.loads(raw_args)
         except json.JSONDecodeError:
+            tool_args = {}
+        if not isinstance(tool_args, dict):
             tool_args = {}
 
         research_question = tool_args.get("research_question", request.message)
@@ -121,9 +115,9 @@ class ChatOrchestrator:
                 )
             )
             research_summary = research_result.output_text or ""
-        except Exception as exc:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             # Surface as structured error rather than HTTP 500
-            error_detail = f"deep_research failed: {exc}"
+            error_detail = SAFE_CHAT_ERROR_MESSAGE
             return ChatResponse(
                 content=error_detail,
                 tool_called=True,
@@ -131,27 +125,32 @@ class ChatOrchestrator:
                 research_summary=error_detail,
             )
 
-        tool_call_id = deep_research_call.get("id", "call_0")
-        messages_with_result: list[dict[str, Any]] = [
-            {"role": "user", "content": user_content},
-            {"role": "assistant", "content": None, "tool_calls": [deep_research_call]},
-            {
-                "role": "tool",
-                "tool_call_id": tool_call_id,
-                "content": research_summary,
-            },
-        ]
+        response_id = self._extract_response_id(first_response)
+        call_id = str(deep_research_call.get("call_id") or "call_0")
 
         second_kwargs: dict[str, Any] = {
             "model": self._chat_model,
-            "messages": messages_with_result,
+            "previous_response_id": response_id,
+            "input": [
+                {
+                    "type": "function_call_output",
+                    "call_id": call_id,
+                    "output": research_summary,
+                }
+            ],
             "api_base": self._base_url,
             "api_key": self._api_key,
             "timeout": self._timeout_seconds,
         }
-        second_response = await asyncio.to_thread(litellm.completion, **second_kwargs)
-        second_choice = self._extract_choice(second_response)
-        final_content = (second_choice.get("message") or {}).get("content") or ""
+        try:
+            second_response = await asyncio.to_thread(
+                litellm.responses, **second_kwargs
+            )
+            final_content = (
+                self._extract_output_text(second_response) or research_summary
+            )
+        except Exception:  # noqa: BLE001
+            final_content = research_summary
 
         return ChatResponse(
             content=final_content,
@@ -175,36 +174,79 @@ class ChatOrchestrator:
         return f"Context:\n{context_block}\n\n{request.message}"
 
     @staticmethod
-    def _extract_tool_calls(message: dict[str, Any]) -> list[dict[str, Any]]:
-        """메시지의 ``tool_calls`` 값을 일반 딕셔너리 목록으로 정규화한다."""
-        raw = message.get("tool_calls")
-        if not raw:
-            return []
+    def _extract_function_call(response: Any) -> dict[str, Any] | None:
+        output = ChatOrchestrator._extract_output_items(response)
+        for item in output:
+            if item.get("type") != "function_call":
+                continue
+            if item.get("name") != "deep_research":
+                continue
+            return item
+        return None
+
+    @staticmethod
+    def _extract_output_items(response: Any) -> list[dict[str, Any]]:
+        if isinstance(response, dict):
+            output = response.get("output") or []
+        elif hasattr(response, "output"):
+            output = response.output or []
+        else:
+            output = []
         result: list[dict[str, Any]] = []
-        for tc in raw:
-            if isinstance(tc, dict):
-                result.append(tc)
-            elif hasattr(tc, "model_dump"):
-                dumped = tc.model_dump()
+        for item in output:
+            if isinstance(item, dict):
+                result.append(item)
+            elif hasattr(item, "model_dump"):
+                dumped = item.model_dump()
                 if isinstance(dumped, dict):
                     result.append(dumped)
         return result
 
     @staticmethod
-    def _extract_choice(response: Any) -> dict[str, Any]:
-        """LiteLLM 응답에서 첫 번째 choice를 딕셔너리로 꺼낸다."""
+    def _extract_output_text(response: Any) -> str:
         if isinstance(response, dict):
-            choices = response.get("choices") or []
-        elif hasattr(response, "choices"):
-            choices = response.choices or []
+            payload = response
+        elif hasattr(response, "model_dump"):
+            payload = response.model_dump()
         else:
-            choices = []
-        if not choices:
-            return {}
-        first = choices[0]
-        if isinstance(first, dict):
-            return first
-        if hasattr(first, "model_dump"):
-            result = first.model_dump()
-            return result if isinstance(result, dict) else {}
-        return {}
+            payload = {
+                "output_text": getattr(response, "output_text", None),
+                "output": getattr(response, "output", []),
+            }
+        if not isinstance(payload, dict):
+            return ""
+        output_text = payload.get("output_text")
+        if isinstance(output_text, str) and output_text:
+            return output_text
+        parts: list[str] = []
+        for item in ChatOrchestrator._extract_output_items(payload):
+            content = item.get("content")
+            if not isinstance(content, list):
+                continue
+            for block in content:
+                if not isinstance(block, dict):
+                    continue
+                if block.get("type") not in {"output_text", "text"}:
+                    continue
+                text = block.get("text")
+                if isinstance(text, str) and text:
+                    parts.append(text)
+                elif isinstance(text, dict):
+                    value = text.get("value")
+                    if isinstance(value, str) and value:
+                        parts.append(value)
+        return "".join(parts)
+
+    @staticmethod
+    def _extract_response_id(response: Any) -> str:
+        if isinstance(response, dict):
+            payload = response
+        elif hasattr(response, "model_dump"):
+            payload = response.model_dump()
+        else:
+            payload = {"id": getattr(response, "id", None)}
+        if isinstance(payload, dict):
+            response_id = payload.get("id")
+            if isinstance(response_id, str) and response_id:
+                return response_id
+        raise ValueError("response id missing")

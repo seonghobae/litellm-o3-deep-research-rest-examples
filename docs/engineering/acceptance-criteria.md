@@ -34,9 +34,9 @@ Work in this repository is complete only when all of the following are true:
 ## Auto tool-calling (function calling)
 
 12. Python and Java direct clients support `--auto-tool-call` flag using the OpenAI-standard Responses API function-calling pattern: the client sends `POST /v1/responses` with the `deep_research` function schema attached; if the model emits a `function_call`, the client executes the tool via relay `POST /api/v1/tool-invocations`, then sends a second `POST /v1/responses` request with `previous_response_id` plus a `function_call_output` item.
-13. The relay exposes `POST /api/v1/chat` which internally performs relay-side orchestration: 1st Chat Completions turn → tool call detection → deep_research execution → 2nd completions turn → structured `ChatResponse`. The relay uses `LITELLM_CHAT_MODEL` (default `gpt-4o`) for orchestration turns and `LITELLM_MODEL` for deep research.
-14. The relay `ChatOrchestrator` uses separate timeouts: `RELAY_TIMEOUT_SECONDS` (default 30 s) for Chat Completions turns and `RELAY_RESEARCH_TIMEOUT_SECONDS` (default 300 s) for deep_research execution.
-15. Upstream errors in auto tool-calling are caught and returned as a structured `ChatResponse` (not bare HTTP 500).
+13. The relay exposes `POST /api/v1/chat` which internally performs relay-side orchestration: 1st Responses turn → tool call detection → deep_research execution → 2nd Responses turn → structured `ChatResponse`. The relay uses `LITELLM_CHAT_MODEL` (default `gpt-4o`) for orchestration turns and `LITELLM_MODEL` for deep research.
+14. The relay `ChatOrchestrator` uses separate timeouts: `RELAY_TIMEOUT_SECONDS` (default 30 s) for Responses orchestration turns and `RELAY_RESEARCH_TIMEOUT_SECONDS` (default 300 s) for deep_research execution.
+15. Upstream errors in auto tool-calling are caught and returned as a structured `ChatResponse` (not bare HTTP 500), and the public payload does not include raw upstream exception text.
 16. Direct auto tool-calling surfaces the relevant identifiers to callers: final `response_id`, initial `previous_response_id` when a tool was called, `tool_call_id`, relay `invocation_id`, and relay `upstream_response_id`.
 17. Direct clients do not forward the upstream `LITELLM_API_KEY` bearer token to relay `POST /api/v1/tool-invocations`; relay tool execution uses a no-auth local relay request path.
 
@@ -48,7 +48,7 @@ Work in this repository is complete only when all of the following are true:
 
 ## Tests and coverage
 
-21. Automated tests cover: configuration loading, request construction, background handling, status polling, SSE text streaming, error handling, `system_prompt` passthrough, `text_format` passthrough, `web_search_preview` passthrough, `auto_tool_call` (no-tool and tool-call paths), standard Responses API `function_call_output` continuation, no-auth relay execution for direct auto-tool-calling, `ChatOrchestrator` timeout separation, Pydantic tool_call normalisation, `ChatRequest.system_prompt` and `ChatRequest.deliverable_format` propagation to `DeepResearchArguments`.
+21. Automated tests cover: configuration loading, request construction, background handling, status polling, SSE text streaming, error handling, redacted relay error payloads, `system_prompt` passthrough, `text_format` passthrough, `web_search_preview` passthrough, `auto_tool_call` (no-tool and tool-call paths), standard Responses API `function_call_output` continuation, no-auth relay execution for direct auto-tool-calling, `ChatOrchestrator` timeout separation, Pydantic tool_call normalisation, and `ChatRequest.system_prompt` / `ChatRequest.deliverable_format` propagation to `DeepResearchArguments`.
 22. Python relay: `uv run pytest --cov=litellm_relay --cov-fail-under=100` passes.
 23. Python client: `uv run pytest --cov=litellm_example --cov-fail-under=100` passes.
 24. Java: `mvn test` → BUILD SUCCESS.

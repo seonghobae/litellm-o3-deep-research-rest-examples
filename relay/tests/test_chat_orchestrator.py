@@ -11,23 +11,12 @@ async def test_chat_no_tool_call_returns_direct_answer(monkeypatch):
     """When the model does not call deep_research, return the assistant text directly."""
     calls = []
 
-    def fake_completions(**kwargs):
+    def fake_responses(**kwargs):
         calls.append(kwargs)
-        return {
-            "choices": [
-                {
-                    "finish_reason": "stop",
-                    "message": {
-                        "role": "assistant",
-                        "content": "Hello there!",
-                        "tool_calls": None,
-                    },
-                }
-            ]
-        }
+        return {"id": "resp_1", "output_text": "Hello there!", "output": []}
 
     monkeypatch.setattr(
-        "litellm_relay.chat_orchestrator.litellm.completion", fake_completions
+        "litellm_relay.chat_orchestrator.litellm.responses", fake_responses
     )
 
     orchestrator = ChatOrchestrator(
@@ -50,53 +39,38 @@ async def test_chat_with_tool_call_executes_deep_research(monkeypatch):
     import json as _json
 
     turn = 0
+    calls = []
 
-    def fake_completions(**kwargs):
+    def fake_responses(**kwargs):
         nonlocal turn
+        calls.append(kwargs)
         turn += 1
         if turn == 1:
             return {
-                "choices": [
+                "id": "resp_1",
+                "output": [
                     {
-                        "finish_reason": "tool_calls",
-                        "message": {
-                            "role": "assistant",
-                            "content": None,
-                            "tool_calls": [
-                                {
-                                    "id": "call_abc",
-                                    "type": "function",
-                                    "function": {
-                                        "name": "deep_research",
-                                        "arguments": _json.dumps(
-                                            {
-                                                "research_question": "짜장면의 역사",
-                                                "deliverable_format": "markdown_brief",
-                                            }
-                                        ),
-                                    },
-                                }
-                            ],
-                        },
+                        "type": "function_call",
+                        "name": "deep_research",
+                        "call_id": "call_abc",
+                        "arguments": _json.dumps(
+                            {
+                                "research_question": "짜장면의 역사",
+                                "deliverable_format": "markdown_brief",
+                            }
+                        ),
                     }
-                ]
+                ],
             }
         else:
             return {
-                "choices": [
-                    {
-                        "finish_reason": "stop",
-                        "message": {
-                            "role": "assistant",
-                            "content": "짜장면은 19세기 말 중국 산둥 지방에서 유래했습니다.",
-                            "tool_calls": None,
-                        },
-                    }
-                ]
+                "id": "resp_2",
+                "output_text": "짜장면은 19세기 말 중국 산둥 지방에서 유래했습니다.",
+                "output": [],
             }
 
     monkeypatch.setattr(
-        "litellm_relay.chat_orchestrator.litellm.completion", fake_completions
+        "litellm_relay.chat_orchestrator.litellm.responses", fake_responses
     )
 
     orchestrator = ChatOrchestrator(
@@ -126,6 +100,8 @@ async def test_chat_with_tool_call_executes_deep_research(monkeypatch):
     assert "짜장면" in result.content
     assert result.research_summary == "역사 요약: 인천 차이나타운 기원"
     assert turn == 2
+    assert calls[1]["previous_response_id"] == "resp_1"
+    assert calls[1]["input"][0]["type"] == "function_call_output"
 
 
 @pytest.mark.asyncio
@@ -133,23 +109,12 @@ async def test_chat_auto_tool_call_false_skips_tools(monkeypatch):
     """When auto_tool_call=False, the orchestrator does not attach tools."""
     calls = []
 
-    def fake_completions(**kwargs):
+    def fake_responses(**kwargs):
         calls.append(kwargs)
-        return {
-            "choices": [
-                {
-                    "finish_reason": "stop",
-                    "message": {
-                        "role": "assistant",
-                        "content": "No tools used.",
-                        "tool_calls": None,
-                    },
-                }
-            ]
-        }
+        return {"id": "resp_1", "output_text": "No tools used.", "output": []}
 
     monkeypatch.setattr(
-        "litellm_relay.chat_orchestrator.litellm.completion", fake_completions
+        "litellm_relay.chat_orchestrator.litellm.responses", fake_responses
     )
 
     orchestrator = ChatOrchestrator(
@@ -170,23 +135,12 @@ async def test_chat_with_context_includes_context_in_first_turn(monkeypatch):
     """Context items are prepended to the user message."""
     calls = []
 
-    def fake_completions(**kwargs):
+    def fake_responses(**kwargs):
         calls.append(kwargs)
-        return {
-            "choices": [
-                {
-                    "finish_reason": "stop",
-                    "message": {
-                        "role": "assistant",
-                        "content": "got it",
-                        "tool_calls": None,
-                    },
-                }
-            ]
-        }
+        return {"id": "resp_1", "output_text": "got it", "output": []}
 
     monkeypatch.setattr(
-        "litellm_relay.chat_orchestrator.litellm.completion", fake_completions
+        "litellm_relay.chat_orchestrator.litellm.responses", fake_responses
     )
 
     orchestrator = ChatOrchestrator(
@@ -197,38 +151,31 @@ async def test_chat_with_context_includes_context_in_first_turn(monkeypatch):
     )
     await orchestrator.chat(ChatRequest(message="Q", context=["ctx A", "ctx B"]))
 
-    messages = calls[0]["messages"]
-    user_content = next(m["content"] for m in messages if m["role"] == "user")
+    user_content = calls[0]["input"]
     assert "ctx A" in user_content
     assert "ctx B" in user_content
     assert "Q" in user_content
 
 
 @pytest.mark.asyncio
-async def test_chat_extract_choice_handles_model_dump(monkeypatch):
-    """_extract_choice handles objects with model_dump method."""
+async def test_chat_extract_output_text_handles_model_dump(monkeypatch):
+    """_extract_output_text handles response objects with model_dump method."""
     calls = []
 
-    class FakeChoice:
+    class FakeResponse:
         def model_dump(self):
             return {
-                "finish_reason": "stop",
-                "message": {
-                    "role": "assistant",
-                    "content": "via model_dump",
-                    "tool_calls": None,
-                },
+                "id": "resp_1",
+                "output_text": "via model_dump",
+                "output": [],
             }
 
-    class FakeResponse:
-        choices = [FakeChoice()]
-
-    def fake_completions(**kwargs):
+    def fake_responses(**kwargs):
         calls.append(kwargs)
         return FakeResponse()
 
     monkeypatch.setattr(
-        "litellm_relay.chat_orchestrator.litellm.completion", fake_completions
+        "litellm_relay.chat_orchestrator.litellm.responses", fake_responses
     )
 
     orchestrator = ChatOrchestrator(
@@ -241,14 +188,14 @@ async def test_chat_extract_choice_handles_model_dump(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_chat_extract_choice_handles_empty_choices(monkeypatch):
-    """_extract_choice returns {} when choices is empty, resulting in empty content."""
+async def test_chat_extract_output_text_handles_empty_output(monkeypatch):
+    """Empty output results in empty direct content."""
 
-    def fake_completions(**kwargs):
-        return {"choices": []}
+    def fake_responses(**kwargs):
+        return {"id": "resp_1", "output": []}
 
     monkeypatch.setattr(
-        "litellm_relay.chat_orchestrator.litellm.completion", fake_completions
+        "litellm_relay.chat_orchestrator.litellm.responses", fake_responses
     )
 
     orchestrator = ChatOrchestrator(
@@ -263,50 +210,27 @@ async def test_chat_extract_choice_handles_empty_choices(monkeypatch):
 @pytest.mark.asyncio
 async def test_chat_tool_call_with_invalid_json_args(monkeypatch):
     """When tool call arguments are invalid JSON, falls back to request.message."""
-    import json as _json
-
     turn = 0
 
-    def fake_completions(**kwargs):
+    def fake_responses(**kwargs):
         nonlocal turn
         turn += 1
         if turn == 1:
             return {
-                "choices": [
+                "id": "resp_1",
+                "output": [
                     {
-                        "finish_reason": "tool_calls",
-                        "message": {
-                            "role": "assistant",
-                            "content": None,
-                            "tool_calls": [
-                                {
-                                    "id": "call_xyz",
-                                    "type": "function",
-                                    "function": {
-                                        "name": "deep_research",
-                                        "arguments": "NOT VALID JSON",
-                                    },
-                                }
-                            ],
-                        },
+                        "type": "function_call",
+                        "name": "deep_research",
+                        "call_id": "call_xyz",
+                        "arguments": "NOT VALID JSON",
                     }
-                ]
+                ],
             }
-        return {
-            "choices": [
-                {
-                    "finish_reason": "stop",
-                    "message": {
-                        "role": "assistant",
-                        "content": "final",
-                        "tool_calls": None,
-                    },
-                }
-            ]
-        }
+        return {"id": "resp_2", "output_text": "final", "output": []}
 
     monkeypatch.setattr(
-        "litellm_relay.chat_orchestrator.litellm.completion", fake_completions
+        "litellm_relay.chat_orchestrator.litellm.responses", fake_responses
     )
 
     orchestrator = ChatOrchestrator(
@@ -331,15 +255,60 @@ async def test_chat_tool_call_with_invalid_json_args(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_extract_choice_unknown_response_type(monkeypatch):
-    """_extract_choice returns {} when response has no choices attribute and is not a dict."""
+async def test_chat_tool_call_with_non_object_json_args(monkeypatch):
+    turn = 0
 
-    def fake_completions(**kwargs):
-        # Return a plain string — neither dict nor object with .choices
+    def fake_responses(**kwargs):
+        nonlocal turn
+        turn += 1
+        if turn == 1:
+            return {
+                "id": "resp_1",
+                "output": [
+                    {
+                        "type": "function_call",
+                        "name": "deep_research",
+                        "call_id": "call_non_object",
+                        "arguments": "null",
+                    }
+                ],
+            }
+        return {"id": "resp_2", "output_text": "final", "output": []}
+
+    monkeypatch.setattr(
+        "litellm_relay.chat_orchestrator.litellm.responses", fake_responses
+    )
+
+    orchestrator = ChatOrchestrator(
+        base_url="https://proxy.example/v1",
+        api_key="sk-test",
+    )
+
+    from litellm_relay.upstream import UpstreamInvocationResult
+
+    async def fake_invoke(args):
+        assert args.research_question == "fallback question"
+        assert args.deliverable_format == "markdown_brief"
+        return UpstreamInvocationResult(
+            mode="foreground", status="completed", output_text="summary"
+        )
+
+    orchestrator._invoke_deep_research = fake_invoke
+
+    result = await orchestrator.chat(ChatRequest(message="fallback question"))
+    assert result.tool_called is True
+    assert result.content == "final"
+
+
+@pytest.mark.asyncio
+async def test_extract_output_text_unknown_response_type(monkeypatch):
+    """Unknown response shape falls back to empty content."""
+
+    def fake_responses(**kwargs):
         return "unexpected string response"
 
     monkeypatch.setattr(
-        "litellm_relay.chat_orchestrator.litellm.completion", fake_completions
+        "litellm_relay.chat_orchestrator.litellm.responses", fake_responses
     )
 
     orchestrator = ChatOrchestrator(
@@ -352,22 +321,20 @@ async def test_extract_choice_unknown_response_type(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_extract_choice_choice_without_model_dump(monkeypatch):
-    """_extract_choice returns {} when choice is not dict and has no model_dump."""
+async def test_extract_output_text_item_without_model_dump(monkeypatch):
+    """Non-dict output items without model_dump are ignored."""
 
-    class FakeChoiceNoModelDump:
-        """A choice-like object that has NO model_dump method."""
-
+    class FakeOutputNoModelDump:
         pass
 
-    class FakeResponseWithChoices:
-        choices = [FakeChoiceNoModelDump()]
+    class FakeResponseWithOutput:
+        output = [FakeOutputNoModelDump()]
 
-    def fake_completions(**kwargs):
-        return FakeResponseWithChoices()
+    def fake_responses(**kwargs):
+        return FakeResponseWithOutput()
 
     monkeypatch.setattr(
-        "litellm_relay.chat_orchestrator.litellm.completion", fake_completions
+        "litellm_relay.chat_orchestrator.litellm.responses", fake_responses
     )
 
     orchestrator = ChatOrchestrator(
@@ -432,39 +399,29 @@ async def test_research_timeout_is_separate_from_chat_timeout(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_chat_deep_research_error_returns_structured_response(monkeypatch):
-    """When deep_research raises, returns ChatResponse with error detail instead of 500."""
+    """When deep_research raises, returns a safe structured error instead of 500."""
     import json as _json
 
-    def fake_completions(**kwargs):
+    def fake_responses(**kwargs):
         return {
-            "choices": [
+            "id": "resp_err",
+            "output": [
                 {
-                    "finish_reason": "tool_calls",
-                    "message": {
-                        "role": "assistant",
-                        "content": None,
-                        "tool_calls": [
-                            {
-                                "id": "call_err",
-                                "type": "function",
-                                "function": {
-                                    "name": "deep_research",
-                                    "arguments": _json.dumps(
-                                        {
-                                            "research_question": "will fail",
-                                            "deliverable_format": "markdown_brief",
-                                        }
-                                    ),
-                                },
-                            }
-                        ],
-                    },
+                    "type": "function_call",
+                    "name": "deep_research",
+                    "call_id": "call_err",
+                    "arguments": _json.dumps(
+                        {
+                            "research_question": "will fail",
+                            "deliverable_format": "markdown_brief",
+                        }
+                    ),
                 }
-            ]
+            ],
         }
 
     monkeypatch.setattr(
-        "litellm_relay.chat_orchestrator.litellm.completion", fake_completions
+        "litellm_relay.chat_orchestrator.litellm.responses", fake_responses
     )
 
     orchestrator = ChatOrchestrator(
@@ -480,19 +437,98 @@ async def test_chat_deep_research_error_returns_structured_response(monkeypatch)
     result = await orchestrator.chat(ChatRequest(message="will fail"))
     assert result.tool_called is True
     assert result.tool_name == "deep_research"
-    assert "deep_research failed" in result.content
-    assert "upstream timeout" in result.research_summary
+    assert result.content == "deep_research failed. Please retry later."
+    assert result.research_summary == "deep_research failed. Please retry later."
+    assert "upstream timeout" not in result.content
+    assert "upstream timeout" not in result.research_summary
 
 
 @pytest.mark.asyncio
-async def test_extract_tool_calls_handles_pydantic_objects(monkeypatch):
-    """_extract_tool_calls normalises Pydantic-like tool call objects to dicts."""
+async def test_chat_first_responses_exception_returns_safe_response(monkeypatch):
+    def fake_responses(**kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(
+        "litellm_relay.chat_orchestrator.litellm.responses", fake_responses
+    )
+
+    orchestrator = ChatOrchestrator(
+        base_url="https://proxy.example/v1",
+        api_key="sk-test",
+    )
+
+    result = await orchestrator.chat(ChatRequest(message="will fail"))
+    assert result.content == "The chat request failed. Please retry later."
+    assert result.tool_called is False
+
+
+@pytest.mark.asyncio
+async def test_chat_second_responses_exception_falls_back_to_research_summary(
+    monkeypatch,
+):
     import json as _json
 
-    class FakeFunctionCall:
+    turn = 0
+
+    def fake_responses(**kwargs):
+        nonlocal turn
+        turn += 1
+        if turn == 1:
+            return {
+                "id": "resp_1",
+                "output": [
+                    {
+                        "type": "function_call",
+                        "name": "deep_research",
+                        "call_id": "call_1",
+                        "arguments": _json.dumps(
+                            {
+                                "research_question": "q",
+                                "deliverable_format": "markdown_brief",
+                            }
+                        ),
+                    }
+                ],
+            }
+        raise RuntimeError("second turn failed")
+
+    monkeypatch.setattr(
+        "litellm_relay.chat_orchestrator.litellm.responses", fake_responses
+    )
+
+    orchestrator = ChatOrchestrator(
+        base_url="https://proxy.example/v1",
+        api_key="sk-test",
+    )
+
+    from litellm_relay.upstream import UpstreamInvocationResult
+
+    async def fake_invoke(args):
+        return UpstreamInvocationResult(
+            mode="foreground",
+            status="completed",
+            output_text="research summary",
+        )
+
+    orchestrator._invoke_deep_research = fake_invoke
+
+    result = await orchestrator.chat(ChatRequest(message="q"))
+    assert result.tool_called is True
+    assert result.content == "research summary"
+    assert result.research_summary == "research summary"
+
+
+@pytest.mark.asyncio
+async def test_extract_function_call_handles_pydantic_objects(monkeypatch):
+    """_extract_function_call normalises Pydantic-like response output items."""
+    import json as _json
+
+    class FakeOutputItem:
         def model_dump(self):
             return {
+                "type": "function_call",
                 "name": "deep_research",
+                "call_id": "call_pydantic",
                 "arguments": _json.dumps(
                     {
                         "research_question": "pydantic q",
@@ -501,78 +537,22 @@ async def test_extract_tool_calls_handles_pydantic_objects(monkeypatch):
                 ),
             }
 
-    class FakeToolCall:
-        type = "function"
-        id = "call_pydantic"
-
-        def model_dump(self):
-            return {
-                "id": self.id,
-                "type": self.type,
-                "function": {
-                    "name": "deep_research",
-                    "arguments": _json.dumps(
-                        {
-                            "research_question": "pydantic q",
-                            "deliverable_format": "markdown_brief",
-                        }
-                    ),
-                },
-            }
-
     turn = 0
 
-    def fake_completions(**kwargs):
+    def fake_responses(**kwargs):
         nonlocal turn
         turn += 1
         if turn == 1:
-            # Return a response where tool_calls contains a Pydantic-like object
-            class FakeMessage:
-                role = "assistant"
-                content = None
-                tool_calls = [FakeToolCall()]
 
-                def get(self, key, default=None):
-                    return getattr(self, key, default)
+            class FakeResponse:
+                output = [FakeOutputItem()]
+                id = "resp_1"
 
-            class FakeChoice:
-                finish_reason = "tool_calls"
-                message = {
-                    "role": "assistant",
-                    "content": None,
-                    "tool_calls": [FakeToolCall()],
-                }
-
-                def get(self, key, default=None):
-                    return getattr(self, key, default)
-
-            return {
-                "choices": [
-                    {
-                        "finish_reason": "tool_calls",
-                        "message": {
-                            "role": "assistant",
-                            "content": None,
-                            "tool_calls": [FakeToolCall()],
-                        },
-                    }
-                ]
-            }
-        return {
-            "choices": [
-                {
-                    "finish_reason": "stop",
-                    "message": {
-                        "role": "assistant",
-                        "content": "done",
-                        "tool_calls": None,
-                    },
-                }
-            ]
-        }
+            return FakeResponse()
+        return {"id": "resp_2", "output_text": "done", "output": []}
 
     monkeypatch.setattr(
-        "litellm_relay.chat_orchestrator.litellm.completion", fake_completions
+        "litellm_relay.chat_orchestrator.litellm.responses", fake_responses
     )
 
     orchestrator = ChatOrchestrator(
@@ -595,8 +575,62 @@ async def test_extract_tool_calls_handles_pydantic_objects(monkeypatch):
     assert result.research_summary == "pydantic summary"
 
 
+def test_extract_function_call_skips_non_matching_items():
+    result = ChatOrchestrator._extract_function_call(
+        {
+            "output": [
+                {"type": "message", "name": "deep_research"},
+                {"type": "function_call", "name": "other_tool", "call_id": "x"},
+            ]
+        }
+    )
+
+    assert result is None
+
+
+def test_extract_output_text_reads_nested_blocks_and_invalid_model_dump():
+    class FakeBadResponse:
+        def model_dump(self):
+            return "invalid"
+
+    assert ChatOrchestrator._extract_output_text(FakeBadResponse()) == ""
+
+    payload = {
+        "output": [
+            {
+                "content": [
+                    {"type": "output_text", "text": "hello"},
+                    {"type": "text", "text": {"value": " world"}},
+                ]
+            }
+        ]
+    }
+    assert ChatOrchestrator._extract_output_text(payload) == "hello world"
+
+    noisy_payload = {
+        "output": [
+            {"content": "not-a-list"},
+            {"content": ["not-a-dict", {"type": "reasoning", "text": "skip"}]},
+        ]
+    }
+    assert ChatOrchestrator._extract_output_text(noisy_payload) == ""
+
+
+def test_extract_response_id_missing_raises_value_error():
+    with pytest.raises(ValueError):
+        ChatOrchestrator._extract_response_id({})
+
+
+def test_extract_response_id_from_model_dump_object():
+    class FakeResponse:
+        def model_dump(self):
+            return {"id": "resp_model_dump"}
+
+    assert ChatOrchestrator._extract_response_id(FakeResponse()) == "resp_model_dump"
+
+
 # ---------------------------------------------------------------------------
-# New tests: system_prompt and deliverable_format passthrough
+# system_prompt and deliverable_format passthrough
 # ---------------------------------------------------------------------------
 
 
@@ -607,51 +641,34 @@ async def test_chat_system_prompt_forwarded_to_deep_research(monkeypatch):
 
     turn = 0
 
-    def fake_completions(**kwargs):
+    def fake_responses(**kwargs):
         nonlocal turn
         turn += 1
         if turn == 1:
             return {
-                "choices": [
+                "id": "resp_1",
+                "output": [
                     {
-                        "finish_reason": "tool_calls",
-                        "message": {
-                            "role": "assistant",
-                            "content": None,
-                            "tool_calls": [
-                                {
-                                    "id": "call_sp",
-                                    "type": "function",
-                                    "function": {
-                                        "name": "deep_research",
-                                        "arguments": _json.dumps(
-                                            {
-                                                "research_question": "짜장면 역사",
-                                                "deliverable_format": "markdown_brief",
-                                            }
-                                        ),
-                                    },
-                                }
-                            ],
-                        },
+                        "type": "function_call",
+                        "name": "deep_research",
+                        "call_id": "call_sp",
+                        "arguments": _json.dumps(
+                            {
+                                "research_question": "짜장면 역사",
+                                "deliverable_format": "markdown_brief",
+                            }
+                        ),
                     }
-                ]
+                ],
             }
         return {
-            "choices": [
-                {
-                    "finish_reason": "stop",
-                    "message": {
-                        "role": "assistant",
-                        "content": "English answer about jjajangmyeon.",
-                        "tool_calls": None,
-                    },
-                }
-            ]
+            "id": "resp_2",
+            "output_text": "English answer about jjajangmyeon.",
+            "output": [],
         }
 
     monkeypatch.setattr(
-        "litellm_relay.chat_orchestrator.litellm.completion", fake_completions
+        "litellm_relay.chat_orchestrator.litellm.responses", fake_responses
     )
 
     orchestrator = ChatOrchestrator(
@@ -692,51 +709,34 @@ async def test_chat_system_prompt_none_when_not_provided(monkeypatch):
 
     turn = 0
 
-    def fake_completions(**kwargs):
+    def fake_responses(**kwargs):
         nonlocal turn
         turn += 1
         if turn == 1:
             return {
-                "choices": [
+                "id": "resp_1",
+                "output": [
                     {
-                        "finish_reason": "tool_calls",
-                        "message": {
-                            "role": "assistant",
-                            "content": None,
-                            "tool_calls": [
-                                {
-                                    "id": "call_no_sp",
-                                    "type": "function",
-                                    "function": {
-                                        "name": "deep_research",
-                                        "arguments": _json.dumps(
-                                            {
-                                                "research_question": "test",
-                                                "deliverable_format": "markdown_brief",
-                                            }
-                                        ),
-                                    },
-                                }
-                            ],
-                        },
+                        "type": "function_call",
+                        "name": "deep_research",
+                        "call_id": "call_no_sp",
+                        "arguments": _json.dumps(
+                            {
+                                "research_question": "test",
+                                "deliverable_format": "markdown_brief",
+                            }
+                        ),
                     }
-                ]
+                ],
             }
         return {
-            "choices": [
-                {
-                    "finish_reason": "stop",
-                    "message": {
-                        "role": "assistant",
-                        "content": "answer",
-                        "tool_calls": None,
-                    },
-                }
-            ]
+            "id": "resp_2",
+            "output_text": "answer",
+            "output": [],
         }
 
     monkeypatch.setattr(
-        "litellm_relay.chat_orchestrator.litellm.completion", fake_completions
+        "litellm_relay.chat_orchestrator.litellm.responses", fake_responses
     )
 
     orchestrator = ChatOrchestrator(
@@ -772,52 +772,29 @@ async def test_chat_deliverable_format_used_as_fallback(monkeypatch):
 
     turn = 0
 
-    def fake_completions(**kwargs):
+    def fake_responses(**kwargs):
         nonlocal turn
         turn += 1
         if turn == 1:
-            # Model does not include deliverable_format in tool args
             return {
-                "choices": [
+                "id": "resp_1",
+                "output": [
                     {
-                        "finish_reason": "tool_calls",
-                        "message": {
-                            "role": "assistant",
-                            "content": None,
-                            "tool_calls": [
-                                {
-                                    "id": "call_fmt",
-                                    "type": "function",
-                                    "function": {
-                                        "name": "deep_research",
-                                        "arguments": _json.dumps(
-                                            {
-                                                "research_question": "짜장면",
-                                                # no deliverable_format key
-                                            }
-                                        ),
-                                    },
-                                }
-                            ],
-                        },
+                        "type": "function_call",
+                        "name": "deep_research",
+                        "call_id": "call_fmt",
+                        "arguments": _json.dumps({"research_question": "짜장면"}),
                     }
-                ]
+                ],
             }
         return {
-            "choices": [
-                {
-                    "finish_reason": "stop",
-                    "message": {
-                        "role": "assistant",
-                        "content": "done",
-                        "tool_calls": None,
-                    },
-                }
-            ]
+            "id": "resp_2",
+            "output_text": "done",
+            "output": [],
         }
 
     monkeypatch.setattr(
-        "litellm_relay.chat_orchestrator.litellm.completion", fake_completions
+        "litellm_relay.chat_orchestrator.litellm.responses", fake_responses
     )
 
     orchestrator = ChatOrchestrator(
@@ -840,7 +817,6 @@ async def test_chat_deliverable_format_used_as_fallback(monkeypatch):
 
     orchestrator._invoke_deep_research = capturing_invoke
 
-    # Caller requests markdown_report as the preferred format
     await orchestrator.chat(
         ChatRequest(message="짜장면", deliverable_format="markdown_report")
     )
@@ -856,52 +832,34 @@ async def test_chat_model_format_overrides_request_format(monkeypatch):
 
     turn = 0
 
-    def fake_completions(**kwargs):
+    def fake_responses(**kwargs):
         nonlocal turn
         turn += 1
         if turn == 1:
-            # Model explicitly sets json_outline
             return {
-                "choices": [
+                "id": "resp_1",
+                "output": [
                     {
-                        "finish_reason": "tool_calls",
-                        "message": {
-                            "role": "assistant",
-                            "content": None,
-                            "tool_calls": [
-                                {
-                                    "id": "call_override",
-                                    "type": "function",
-                                    "function": {
-                                        "name": "deep_research",
-                                        "arguments": _json.dumps(
-                                            {
-                                                "research_question": "짜장면",
-                                                "deliverable_format": "json_outline",
-                                            }
-                                        ),
-                                    },
-                                }
-                            ],
-                        },
+                        "type": "function_call",
+                        "name": "deep_research",
+                        "call_id": "call_override",
+                        "arguments": _json.dumps(
+                            {
+                                "research_question": "짜장면",
+                                "deliverable_format": "json_outline",
+                            }
+                        ),
                     }
-                ]
+                ],
             }
         return {
-            "choices": [
-                {
-                    "finish_reason": "stop",
-                    "message": {
-                        "role": "assistant",
-                        "content": "done",
-                        "tool_calls": None,
-                    },
-                }
-            ]
+            "id": "resp_2",
+            "output_text": "done",
+            "output": [],
         }
 
     monkeypatch.setattr(
-        "litellm_relay.chat_orchestrator.litellm.completion", fake_completions
+        "litellm_relay.chat_orchestrator.litellm.responses", fake_responses
     )
 
     orchestrator = ChatOrchestrator(
@@ -924,13 +882,11 @@ async def test_chat_model_format_overrides_request_format(monkeypatch):
 
     orchestrator._invoke_deep_research = capturing_invoke
 
-    # Request says markdown_report but model overrides with json_outline
     await orchestrator.chat(
         ChatRequest(message="짜장면", deliverable_format="markdown_report")
     )
 
     assert len(captured_args) == 1
-    # Model's choice (json_outline) takes precedence over caller's (markdown_report)
     assert captured_args[0].deliverable_format == "json_outline"
 
 

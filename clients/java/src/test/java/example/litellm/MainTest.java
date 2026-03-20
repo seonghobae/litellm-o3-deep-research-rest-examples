@@ -72,7 +72,6 @@ class MainTest {
 
     @Test
     void backgroundRequiresResponsesApi() {
-        // --background with default --api chat (not responses) must fail fast.
         assertThrows(
                 IllegalArgumentException.class,
                 () -> Main.main(new String[] {"--background", "my question"}));
@@ -86,16 +85,13 @@ class MainTest {
 
     @Test
     void webSearchFlagRequiresResponsesApi() {
-        // --web-search without --api responses must fail fast.
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(
+                IllegalArgumentException.class,
                 () -> Main.main(new String[] {"--web-search", "some prompt"}));
     }
 
     @Test
     void webSearchFlagSendsWebSearchPreviewTool() throws Exception {
-        // Verify the web-search routing by exercising LiteLlmClient directly
-        // (same pattern as other routing tests - Main.main env-var coupling
-        // cannot be controlled in-process).
         java.util.concurrent.atomic.AtomicReference<String> capturedBody =
                 new java.util.concurrent.atomic.AtomicReference<>();
 
@@ -112,7 +108,6 @@ class MainTest {
                 java.util.Map.of("LITELLM_BASE_URL", baseUrl, "LITELLM_API_KEY", "sk-test"));
         LiteLlmClient client = new LiteLlmClient(cfg.baseUrl(), cfg.apiKey(), cfg.model());
 
-        // Same logic as Main.main's --web-search branch
         String result = client.createResponse(
                 "짜장면의 역사",
                 false,
@@ -127,13 +122,6 @@ class MainTest {
     }
 
     // ---------- routing integration tests ------------------------------------
-    //
-    // Main.main() calls EnvConfig.loadDefault() which reads System.getenv().
-    // We cannot override env vars in-process in Java, so we test the routing
-    // paths (relay, direct chat, direct responses) by exercising the underlying
-    // client classes directly with a controlled HTTP server.  This validates
-    // the same code paths that Main.main() exercises (lines 37-55 of Main.java)
-    // without the environment-variable coupling.
 
     @Test
     void relayChatRoutingPathCompletesSuccessfully() throws Exception {
@@ -145,7 +133,6 @@ class MainTest {
                             + "\"output_text\":\"relay routed\"}");
         });
 
-        // Same logic as Main.main's relay branch (lines 37-38)
         example.litellm.relay.RelayClient client =
                 new example.litellm.relay.RelayClient(baseUrl);
         String result = client.invokeDeepResearch("route test", "markdown_brief", false, false);
@@ -161,7 +148,6 @@ class MainTest {
                             + "\"content\":\"direct routed\"}}]}");
         });
 
-        // Same logic as Main.main's direct chat branch (lines 47-51)
         EnvConfig cfg = EnvConfig.load(
                 tempDir.resolve(".env"),
                 java.util.Map.of("LITELLM_BASE_URL", baseUrl, "LITELLM_API_KEY", "sk-test"));
@@ -179,7 +165,6 @@ class MainTest {
                             + "\"text\":\"responses routed\"}]}]}");
         });
 
-        // Same logic as Main.main's direct responses branch (lines 50, 47-51)
         EnvConfig cfg = EnvConfig.load(
                 tempDir.resolve(".env"),
                 java.util.Map.of("LITELLM_BASE_URL", baseUrl, "LITELLM_API_KEY", "sk-test"));
@@ -199,19 +184,16 @@ class MainTest {
 
     @Test
     void autoToolCallRoutingPathCompletesSuccessfully() throws Exception {
-        // Exercise the createChatWithToolCalling path via LiteLlmClient directly
-        // (same pattern as other routing tests - Main.main env-var coupling
-        // cannot be controlled in-process).
         java.util.concurrent.atomic.AtomicInteger responsesCallCount =
                 new java.util.concurrent.atomic.AtomicInteger(0);
 
-        String firstChatJson =
+        String firstResponsesJson =
                 "{\"id\":\"resp_direct\",\"status\":\"completed\",\"output_text\":\"auto tool answer\",\"output\":[]}";
 
         server.createContext("/v1/responses", exchange -> {
             exchange.getRequestBody().readAllBytes();
             responsesCallCount.incrementAndGet();
-            writeJson(exchange, 200, firstChatJson);
+            writeJson(exchange, 200, firstResponsesJson);
         });
 
         EnvConfig cfg = EnvConfig.load(
@@ -219,36 +201,36 @@ class MainTest {
                 java.util.Map.of("LITELLM_BASE_URL", baseUrl, "LITELLM_API_KEY", "sk-test"));
         LiteLlmClient client = new LiteLlmClient(cfg.baseUrl(), cfg.apiKey(), cfg.model());
 
-        // Same logic as Main.main's --auto-tool-call branch (no tool called case)
-        String[] result = client.createChatWithToolCalling("짜장면의 역사", "http://127.0.0.1:9999");
+        LiteLlmClient.ToolCallingResult result = client.createResponseWithToolCalling(
+                "짜장면의 역사", "http://127.0.0.1:9999");
 
-        assertEquals("auto tool answer", result[0]);
-        assertEquals("false", result[1]);
+        assertEquals("auto tool answer", result.finalText());
+        assertEquals(false, result.toolCalled());
+        assertEquals("resp_direct", result.responseId());
         assertEquals(1, responsesCallCount.get());
     }
 
     @Test
     void autoToolCallWithDeepResearchEmitsStderrMessage() throws Exception {
-        // Verify that when tool_called=true, the result[1] is "true"
-        // (stderr output cannot be captured easily in unit tests, but we verify
-        // the logic returns the correct indicator).
         java.util.concurrent.atomic.AtomicInteger responsesCallCount =
                 new java.util.concurrent.atomic.AtomicInteger(0);
+        java.util.concurrent.atomic.AtomicReference<String> relayBody =
+                new java.util.concurrent.atomic.AtomicReference<>("");
 
-        String firstChatJson =
+        String firstResponsesJson =
                 "{\"id\":\"resp_1\",\"status\":\"completed\",\"output\":[{\"type\":\"function_call\",\"name\":\"deep_research\",\"call_id\":\"call_1\",\"arguments\":\"{\\\"research_question\\\":\\\"test\\\",\\\"deliverable_format\\\":\\\"markdown_brief\\\"}\"}]}";
         String relayJson =
                 "{\"invocation_id\":\"inv_1\",\"upstream_response_id\":\"up_1\",\"status\":\"completed\",\"output_text\":\"summary\"}";
-        String secondChatJson =
+        String secondResponsesJson =
                 "{\"id\":\"resp_2\",\"status\":\"completed\",\"output\":[{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"synthesized answer\"}]}]}";
 
         server.createContext("/v1/responses", exchange -> {
             exchange.getRequestBody().readAllBytes();
             int call = responsesCallCount.incrementAndGet();
-            writeJson(exchange, 200, call == 1 ? firstChatJson : secondChatJson);
+            writeJson(exchange, 200, call == 1 ? firstResponsesJson : secondResponsesJson);
         });
         server.createContext("/api/v1/tool-invocations", exchange -> {
-            exchange.getRequestBody().readAllBytes();
+            relayBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
             writeJson(exchange, 200, relayJson);
         });
 
@@ -256,10 +238,18 @@ class MainTest {
                 tempDir.resolve(".env"),
                 java.util.Map.of("LITELLM_BASE_URL", baseUrl, "LITELLM_API_KEY", "sk-test"));
         LiteLlmClient client = new LiteLlmClient(cfg.baseUrl(), cfg.apiKey(), cfg.model());
-        String[] result = client.createChatWithToolCalling("짜장면의 역사", baseUrl);
+        LiteLlmClient.ToolCallingResult result = client.createResponseWithToolCalling(
+                "짜장면의 역사", baseUrl);
 
-        assertEquals("synthesized answer", result[0]);
-        assertEquals("true", result[1]);
+        assertEquals("synthesized answer", result.finalText());
+        assertEquals(true, result.toolCalled());
+        assertEquals("resp_2", result.responseId());
+        assertEquals("resp_1", result.previousResponseId());
+        assertEquals("call_1", result.toolCallId());
+        assertEquals("inv_1", result.invocationId());
+        assertEquals("up_1", result.upstreamResponseId());
+        assertEquals(true, relayBody.get().contains("\"tool_name\":\"deep_research\""));
+        assertEquals(true, relayBody.get().contains("\"deliverable_format\":\"markdown_brief\""));
     }
 
     // ---------- helper -------------------------------------------------------

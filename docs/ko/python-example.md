@@ -92,6 +92,7 @@ print(result)
 - 심층 조사가 필요한 질문 → `function_call` 감지 → relay `tool-invocations`로 deep_research 실행 → `function_call_output` + `previous_response_id`로 최종 답변 합성
 
 이 플래그는 relay 서버(`RELAY_BASE_URL`)가 실행 중이어야 합니다.
+표준 API surface는 `POST /v1/responses`이고, relay는 실제 tool 실행만 `POST /api/v1/tool-invocations`로 담당합니다.
 
 ```bash
 # 터미널 A: relay 서버 시작

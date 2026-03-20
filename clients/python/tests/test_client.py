@@ -791,6 +791,7 @@ def test_create_response_with_tool_calling_with_tool_and_keys():
     assert payloads[2]["input"] == [
         {"type": "function_call_output", "call_id": "call_1", "output": "요약 내용"}
     ]
+    assert payloads[2]["input"][0]["call_id"] == result.tool_call_id
 
 
 def test_create_response_with_tool_calling_no_output_raises():
@@ -801,6 +802,22 @@ def test_create_response_with_tool_calling_no_output_raises():
     client._post_json = lambda url, payload, include_auth=True: {"output": []}
     with pytest.raises(LiteLLMError):
         client.create_response_with_tool_calling("Hello")
+
+
+def test_create_response_with_tool_calling_first_turn_error_is_neutral():
+    from litellm_example.client import LiteLLMClient, LiteLLMError
+
+    client = LiteLLMClient("https://h:4000", "key", "gpt-4o")
+
+    def failing_post(url, payload, include_auth=True):
+        raise LiteLLMError(500, "boom")
+
+    client._post_json = failing_post
+
+    result = client.create_response_with_tool_calling("Hello")
+
+    assert result.tool_called is False
+    assert result.final_text == "The chat request failed. Please retry later."
 
 
 def test_create_response_with_tool_calling_non_list_output_raises():
@@ -862,6 +879,83 @@ def test_create_response_with_tool_calling_invalid_json_args():
     assert result.tool_called is True
     assert result.final_text == "done"
     assert relay_payload["arguments"]["research_question"] == "my question"
+    assert relay_payload["arguments"]["deliverable_format"] == "markdown_brief"
+
+
+def test_create_response_with_tool_calling_non_object_json_args_fall_back():
+    from litellm_example.client import LiteLLMClient
+
+    call_count = [0]
+    relay_payload: dict = {}
+
+    def fake_post(url, payload, include_auth=True):
+        call_count[0] += 1
+        if call_count[0] == 1:
+            return {
+                "id": "resp_bad",
+                "status": "completed",
+                "output": [
+                    {
+                        "type": "function_call",
+                        "name": "deep_research",
+                        "call_id": "call_bad",
+                        "arguments": "null",
+                    }
+                ],
+            }
+        if call_count[0] == 2:
+            relay_payload.update(payload)
+            return {
+                "invocation_id": "inv_bad",
+                "upstream_response_id": "up_bad",
+                "output_text": "summary",
+                "status": "completed",
+            }
+        return {
+            "id": "resp_done",
+            "status": "completed",
+            "output": [
+                {
+                    "type": "message",
+                    "content": [{"type": "output_text", "text": "done"}],
+                }
+            ],
+        }
+
+    client = LiteLLMClient("https://h:4000", "key", "gpt-4o")
+    client._post_json = fake_post
+    result = client.create_response_with_tool_calling("my question")
+
+    assert result.tool_called is True
+    assert relay_payload["arguments"]["research_question"] == "my question"
+    assert relay_payload["arguments"]["deliverable_format"] == "markdown_brief"
+
+
+def test_create_response_with_tool_calling_invalid_response_id_skips_relay():
+    from litellm_example.client import LiteLLMClient, LiteLLMError
+
+    urls: list[str] = []
+
+    def fake_post(url, payload, include_auth=True):
+        urls.append(url)
+        return {
+            "output": [
+                {
+                    "type": "function_call",
+                    "name": "deep_research",
+                    "call_id": "call_1",
+                    "arguments": "{}",
+                }
+            ]
+        }
+
+    client = LiteLLMClient("https://h:4000", "key", "gpt-4o")
+    client._post_json = fake_post
+
+    with pytest.raises(LiteLLMError):
+        client.create_response_with_tool_calling("Hello")
+
+    assert not any(url.endswith("/api/v1/tool-invocations") for url in urls)
 
 
 def test_create_response_with_tool_calling_second_turn_no_text_falls_back_to_research_summary():
@@ -956,7 +1050,7 @@ def test_post_json_can_omit_authorization_header(monkeypatch):
 
 
 def test_create_chat_with_tool_calling_non_deep_research_tool():
-    """Tool call for a different function name is treated as no tool call."""
+    """다른 tool name이면 하위 호환 튜플 API도 no-tool 경로로 처리한다."""
     from litellm_example.client import LiteLLMClient
 
     client = LiteLLMClient("https://h:4000", "key", "gpt-4o")
@@ -976,3 +1070,46 @@ def test_create_chat_with_tool_calling_non_deep_research_tool():
     result, tool_called = client.create_chat_with_tool_calling("Hello")
     assert tool_called is False
     assert result == "some answer"
+
+
+def test_extract_function_call_requires_output_list():
+    from litellm_example.client import LiteLLMClient, LiteLLMError
+
+    with pytest.raises(LiteLLMError):
+        LiteLLMClient._extract_function_call({"output": "oops"})
+
+
+def test_extract_function_call_skips_non_dict_and_non_function_items():
+    from litellm_example.client import LiteLLMClient
+
+    result = LiteLLMClient._extract_function_call(
+        {
+            "output": [
+                "not-a-dict",
+                {"type": "message", "name": "deep_research"},
+                {"type": "function_call", "name": "other_tool", "call_id": "x"},
+            ]
+        }
+    )
+
+    assert result is None
+
+
+def test_extract_function_call_returns_matching_item():
+    from litellm_example.client import LiteLLMClient
+
+    result = LiteLLMClient._extract_function_call(
+        {
+            "output": [
+                {
+                    "type": "function_call",
+                    "name": "deep_research",
+                    "call_id": "call_1",
+                    "arguments": "{}",
+                }
+            ]
+        }
+    )
+
+    assert result is not None
+    assert result["call_id"] == "call_1"

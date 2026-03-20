@@ -349,7 +349,7 @@ def test_apply_upstream_payload_sets_status_to_failed_for_unknown_status() -> No
 
 
 def test_to_view_includes_error_message_when_stream_fails() -> None:
-    """After a failed stream, the GET endpoint must expose the error_message field."""
+    """After a failed stream, the GET endpoint must expose only a safe error_message."""
     client = TestClient(
         create_app(
             service=RelayService(FailingLifecycleGateway(), 30.0),
@@ -378,15 +378,18 @@ def test_to_view_includes_error_message_when_stream_fails() -> None:
     get_response = client.get(f"/api/v1/tool-invocations/{invocation_id}")
     payload = get_response.json()
     assert payload["status"] == "failed"
-    assert payload["error_message"] is not None
-    assert "stream exploded" in payload["error_message"]
+    assert (
+        payload["error_message"] == "deep_research stream failed. Please retry later."
+    )
+    assert "stream exploded" not in payload["error_message"]
 
 
 def test_event_stream_emits_completed_event_for_background_invocation_with_output_text() -> (
     None
 ):
     """event_stream() for a non-stream (background) mode with output_text must emit a
-    'completed' SSE event containing the output text.  This covers service.py line 119."""
+    'completed' SSE event containing the output text.  This covers service.py line 119.
+    """
 
     class CompletedBackgroundGateway:
         async def invoke_deep_research(
@@ -531,6 +534,8 @@ def test_event_stream_replays_error_event_on_re_subscription_to_failed_stream() 
         first_body = "".join(r1.iter_text())
 
     assert "event: error" in first_body
+    assert "deep_research stream failed. Please retry later." in first_body
+    assert "stream exploded" not in first_body
     assert gateway.stream_calls == 1
 
     # Second subscription replays from cached state; gateway must NOT be called again
@@ -538,4 +543,6 @@ def test_event_stream_replays_error_event_on_re_subscription_to_failed_stream() 
         second_body = "".join(r2.iter_text())
 
     assert "event: error" in second_body
+    assert "deep_research stream failed. Please retry later." in second_body
+    assert "stream exploded" not in second_body
     assert gateway.stream_calls == 1  # not called a second time

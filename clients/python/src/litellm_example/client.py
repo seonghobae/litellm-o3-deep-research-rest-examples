@@ -11,34 +11,33 @@ from urllib.parse import urlparse
 
 import certifi
 
-
 DEEP_RESEARCH_FUNCTION_TOOL: Dict[str, Any] = {
     "type": "function",
-    "function": {
-        "name": "deep_research",
-        "description": (
-            "Conduct in-depth research on a topic and return a detailed report. "
-            "Use this when the user asks for detailed factual information, history, "
-            "analysis, or comprehensive explanations that require research beyond "
-            "general knowledge."
-        ),
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "research_question": {
-                    "type": "string",
-                    "description": "The specific research question or topic to investigate",
-                },
-                "deliverable_format": {
-                    "type": "string",
-                    "enum": ["markdown_brief", "markdown_report", "json_outline"],
-                    "description": "Format of the research output",
-                },
+    "name": "deep_research",
+    "description": (
+        "Conduct in-depth research on a topic and return a detailed report. "
+        "Use this when the user asks for detailed factual information, history, "
+        "analysis, or comprehensive explanations that require research beyond "
+        "general knowledge."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "research_question": {
+                "type": "string",
+                "description": "The specific research question or topic to investigate",
             },
-            "required": ["research_question", "deliverable_format"],
+            "deliverable_format": {
+                "type": "string",
+                "enum": ["markdown_brief", "markdown_report", "json_outline"],
+                "description": "Format of the research output",
+            },
         },
+        "required": ["research_question", "deliverable_format"],
     },
 }
+
+SAFE_FIRST_TURN_ERROR_MESSAGE = "The chat request failed. Please retry later."
 
 
 class LiteLLMError(Exception):
@@ -181,7 +180,13 @@ class LiteLLMClient:
             "input": prompt,
             "tools": [DEEP_RESEARCH_FUNCTION_TOOL],
         }
-        first_response = self._post_json(self._responses_url(), payload)
+        try:
+            first_response = self._post_json(self._responses_url(), payload)
+        except LiteLLMError:
+            return ToolCallingResult(
+                final_text=SAFE_FIRST_TURN_ERROR_MESSAGE,
+                tool_called=False,
+            )
         first_response_id = self._maybe_str(first_response.get("id"))
         first_status = self._maybe_str(first_response.get("status"))
 
@@ -212,10 +217,14 @@ class LiteLLMClient:
                 response_status=first_status,
             )
 
+        first_response_id = self._extract_response_id(first_response)
+
         raw_args = str(deep_research_call.get("arguments", "{}"))
         try:
             tool_args = json.loads(raw_args)
         except json.JSONDecodeError:
+            tool_args = {}
+        if not isinstance(tool_args, dict):
             tool_args = {}
 
         research_question = tool_args.get("research_question", prompt)
@@ -289,6 +298,35 @@ class LiteLLMClient:
             prompt, relay_base_url=relay_base_url
         )
         return result.final_text, result.tool_called
+
+    @staticmethod
+    def _extract_function_call(payload: Dict[str, Any]) -> Dict[str, Any] | None:
+        output = payload.get("output") or []
+        if not isinstance(output, list):
+            raise LiteLLMError(
+                200,
+                "Response did not include a usable output array.",
+                json.dumps(payload),
+            )
+
+        for item in output:
+            if not isinstance(item, dict):
+                continue
+            if item.get("type") != "function_call":
+                continue
+            if item.get("name") != "deep_research":
+                continue
+            return item
+        return None
+
+    @staticmethod
+    def _extract_response_id(payload: Dict[str, Any]) -> str:
+        response_id = payload.get("id")
+        if isinstance(response_id, str) and response_id.strip():
+            return response_id
+        raise LiteLLMError(
+            200, "Response did not include a usable id.", json.dumps(payload)
+        )
 
     def _post_json(
         self, url: str, payload: Dict[str, Any], include_auth: bool = True
