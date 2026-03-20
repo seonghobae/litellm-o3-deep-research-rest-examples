@@ -1113,3 +1113,10 @@ def test_extract_function_call_returns_matching_item():
 
     assert result is not None
     assert result["call_id"] == "call_1"
+
+
+def test_helper_methods_have_docstrings():
+    from litellm_example.client import LiteLLMClient
+
+    assert LiteLLMClient._extract_function_call.__doc__
+    assert LiteLLMClient._extract_response_id.__doc__

@@ -629,6 +629,13 @@ def test_extract_response_id_from_model_dump_object():
     assert ChatOrchestrator._extract_response_id(FakeResponse()) == "resp_model_dump"
 
 
+def test_helper_methods_have_docstrings():
+    assert ChatOrchestrator._extract_function_call.__doc__
+    assert ChatOrchestrator._extract_output_items.__doc__
+    assert ChatOrchestrator._extract_output_text.__doc__
+    assert ChatOrchestrator._extract_response_id.__doc__
+
+
 # ---------------------------------------------------------------------------
 # system_prompt and deliverable_format passthrough
 # ---------------------------------------------------------------------------
