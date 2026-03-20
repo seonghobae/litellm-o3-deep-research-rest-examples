@@ -53,10 +53,15 @@ public final class Main {
             }
             EnvConfig config = EnvConfig.loadDefault();
             LiteLlmClient client = new LiteLlmClient(config.baseUrl(), config.apiKey(), config.model(), timeout);
-            String[] result = client.createChatWithToolCalling(prompt, relayUrl);
-            content = result[0];
-            if ("true".equals(result[1])) {
+            LiteLlmClient.ToolCallingResult result = client.createResponseWithToolCalling(prompt, relayUrl);
+            content = result.finalText();
+            if (result.toolCalled()) {
                 System.err.println("[deep_research was called automatically]");
+                System.err.println("response_id=" + result.responseId());
+                System.err.println("previous_response_id=" + result.previousResponseId());
+                System.err.println("tool_call_id=" + result.toolCallId());
+                System.err.println("invocation_id=" + result.invocationId());
+                System.err.println("upstream_response_id=" + result.upstreamResponseId());
             }
         } else if ("relay".equals(target)) {
             RelayClient client = new RelayClient(RelayClient.defaultBaseUrl(), timeout);

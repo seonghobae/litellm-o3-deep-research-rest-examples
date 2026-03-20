@@ -1,3 +1,5 @@
+"""채팅과 deep_research 도구 호출 흐름을 조율한다."""
+
 from __future__ import annotations
 
 import asyncio
@@ -39,34 +41,7 @@ SAFE_CHAT_ERROR_MESSAGE = "deep_research failed. Please retry later."
 
 
 class ChatOrchestrator:
-    """Relay-side orchestration for automatic deep_research tool calling.
-
-    Flow
-    ----
-    1. Build a Chat Completions request with the ``deep_research`` function
-       tool attached (when ``request.auto_tool_call`` is True).
-    2. If the model responds with ``finish_reason == "tool_calls"`` for
-       ``deep_research``, execute the research via the upstream relay gateway.
-    3. Append the tool result to the conversation and send a second Chat
-       Completions request to obtain the final natural-language answer.
-    4. Return a :class:`~litellm_relay.contracts.ChatResponse` capturing
-       whether a tool was called and, if so, the research summary.
-
-    Timeout split
-    -------------
-    ``timeout_seconds`` governs Chat Completions turns (fast, typically <30 s).
-    ``research_timeout_seconds`` governs the deep_research invocation
-    (slow — ``o3-deep-research`` regularly takes 2–10 minutes).  The default
-    for ``research_timeout_seconds`` is 300 s but can be raised via
-    ``RELAY_RESEARCH_TIMEOUT_SECONDS``.
-
-    Error handling
-    --------------
-    Upstream errors during research are caught and returned as a
-    :class:`~litellm_relay.contracts.ChatResponse` with ``tool_called=True``
-    and an ``error_detail`` payload in ``research_summary`` so callers receive
-    a structured response rather than a bare HTTP 500.
-    """
+    """자동 ``deep_research`` 도구 호출이 포함된 채팅 흐름을 조율한다."""
 
     def __init__(
         self,
@@ -77,6 +52,7 @@ class ChatOrchestrator:
         timeout_seconds: float = 30.0,
         research_timeout_seconds: float = 300.0,
     ) -> None:
+        """채팅 모델과 연구 모델에 필요한 연결 정보를 초기화한다."""
         self._base_url = base_url
         self._api_key = api_key
         self._chat_model = chat_model
@@ -90,7 +66,7 @@ class ChatOrchestrator:
         )
 
     async def chat(self, request: ChatRequest) -> ChatResponse:
-        """Perform an orchestrated chat turn, optionally invoking deep_research."""
+        """필요하면 ``deep_research``를 호출하는 채팅 턴을 수행한다."""
         user_content = self._build_user_content(request)
         kwargs: dict[str, Any] = {
             "model": self._chat_model,
@@ -120,13 +96,17 @@ class ChatOrchestrator:
             tool_args = {}
 
         research_question = tool_args.get("research_question", request.message)
-        deliverable_format = tool_args.get("deliverable_format", "markdown_brief")
+        # Use the model-chosen format, falling back to the caller's preferred format.
+        deliverable_format = tool_args.get(
+            "deliverable_format", request.deliverable_format
+        )
 
         try:
             research_result = await self._invoke_deep_research(
                 DeepResearchArguments(
                     research_question=research_question,
                     deliverable_format=deliverable_format,
+                    system_prompt=request.system_prompt,
                 )
             )
             research_summary = research_result.output_text or ""
@@ -177,10 +157,12 @@ class ChatOrchestrator:
     async def _invoke_deep_research(
         self, args: DeepResearchArguments
     ) -> UpstreamInvocationResult:
+        """게이트웨이를 통해 deep_research 실행을 위임한다."""
         return await self._gateway.invoke_deep_research(args)
 
     @staticmethod
     def _build_user_content(request: ChatRequest) -> str:
+        """문맥 목록을 포함한 최종 사용자 메시지 문자열을 만든다."""
         if not request.context:
             return request.message
         context_block = "\n".join(f"- {item}" for item in request.context)

@@ -1,8 +1,10 @@
 package example.litellm;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -488,9 +490,109 @@ class LiteLlmClientTest {
     // ---- createChatWithToolCalling tests ------------------------------------
 
     @Test
+    void createResponseWithToolCalling_no_tool_call_returns_direct_answer() throws Exception {
+        String firstJson = """
+                {"id":"resp_direct","status":"completed","output_text":"Direct answer.","output":[]}
+                """;
+        server.createContext("/v1/responses", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200, firstJson);
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "key", "gpt-4o");
+        LiteLlmClient.ToolCallingResult result = client.createResponseWithToolCalling("Hello", "http://127.0.0.1:9999");
+        assertEquals("Direct answer.", result.finalText());
+        assertFalse(result.toolCalled());
+        assertEquals("resp_direct", result.responseId());
+        assertNull(result.toolCallId());
+    }
+
+    @Test
+    void createResponseWithToolCalling_with_tool_call_executes_research_and_returns_keys() throws Exception {
+        AtomicInteger responsesCallCount = new AtomicInteger(0);
+        AtomicReference<String> relayAuthorization = new AtomicReference<>();
+        AtomicReference<String> relayBody = new AtomicReference<>();
+
+        String firstResponsesJson =
+                "{\"id\":\"resp_1\",\"status\":\"completed\",\"output\":[{\"type\":\"function_call\",\"name\":\"deep_research\",\"call_id\":\"call_1\",\"arguments\":\"{\\\"research_question\\\":\\\"test q\\\",\\\"deliverable_format\\\":\\\"markdown_brief\\\"}\"}]}";
+        String secondResponsesJson = """
+                {"id":"resp_2","status":"completed","output":[{"type":"message","content":[{"type":"output_text","text":"Final answer."}]}]}
+                """;
+        String relayJson = """
+                {"invocation_id":"inv_123","upstream_response_id":"up_456","status":"completed","output_text":"summary text"}
+                """;
+
+        server.createContext("/v1/responses", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            int call = responsesCallCount.incrementAndGet();
+            writeJson(exchange, 200, call == 1 ? firstResponsesJson : secondResponsesJson);
+        });
+        server.createContext("/api/v1/tool-invocations", exchange -> {
+            relayAuthorization.set(exchange.getRequestHeaders().getFirst("Authorization"));
+            relayBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            writeJson(exchange, 200, relayJson);
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "key", "gpt-4o");
+        LiteLlmClient.ToolCallingResult result = client.createResponseWithToolCalling("짜장면 역사", baseUrl);
+
+        assertEquals("Final answer.", result.finalText());
+        assertTrue(result.toolCalled());
+        assertEquals("resp_2", result.responseId());
+        assertEquals("resp_1", result.previousResponseId());
+        assertEquals("call_1", result.toolCallId());
+        assertEquals("inv_123", result.invocationId());
+        assertEquals("up_456", result.upstreamResponseId());
+        assertEquals("summary text", result.researchSummary());
+        assertNull(relayAuthorization.get());
+        assertTrue(relayBody.get().contains("\"tool_name\":\"deep_research\""));
+        assertTrue(relayBody.get().contains("\"research_question\":\"test q\""));
+    }
+
+    @Test
+    void createResponseWithToolCalling_no_output_throws() throws Exception {
+        server.createContext("/v1/responses", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200, "{\"output\":[]}");
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "key", "gpt-4o");
+        assertThrows(ApiException.class, () -> client.createResponseWithToolCalling("Hello", "http://127.0.0.1:9999"));
+    }
+
+    @Test
+    void createResponseWithToolCalling_second_turn_without_text_falls_back_to_summary() throws Exception {
+        AtomicInteger responsesCallCount = new AtomicInteger(0);
+
+        String firstResponsesJson =
+                "{\"id\":\"resp_1\",\"status\":\"completed\",\"output\":[{\"type\":\"function_call\",\"name\":\"deep_research\",\"call_id\":\"call_1\",\"arguments\":\"{\\\"research_question\\\":\\\"q\\\",\\\"deliverable_format\\\":\\\"markdown_brief\\\"}\"}]}";
+        String secondResponsesJson = """
+                {"id":"resp_2","status":"completed","output":[]}
+                """;
+        String relayJson = """
+                {"invocation_id":"inv_1","upstream_response_id":"up_1","status":"completed","output_text":"summary fallback"}
+                """;
+
+        server.createContext("/v1/responses", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            int call = responsesCallCount.incrementAndGet();
+            writeJson(exchange, 200, call == 1 ? firstResponsesJson : secondResponsesJson);
+        });
+        server.createContext("/api/v1/tool-invocations", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            writeJson(exchange, 200, relayJson);
+        });
+
+        LiteLlmClient client = new LiteLlmClient(baseUrl, "key", "gpt-4o");
+        LiteLlmClient.ToolCallingResult result = client.createResponseWithToolCalling("Q", baseUrl);
+        assertTrue(result.toolCalled());
+        assertEquals("summary fallback", result.finalText());
+    }
+
+    @Test
     void createChatWithToolCalling_no_tool_call_returns_direct_answer() throws Exception {
         String firstJson = """
-                {"id":"resp_1","output_text":"Direct answer.","output":[]}
+                {"id":"resp_direct","status":"completed","output_text":"Direct answer.","output":[]}
                 """;
         server.createContext("/v1/responses", exchange -> {
             exchange.getRequestBody().readAllBytes();
@@ -505,23 +607,22 @@ class LiteLlmClientTest {
 
     @Test
     void createChatWithToolCalling_with_tool_call_executes_research() throws Exception {
-        AtomicInteger responseCallCount = new AtomicInteger(0);
+        AtomicInteger responsesCallCount = new AtomicInteger(0);
         AtomicReference<String> relayBody = new AtomicReference<>("");
 
-        String firstResponseJson =
-                "{\"id\":\"resp_1\",\"output\":[{\"type\":\"function_call\",\"name\":\"deep_research\",\"call_id\":\"call_1\","
-                + "\"arguments\":\"{\\\"research_question\\\":\\\"test q\\\",\\\"deliverable_format\\\":\\\"markdown_brief\\\"}\"}]}";
-        String secondResponseJson = """
-                {"id":"resp_2","output_text":"Final answer.","output":[]}
+        String firstChatJson =
+                "{\"id\":\"resp_1\",\"status\":\"completed\",\"output\":[{\"type\":\"function_call\",\"name\":\"deep_research\",\"call_id\":\"call_1\",\"arguments\":\"{\\\"research_question\\\":\\\"test q\\\",\\\"deliverable_format\\\":\\\"markdown_brief\\\"}\"}]}";
+        String secondChatJson = """
+                {"id":"resp_2","status":"completed","output":[{"type":"message","content":[{"type":"output_text","text":"Final answer."}]}]}
                 """;
         String relayJson = """
-                {"output_text":"summary text","status":"completed","mode":"foreground"}
+                {"invocation_id":"inv_1","upstream_response_id":"up_1","status":"completed","output_text":"summary text"}
                 """;
 
         server.createContext("/v1/responses", exchange -> {
             exchange.getRequestBody().readAllBytes();
-            int call = responseCallCount.incrementAndGet();
-            writeJson(exchange, 200, call == 1 ? firstResponseJson : secondResponseJson);
+            int call = responsesCallCount.incrementAndGet();
+            writeJson(exchange, 200, call == 1 ? firstChatJson : secondChatJson);
         });
         server.createContext("/api/v1/tool-invocations", exchange -> {
             relayBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
@@ -548,22 +649,21 @@ class LiteLlmClientTest {
 
     @Test
     void createChatWithToolCalling_second_turn_no_choices_returns_summary() throws Exception {
-        AtomicInteger responseCallCount = new AtomicInteger(0);
+        AtomicInteger responsesCallCount = new AtomicInteger(0);
 
-        String firstResponseJson =
-                "{\"id\":\"resp_1\",\"output\":[{\"type\":\"function_call\",\"name\":\"deep_research\",\"call_id\":\"call_1\","
-                + "\"arguments\":\"{\\\"research_question\\\":\\\"q\\\",\\\"deliverable_format\\\":\\\"markdown_brief\\\"}\"}]}";
-        String secondResponseJson = """
-                {"id":"resp_2","output":[]}
+        String firstChatJson =
+                "{\"id\":\"resp_1\",\"status\":\"completed\",\"output\":[{\"type\":\"function_call\",\"name\":\"deep_research\",\"call_id\":\"call_1\",\"arguments\":\"{\\\"research_question\\\":\\\"q\\\",\\\"deliverable_format\\\":\\\"markdown_brief\\\"}\"}]}";
+        String secondChatJson = """
+                {"id":"resp_2","status":"completed","output":[]}
                 """;
         String relayJson = """
-                {"output_text":"summary fallback"}
+                {"invocation_id":"inv_1","upstream_response_id":"up_1","status":"completed","output_text":"summary fallback"}
                 """;
 
         server.createContext("/v1/responses", exchange -> {
             exchange.getRequestBody().readAllBytes();
-            int call = responseCallCount.incrementAndGet();
-            writeJson(exchange, 200, call == 1 ? firstResponseJson : secondResponseJson);
+            int call = responsesCallCount.incrementAndGet();
+            writeJson(exchange, 200, call == 1 ? firstChatJson : secondChatJson);
         });
         server.createContext("/api/v1/tool-invocations", exchange -> {
             exchange.getRequestBody().readAllBytes();
@@ -579,7 +679,7 @@ class LiteLlmClientTest {
     @Test
     void createChatWithToolCalling_non_deep_research_tool_treated_as_no_call() throws Exception {
         String firstJson = """
-                {"id":"resp_1","output_text":"direct","output":[{"type":"function_call","name":"other_tool","call_id":"call_x","arguments":"{}"}]}
+                {"id":"resp_direct","status":"completed","output":[{"type":"function_call","name":"other_tool","call_id":"call_x","arguments":"{}"}],"output_text":"direct"}
                 """;
         server.createContext("/v1/responses", exchange -> {
             exchange.getRequestBody().readAllBytes();
@@ -594,25 +694,26 @@ class LiteLlmClientTest {
 
     @Test
     void createChatWithToolCalling_invalid_json_args_falls_back_to_prompt() throws Exception {
-        AtomicInteger responseCallCount = new AtomicInteger(0);
+        AtomicInteger responsesCallCount = new AtomicInteger(0);
+        AtomicReference<String> relayBody = new AtomicReference<>();
 
-        String firstResponseJson = """
-                {"id":"resp_1","output":[{"type":"function_call","name":"deep_research","call_id":"call_1","arguments":"INVALID"}]}
+        String firstChatJson = """
+                {"id":"resp_1","status":"completed","output":[{"type":"function_call","name":"deep_research","call_id":"call_1","arguments":"INVALID"}]}
                 """;
-        String secondResponseJson = """
-                {"id":"resp_2","output_text":"done","output":[]}
+        String secondChatJson = """
+                {"id":"resp_2","status":"completed","output":[{"type":"message","content":[{"type":"output_text","text":"done"}]}]}
                 """;
         String relayJson = """
-                {"output_text":"s"}
+                {"invocation_id":"inv_1","upstream_response_id":"up_1","status":"completed","output_text":"s"}
                 """;
 
         server.createContext("/v1/responses", exchange -> {
             exchange.getRequestBody().readAllBytes();
-            int call = responseCallCount.incrementAndGet();
-            writeJson(exchange, 200, call == 1 ? firstResponseJson : secondResponseJson);
+            int call = responsesCallCount.incrementAndGet();
+            writeJson(exchange, 200, call == 1 ? firstChatJson : secondChatJson);
         });
         server.createContext("/api/v1/tool-invocations", exchange -> {
-            exchange.getRequestBody().readAllBytes();
+            relayBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
             writeJson(exchange, 200, relayJson);
         });
 
@@ -620,6 +721,7 @@ class LiteLlmClientTest {
         String[] result = client.createChatWithToolCalling("my prompt", baseUrl);
         assertEquals("done", result[0]);
         assertEquals("true", result[1]);
+        assertTrue(relayBody.get().contains("\"research_question\":\"my prompt\""));
     }
 
     private static void writeJson(HttpExchange exchange, int status, String payload) throws IOException {

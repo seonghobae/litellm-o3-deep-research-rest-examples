@@ -232,14 +232,49 @@ public final class RelayClient {
     /**
      * POST /api/v1/chat — relay-side orchestration with optional deep_research tool.
      *
+     * <p>This is equivalent to calling
+     * {@code invokeChat(message, autoToolCall, null, "markdown_brief")}.
+     *
      * @param message      user message
      * @param autoToolCall whether to enable automatic deep_research tool calling
      * @return ChatResult with content and tool metadata
      */
     public ChatResult invokeChat(String message, boolean autoToolCall) {
+        return invokeChat(message, autoToolCall, null, "markdown_brief");
+    }
+
+    /**
+     * POST /api/v1/chat — relay-side orchestration with optional deep_research tool,
+     * system prompt, and deliverable format.
+     *
+     * <p>The {@code systemPrompt} is forwarded to the deep_research invocation as the
+     * Responses API {@code instructions} field when the model triggers the tool.  Use
+     * it to set a persona, output language, or answer format.
+     *
+     * <p>The {@code deliverableFormat} is the fallback format for the deep_research
+     * invocation when the model does not specify one in its tool-call arguments.
+     *
+     * @param message          user message
+     * @param autoToolCall     whether to enable automatic deep_research tool calling
+     * @param systemPrompt     optional system-level instructions for deep_research
+     *                         (maps to Responses API {@code instructions}); may be {@code null}
+     * @param deliverableFormat fallback format for deep_research (default: {@code "markdown_brief"})
+     * @return ChatResult with content and tool metadata
+     */
+    public ChatResult invokeChat(
+            String message,
+            boolean autoToolCall,
+            String systemPrompt,
+            String deliverableFormat) {
         java.util.Map<String, Object> body = new java.util.LinkedHashMap<>();
         body.put("message", message);
         body.put("auto_tool_call", autoToolCall);
+        if (systemPrompt != null) {
+            body.put("system_prompt", systemPrompt);
+        }
+        if (deliverableFormat != null && !deliverableFormat.isBlank()) {
+            body.put("deliverable_format", deliverableFormat);
+        }
         JsonNode result = postJson(chatUrl(), body);
         String content = result.path("content").asText("");
         boolean toolCalled = result.path("tool_called").asBoolean(false);

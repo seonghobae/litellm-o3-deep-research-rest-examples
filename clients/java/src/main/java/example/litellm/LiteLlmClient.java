@@ -148,15 +148,131 @@ public final class LiteLlmClient {
         DEEP_RESEARCH_TOOL_SCHEMA = java.util.Collections.unmodifiableMap(tool);
     }
 
+    /** Responses API 표준 function calling 결과와 deep_research 메타데이터를 담는다. */
+    public record ToolCallingResult(
+            String finalText,
+            boolean toolCalled,
+            String responseId,
+            String previousResponseId,
+            String responseStatus,
+            String toolName,
+            String toolCallId,
+            String invocationId,
+            String upstreamResponseId,
+            String researchSummary) {}
+
     /**
-     * Responses API with automatic deep_research function calling.
+     * Responses API 표준 function calling으로 deep_research를 실행한다.
+     *
+     * @param prompt user prompt
+     * @param relayBaseUrl relay base URL for deep_research execution
+     * @return 최종 텍스트와 관련 key를 포함한 결과 객체
+     */
+    public ToolCallingResult createResponseWithToolCalling(String prompt, String relayBaseUrl) {
+        java.util.Map<String, Object> payload = new java.util.LinkedHashMap<>();
+        payload.put("model", model);
+        payload.put("input", prompt);
+        payload.put("tools", java.util.List.of(DEEP_RESEARCH_TOOL_SCHEMA));
+
+        JsonNode first = postJson(baseUrl.resolve("responses"), payload);
+        String firstResponseId = textOrNull(first.get("id"));
+        String firstStatus = textOrNull(first.get("status"));
+        JsonNode output = first.path("output");
+        if (!output.isArray()) {
+            throw new ApiException(200, "Response did not include any output items.", first.toString());
+        }
+
+        JsonNode deepResearchCall = null;
+        for (JsonNode item : output) {
+            if ("function_call".equals(item.path("type").asText())
+                    && "deep_research".equals(item.path("name").asText())) {
+                deepResearchCall = item;
+                break;
+            }
+        }
+
+        if (deepResearchCall == null) {
+            return new ToolCallingResult(
+                    extractResponseText(first),
+                    false,
+                    firstResponseId,
+                    null,
+                    firstStatus,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null);
+        }
+
+        String toolCallId = deepResearchCall.path("call_id").asText("call_0");
+        String rawArgs = deepResearchCall.path("arguments").asText("{}");
+        JsonNode argsNode;
+        try {
+            argsNode = MAPPER.readTree(rawArgs);
+        } catch (JsonProcessingException e) {
+            argsNode = MAPPER.createObjectNode();
+        }
+
+        String researchQuestion = argsNode.path("research_question").asText(prompt);
+        String deliverableFormat = argsNode.path("deliverable_format").asText("markdown_brief");
+
+        String relayUrl = relayBaseUrl.endsWith("/") ? relayBaseUrl : relayBaseUrl + "/";
+        URI relayUri = URI.create(relayUrl);
+        java.util.Map<String, Object> relayBody = new java.util.LinkedHashMap<>();
+        relayBody.put("tool_name", "deep_research");
+        relayBody.put(
+                "arguments",
+                java.util.Map.of(
+                        "research_question", researchQuestion,
+                        "deliverable_format", deliverableFormat,
+                        "background", false,
+                        "stream", false));
+        JsonNode relayResp = postJson(relayUri.resolve("api/v1/tool-invocations"), relayBody, false);
+        String researchSummary = extractRelayOutputText(relayResp);
+
+        java.util.Map<String, Object> secondPayload = new java.util.LinkedHashMap<>();
+        secondPayload.put("model", model);
+        secondPayload.put("previous_response_id", firstResponseId);
+        secondPayload.put(
+                "input",
+                java.util.List.of(
+                        java.util.Map.of(
+                                "type", "function_call_output",
+                                "call_id", toolCallId,
+                                "output", researchSummary)));
+
+        JsonNode second = postJson(baseUrl.resolve("responses"), secondPayload);
+        String finalText;
+        try {
+            finalText = extractResponseText(second);
+        } catch (ApiException exception) {
+            finalText = researchSummary;
+        }
+
+        return new ToolCallingResult(
+                finalText,
+                true,
+                textOrNull(second.get("id")),
+                firstResponseId,
+                textOrNull(second.get("status")),
+                "deep_research",
+                toolCallId,
+                textOrNull(relayResp.get("invocation_id")),
+                textOrNull(relayResp.get("upstream_response_id")),
+                researchSummary);
+    }
+
+    /**
+     * Chat completions-style compatibility wrapper around the Responses API auto tool-calling flow.
      *
      * <p>Flow:
      * <ol>
      *   <li>First Responses API turn with the {@code deep_research} tool schema.</li>
-     *   <li>If a {@code function_call} output item is emitted for {@code deep_research}, calls the
+     *   <li>If the response emits a {@code function_call} for {@code deep_research}, calls the
      *       relay {@code POST /api/v1/tool-invocations} endpoint to execute the research.</li>
-     *   <li>Second Responses API turn sends {@code function_call_output} and synthesises the final answer.</li>
+     *   <li>Second Responses API turn sends a standard {@code function_call_output} item and
+     *       synthesises the final answer from the tool result.</li>
      * </ol>
      *
      * @param prompt       the user message
@@ -165,61 +281,8 @@ public final class LiteLlmClient {
      * @return array of length 2: {@code [finalAnswer, "true"|"false"]}
      */
     public String[] createChatWithToolCalling(String prompt, String relayBaseUrl) {
-        // First turn
-        java.util.Map<String, Object> payload = new java.util.LinkedHashMap<>();
-        payload.put("model", model);
-        payload.put("input", prompt);
-        payload.put("tools", java.util.List.of(DEEP_RESEARCH_TOOL_SCHEMA));
-
-        JsonNode first = postJson(baseUrl.resolve("responses"), payload);
-        JsonNode deepResearchCall = extractFunctionCall(first);
-
-        if (deepResearchCall == null) {
-            return new String[]{extractResponseText(first), "false"};
-        }
-
-        String callId = deepResearchCall.path("call_id").asText("call_0");
-        String rawArgs = deepResearchCall.path("arguments").asText("{}");
-        JsonNode argsNode;
-        try {
-            argsNode = MAPPER.readTree(rawArgs);
-        } catch (JsonProcessingException e) {
-            argsNode = MAPPER.createObjectNode();
-        }
-        String researchQuestion = argsNode.path("research_question").asText(prompt);
-        String deliverableFormat = argsNode.path("deliverable_format").asText("markdown_brief");
-
-        // Call relay /api/v1/tool-invocations
-        String relayUrl = relayBaseUrl.endsWith("/") ? relayBaseUrl : relayBaseUrl + "/";
-        URI relayUri = URI.create(relayUrl);
-        java.util.Map<String, Object> relayBody = new java.util.LinkedHashMap<>();
-        relayBody.put("tool_name", "deep_research");
-        relayBody.put("arguments", java.util.Map.of(
-                "research_question", researchQuestion,
-                "deliverable_format", deliverableFormat));
-        JsonNode relayResp = postJson(relayUri.resolve("api/v1/tool-invocations"), relayBody);
-        String researchSummary = relayResp.path("output_text").asText("");
-        if (researchSummary.isBlank()) {
-            researchSummary = relayResp.path("research_summary").asText("");
-        }
-        if (researchSummary.isBlank()) {
-            researchSummary = relayResp.path("content").asText("");
-        }
-
-        // Second turn
-        java.util.Map<String, Object> second = new java.util.LinkedHashMap<>();
-        second.put("model", model);
-        second.put("previous_response_id", extractResponseId(first));
-        second.put("input", java.util.List.of(java.util.Map.of(
-                "type", "function_call_output",
-                "call_id", callId,
-                "output", researchSummary)));
-        JsonNode secondResp = postJson(baseUrl.resolve("responses"), second);
-        try {
-            return new String[]{extractResponseText(secondResp), "true"};
-        } catch (ApiException ex) {
-            return new String[]{researchSummary, "true"};
-        }
+        ToolCallingResult result = createResponseWithToolCalling(prompt, relayBaseUrl);
+        return new String[] {result.finalText(), Boolean.toString(result.toolCalled())};
     }
 
     private static JsonNode extractFunctionCall(JsonNode payload) {
@@ -248,6 +311,10 @@ public final class LiteLlmClient {
     }
 
     private JsonNode postJson(URI target, Map<String, Object> payload) {
+        return postJson(target, payload, true);
+    }
+
+    private JsonNode postJson(URI target, Map<String, Object> payload, boolean includeAuth) {
         String body;
         try {
             body = MAPPER.writeValueAsString(payload);
@@ -255,11 +322,14 @@ public final class LiteLlmClient {
             throw new IllegalStateException("Failed to serialize request payload.", exception);
         }
 
-        HttpRequest request = HttpRequest.newBuilder(target)
+        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder(target)
                 .timeout(requestTimeout)
-                .header("Authorization", "Bearer " + apiKey)
                 .header("Content-Type", "application/json")
-                .header("Accept", "application/json")
+                .header("Accept", "application/json");
+        if (includeAuth) {
+            requestBuilder.header("Authorization", "Bearer " + apiKey);
+        }
+        HttpRequest request = requestBuilder
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
 
@@ -298,6 +368,26 @@ public final class LiteLlmClient {
             // Fall through to generic message.
         }
         return "LiteLLM returned an error response.";
+    }
+
+    private static String extractRelayOutputText(JsonNode payload) {
+        JsonNode outputText = payload.get("output_text");
+        if (outputText != null && outputText.isTextual() && !outputText.asText().isBlank()) {
+            return outputText.asText();
+        }
+        JsonNode response = payload.path("response");
+        JsonNode nestedOutputText = response.get("output_text");
+        if (nestedOutputText != null && nestedOutputText.isTextual() && !nestedOutputText.asText().isBlank()) {
+            return nestedOutputText.asText();
+        }
+        throw new ApiException(200, "Relay response did not include a usable output_text value.", payload.toString());
+    }
+
+    private static String textOrNull(JsonNode node) {
+        if (node != null && node.isTextual() && !node.asText().isBlank()) {
+            return node.asText();
+        }
+        return null;
     }
 
     private static String extractAssistantText(JsonNode payload) {

@@ -1,0 +1,46 @@
+name: Release Artifacts
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  python-packages:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - package-dir: clients/python
+            artifact-name: python-client-dist
+          - package-dir: relay
+            artifact-name: relay-dist
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+      - name: Build Python package
+        working-directory: ${{ matrix.package-dir }}
+        run: uv run --with build python -m build
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: ${{ matrix.package-dir }}/dist/*
+
+  java-package:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: clients/java
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Build Java package
+        run: mvn -B -DskipTests package
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: java-package
+          path: clients/java/target/*.jar

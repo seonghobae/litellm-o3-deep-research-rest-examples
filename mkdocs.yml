@@ -35,6 +35,7 @@ nav:
       - FAQ: ko/faq.md
       - 중계 예제 구현 계획(보관): ko/relay-toolcalling-plan.md
       - 배포 런북: operations/deploy-runbook.md
+      - 패키지 릴리스 런북: operations/package-release-runbook.md
 
 exclude_docs: |
   agents/README.md

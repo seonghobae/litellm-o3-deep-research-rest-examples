@@ -1,3 +1,5 @@
+"""도구 호출 상태 저장과 SSE 이벤트 생성을 담당한다."""
+
 from __future__ import annotations
 
 import json
@@ -18,11 +20,13 @@ SAFE_STREAM_ERROR_MESSAGE = "deep_research stream failed. Please retry later."
 
 
 class InvocationNotFoundError(KeyError):
-    """Raised when an invocation id is unknown."""
+    """알 수 없는 호출 ID를 조회했을 때 발생한다."""
 
 
 @dataclass
 class _StoredInvocation:
+    """메모리에 유지되는 도구 호출 상태 레코드다."""
+
     request: ToolInvocationRequest
     mode: InvocationMode
     status: InvocationStatus
@@ -35,14 +39,10 @@ class _StoredInvocation:
 
 
 class RelayService:
-    """In-process relay that stores invocations in memory and drives the gateway.
-
-    Each call to :meth:`create_invocation` allocates a UUID for the new
-    invocation and stores it so subsequent ``get``, ``wait``, and ``events``
-    requests can look it up.  The store is per-process and not persistent.
-    """
+    """호출 상태를 메모리에 저장하고 게이트웨이 실행을 조율한다."""
 
     def __init__(self, gateway: LiteLLMRelayGateway, timeout_seconds: float) -> None:
+        """게이트웨이와 대기 타임아웃을 보관한다."""
         self._gateway = gateway
         self._timeout_seconds = timeout_seconds
         self._store: dict[str, _StoredInvocation] = {}
@@ -50,12 +50,7 @@ class RelayService:
     async def create_invocation(
         self, payload: ToolInvocationRequest
     ) -> tuple[int, ToolInvocationView]:
-        """Create a new invocation and drive it through the upstream gateway.
-
-        Returns a ``(status_code, view)`` pair where *status_code* is 200 for
-        synchronous foreground results and 202 for background or stream
-        invocations.
-        """
+        """새 호출을 만들고 적절한 초기 응답 상태를 반환한다."""
         invocation_id = str(uuid4())
         args = payload.arguments
 
@@ -75,7 +70,7 @@ class RelayService:
         return status_code, self._to_view(invocation_id, stored)
 
     async def get_invocation(self, invocation_id: str) -> ToolInvocationView:
-        """Return the current view of an invocation, refreshing from upstream if needed."""
+        """필요하면 업스트림 상태를 새로고침한 뒤 현재 호출 뷰를 반환한다."""
         stored = self._require(invocation_id)
         if stored.mode == "background" and stored.upstream_response_id:
             payload = await self._gateway.get_response(stored.upstream_response_id)
@@ -83,7 +78,7 @@ class RelayService:
         return self._to_view(invocation_id, stored)
 
     async def wait_for_invocation(self, invocation_id: str) -> ToolInvocationView:
-        """Block until the upstream completes the invocation and return the final view."""
+        """업스트림 완료까지 기다린 뒤 최종 호출 뷰를 반환한다."""
         stored = self._require(invocation_id)
         if stored.mode == "background" and stored.upstream_response_id:
             payload = await self._gateway.wait_for_response(
@@ -94,18 +89,7 @@ class RelayService:
         return self._to_view(invocation_id, stored)
 
     async def event_stream(self, invocation_id: str):
-        """Async generator that yields SSE-formatted frames for the given invocation.
-
-        For foreground and background invocations the generator emits a final
-        ``completed`` event and stops.  For stream invocations it pulls text
-        chunks from the upstream gateway, emitting one ``output_text`` event per
-        chunk, followed by a ``completed`` event when the upstream stream ends.
-        A single ``error`` event is emitted if the upstream stream raises.
-
-        Re-subscriptions (calling this method a second time for the same id)
-        replay cached chunks from the first subscription without re-calling the
-        upstream.
-        """
+        """지정한 호출에 대한 SSE 프레임을 비동기로 생성한다."""
         stored = self._require(invocation_id)
         yield self._to_sse(
             ToolInvocationEvent(
@@ -199,6 +183,7 @@ class RelayService:
             )
 
     def _require(self, invocation_id: str) -> _StoredInvocation:
+        """저장소에서 호출을 조회하고 없으면 예외를 발생시킨다."""
         stored = self._store.get(invocation_id)
         if stored is None:
             raise InvocationNotFoundError(invocation_id)
@@ -208,6 +193,7 @@ class RelayService:
     def _from_result(
         payload: ToolInvocationRequest, result: UpstreamInvocationResult
     ) -> _StoredInvocation:
+        """업스트림 결과를 내부 저장 레코드로 변환한다."""
         status: InvocationStatus = (
             "queued" if result.mode == "background" else "completed"
         )
@@ -224,6 +210,7 @@ class RelayService:
     def _apply_upstream_payload(
         stored: _StoredInvocation, payload: dict[str, Any]
     ) -> None:
+        """업스트림 응답을 저장된 호출 상태에 반영한다."""
         status = str(payload.get("status", stored.status))
         if status == "completed":
             stored.status = "completed"
@@ -239,6 +226,7 @@ class RelayService:
 
     @staticmethod
     def _to_view(invocation_id: str, stored: _StoredInvocation) -> ToolInvocationView:
+        """내부 저장 상태를 외부 응답 모델로 변환한다."""
         return ToolInvocationView(
             invocation_id=invocation_id,
             tool_name=stored.request.tool_name,
@@ -253,5 +241,6 @@ class RelayService:
 
     @staticmethod
     def _to_sse(event: ToolInvocationEvent) -> str:
+        """이벤트 모델을 SSE 텍스트 프레임으로 직렬화한다."""
         payload = json.dumps(event.model_dump(), ensure_ascii=False)
         return f"event: {event.type}\ndata: {payload}\n\n"

@@ -1,3 +1,5 @@
+"""릴레이 계약을 LiteLLM SDK 호출로 변환한다."""
+
 from __future__ import annotations
 
 import asyncio
@@ -12,7 +14,7 @@ from .contracts import DeepResearchArguments, InvocationMode
 
 @dataclass(frozen=True)
 class UpstreamInvocationResult:
-    """Normalised result returned by the gateway after calling the upstream API."""
+    """업스트림 API 호출 결과를 정규화한 값이다."""
 
     mode: InvocationMode
     status: str
@@ -22,7 +24,7 @@ class UpstreamInvocationResult:
 
 
 class LiteLLMRelayGateway:
-    """Translate the relay contract into LiteLLM SDK calls."""
+    """릴레이 계약을 LiteLLM SDK 호출로 변환한다."""
 
     def __init__(
         self,
@@ -31,6 +33,7 @@ class LiteLLMRelayGateway:
         model: str = "o3-deep-research",
         timeout_seconds: float = 30.0,
     ) -> None:
+        """업스트림 LiteLLM 연결에 필요한 설정을 저장한다."""
         self._base_url = base_url
         self._api_key = api_key
         self._model = (
@@ -41,16 +44,7 @@ class LiteLLMRelayGateway:
     async def invoke_deep_research(
         self, args: DeepResearchArguments
     ) -> UpstreamInvocationResult:
-        """Submit a deep-research invocation to the upstream LiteLLM Proxy.
-
-        Foreground calls block until the response is ready.  Background calls
-        return immediately with a queued-status result containing the upstream
-        response id.
-
-        When ``args.system_prompt`` is set it is forwarded to the Responses API
-        ``instructions`` field so the model treats it as a system-level
-        directive rather than part of the user question.
-        """
+        """업스트림 LiteLLM 프록시에 deep_research 호출을 제출한다."""
         extra_kwargs: dict[str, Any] = {}
         if args.system_prompt:
             extra_kwargs["instructions"] = args.system_prompt
@@ -88,7 +82,7 @@ class LiteLLMRelayGateway:
         )
 
     async def get_response(self, response_id: str) -> dict[str, Any]:
-        """Fetch the current status of an upstream response by its id."""
+        """응답 ID로 업스트림 응답의 현재 상태를 조회한다."""
         payload = await litellm.aget_responses(
             response_id=response_id,
             api_base=self._base_url,
@@ -103,10 +97,7 @@ class LiteLLMRelayGateway:
         timeout_seconds: float,
         poll_interval_seconds: float = 0.5,
     ) -> dict[str, Any]:
-        """Poll the upstream until the response reaches a terminal status.
-
-        Raises ``TimeoutError`` if *timeout_seconds* elapses before completion.
-        """
+        """응답이 종료 상태가 될 때까지 업스트림을 폴링한다."""
         deadline = asyncio.get_running_loop().time() + timeout_seconds
         while True:
             payload = await self.get_response(response_id)
@@ -122,7 +113,7 @@ class LiteLLMRelayGateway:
     async def stream_deep_research(
         self, args: DeepResearchArguments
     ) -> AsyncIterator[str]:
-        """Async-generator that yields text-delta chunks from a streaming response."""
+        """스트리밍 응답에서 텍스트 델타 조각을 순차적으로 내보낸다."""
         extra_kwargs: dict[str, Any] = {}
         if args.system_prompt:
             extra_kwargs["instructions"] = args.system_prompt
@@ -148,6 +139,7 @@ class LiteLLMRelayGateway:
 
     @staticmethod
     def _render_input(args: DeepResearchArguments) -> str:
+        """deep_research 인자를 업스트림 입력 문자열로 렌더링한다."""
         lines = [
             "Tool: deep_research",
             f"Research question: {args.research_question}",
@@ -164,6 +156,7 @@ class LiteLLMRelayGateway:
 
     @staticmethod
     def _to_dict(payload: Any) -> dict[str, Any]:
+        """LiteLLM SDK 페이로드를 일반 딕셔너리로 변환한다."""
         if isinstance(payload, dict):
             return payload
         if hasattr(payload, "model_dump"):
@@ -178,10 +171,12 @@ class LiteLLMRelayGateway:
 
     @staticmethod
     def _maybe_str(value: Any) -> str | None:
+        """비어 있지 않은 문자열만 반환하고 나머지는 ``None``으로 바꾼다."""
         return value if isinstance(value, str) and value else None
 
     @classmethod
     def _extract_response_text(cls, payload: dict[str, Any]) -> str:
+        """응답 페이로드에서 결합된 텍스트 본문을 추출한다."""
         output_text = payload.get("output_text")
         if isinstance(output_text, str) and output_text.strip():
             return output_text
@@ -206,6 +201,7 @@ class LiteLLMRelayGateway:
 
     @classmethod
     def _extract_stream_text(cls, payload: dict[str, Any]) -> str | None:
+        """스트림 이벤트 페이로드에서 텍스트 델타를 추출한다."""
         if payload.get("type") == "response.output_text.delta":
             delta = payload.get("delta")
             if isinstance(delta, str) and delta:

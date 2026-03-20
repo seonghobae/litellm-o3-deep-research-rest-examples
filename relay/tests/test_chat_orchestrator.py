@@ -581,3 +581,274 @@ def test_extract_response_id_from_model_dump_object():
             return {"id": "resp_model_dump"}
 
     assert ChatOrchestrator._extract_response_id(FakeResponse()) == "resp_model_dump"
+
+
+# ---------------------------------------------------------------------------
+# system_prompt and deliverable_format passthrough
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_chat_system_prompt_forwarded_to_deep_research(monkeypatch):
+    """ChatRequest.system_prompt is passed to DeepResearchArguments when tool is called."""
+    import json as _json
+
+    turn = 0
+
+    def fake_responses(**kwargs):
+        nonlocal turn
+        turn += 1
+        if turn == 1:
+            return {
+                "id": "resp_1",
+                "output": [
+                    {
+                        "type": "function_call",
+                        "name": "deep_research",
+                        "call_id": "call_sp",
+                        "arguments": _json.dumps(
+                            {
+                                "research_question": "짜장면 역사",
+                                "deliverable_format": "markdown_brief",
+                            }
+                        ),
+                    }
+                ],
+            }
+        return {
+            "id": "resp_2",
+            "output_text": "English answer about jjajangmyeon.",
+            "output": [],
+        }
+
+    monkeypatch.setattr(
+        "litellm_relay.chat_orchestrator.litellm.responses", fake_responses
+    )
+
+    orchestrator = ChatOrchestrator(
+        base_url="https://proxy.example/v1",
+        api_key="sk-test",
+    )
+
+    from litellm_relay.contracts import DeepResearchArguments
+    from litellm_relay.upstream import UpstreamInvocationResult
+
+    captured_args: list[DeepResearchArguments] = []
+
+    async def capturing_invoke(args: DeepResearchArguments) -> UpstreamInvocationResult:
+        captured_args.append(args)
+        return UpstreamInvocationResult(
+            mode="foreground",
+            status="completed",
+            output_text="summary",
+        )
+
+    orchestrator._invoke_deep_research = capturing_invoke
+
+    await orchestrator.chat(
+        ChatRequest(
+            message="짜장면 역사",
+            system_prompt="Always answer in English only.",
+        )
+    )
+
+    assert len(captured_args) == 1
+    assert captured_args[0].system_prompt == "Always answer in English only."
+
+
+@pytest.mark.asyncio
+async def test_chat_system_prompt_none_when_not_provided(monkeypatch):
+    """When system_prompt is omitted from ChatRequest, DeepResearchArguments gets None."""
+    import json as _json
+
+    turn = 0
+
+    def fake_responses(**kwargs):
+        nonlocal turn
+        turn += 1
+        if turn == 1:
+            return {
+                "id": "resp_1",
+                "output": [
+                    {
+                        "type": "function_call",
+                        "name": "deep_research",
+                        "call_id": "call_no_sp",
+                        "arguments": _json.dumps(
+                            {
+                                "research_question": "test",
+                                "deliverable_format": "markdown_brief",
+                            }
+                        ),
+                    }
+                ],
+            }
+        return {
+            "id": "resp_2",
+            "output_text": "answer",
+            "output": [],
+        }
+
+    monkeypatch.setattr(
+        "litellm_relay.chat_orchestrator.litellm.responses", fake_responses
+    )
+
+    orchestrator = ChatOrchestrator(
+        base_url="https://proxy.example/v1",
+        api_key="sk-test",
+    )
+
+    from litellm_relay.contracts import DeepResearchArguments
+    from litellm_relay.upstream import UpstreamInvocationResult
+
+    captured_args: list[DeepResearchArguments] = []
+
+    async def capturing_invoke(args: DeepResearchArguments) -> UpstreamInvocationResult:
+        captured_args.append(args)
+        return UpstreamInvocationResult(
+            mode="foreground",
+            status="completed",
+            output_text="summary",
+        )
+
+    orchestrator._invoke_deep_research = capturing_invoke
+
+    await orchestrator.chat(ChatRequest(message="test"))
+
+    assert len(captured_args) == 1
+    assert captured_args[0].system_prompt is None
+
+
+@pytest.mark.asyncio
+async def test_chat_deliverable_format_used_as_fallback(monkeypatch):
+    """ChatRequest.deliverable_format is used when model does not specify format."""
+    import json as _json
+
+    turn = 0
+
+    def fake_responses(**kwargs):
+        nonlocal turn
+        turn += 1
+        if turn == 1:
+            return {
+                "id": "resp_1",
+                "output": [
+                    {
+                        "type": "function_call",
+                        "name": "deep_research",
+                        "call_id": "call_fmt",
+                        "arguments": _json.dumps({"research_question": "짜장면"}),
+                    }
+                ],
+            }
+        return {
+            "id": "resp_2",
+            "output_text": "done",
+            "output": [],
+        }
+
+    monkeypatch.setattr(
+        "litellm_relay.chat_orchestrator.litellm.responses", fake_responses
+    )
+
+    orchestrator = ChatOrchestrator(
+        base_url="https://proxy.example/v1",
+        api_key="sk-test",
+    )
+
+    from litellm_relay.contracts import DeepResearchArguments
+    from litellm_relay.upstream import UpstreamInvocationResult
+
+    captured_args: list[DeepResearchArguments] = []
+
+    async def capturing_invoke(args: DeepResearchArguments) -> UpstreamInvocationResult:
+        captured_args.append(args)
+        return UpstreamInvocationResult(
+            mode="foreground",
+            status="completed",
+            output_text="summary",
+        )
+
+    orchestrator._invoke_deep_research = capturing_invoke
+
+    await orchestrator.chat(
+        ChatRequest(message="짜장면", deliverable_format="markdown_report")
+    )
+
+    assert len(captured_args) == 1
+    assert captured_args[0].deliverable_format == "markdown_report"
+
+
+@pytest.mark.asyncio
+async def test_chat_model_format_overrides_request_format(monkeypatch):
+    """When model specifies deliverable_format in tool args, it takes precedence."""
+    import json as _json
+
+    turn = 0
+
+    def fake_responses(**kwargs):
+        nonlocal turn
+        turn += 1
+        if turn == 1:
+            return {
+                "id": "resp_1",
+                "output": [
+                    {
+                        "type": "function_call",
+                        "name": "deep_research",
+                        "call_id": "call_override",
+                        "arguments": _json.dumps(
+                            {
+                                "research_question": "짜장면",
+                                "deliverable_format": "json_outline",
+                            }
+                        ),
+                    }
+                ],
+            }
+        return {
+            "id": "resp_2",
+            "output_text": "done",
+            "output": [],
+        }
+
+    monkeypatch.setattr(
+        "litellm_relay.chat_orchestrator.litellm.responses", fake_responses
+    )
+
+    orchestrator = ChatOrchestrator(
+        base_url="https://proxy.example/v1",
+        api_key="sk-test",
+    )
+
+    from litellm_relay.contracts import DeepResearchArguments
+    from litellm_relay.upstream import UpstreamInvocationResult
+
+    captured_args: list[DeepResearchArguments] = []
+
+    async def capturing_invoke(args: DeepResearchArguments) -> UpstreamInvocationResult:
+        captured_args.append(args)
+        return UpstreamInvocationResult(
+            mode="foreground",
+            status="completed",
+            output_text="summary",
+        )
+
+    orchestrator._invoke_deep_research = capturing_invoke
+
+    await orchestrator.chat(
+        ChatRequest(message="짜장면", deliverable_format="markdown_report")
+    )
+
+    assert len(captured_args) == 1
+    assert captured_args[0].deliverable_format == "json_outline"
+
+
+@pytest.mark.asyncio
+async def test_chat_request_defaults(monkeypatch):
+    """ChatRequest defaults: system_prompt=None, deliverable_format='markdown_brief'."""
+    req = ChatRequest(message="hello")
+    assert req.system_prompt is None
+    assert req.deliverable_format == "markdown_brief"
+    assert req.auto_tool_call is True
+    assert req.context == []

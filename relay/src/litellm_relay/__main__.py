@@ -1,3 +1,5 @@
+"""LiteLLM 릴레이 서버 CLI 진입점을 제공한다."""
+
 from __future__ import annotations
 
 import asyncio
@@ -10,14 +12,14 @@ from .config import RelaySettings, load_settings
 
 
 def build_hypercorn_config(settings: RelaySettings) -> Config:
-    """Build a Hypercorn ``Config`` that binds to the host and port in *settings*."""
+    """설정의 호스트와 포트에 바인드되는 Hypercorn 설정을 만든다."""
     config = Config()
     config.bind = [f"{settings.host}:{settings.port}"]
     return config
 
 
 def main() -> int:
-    """Entrypoint for ``python -m litellm_relay`` and the ``litellm-relay`` script."""
+    """릴레이 애플리케이션을 실행하는 CLI 진입점이다."""
     settings = load_settings()
     app = create_app(settings=settings)
     config = build_hypercorn_config(settings)

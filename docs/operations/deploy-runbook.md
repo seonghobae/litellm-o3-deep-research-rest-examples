@@ -8,7 +8,7 @@
 
 - 소스: `docs/` + `mkdocs.yml`
 - 빌드: MkDocs Material
-- 배포: GitHub Actions `pages.yml`
+- 배포: GitHub Actions `Deploy Docs` workflow (`.github/workflows/pages.yml`)가 `mkdocs build --strict`로 `site/`를 만든 뒤, GitHub Pages artifact 업로드 + `actions/deploy-pages`로 배포
 
 ## 기대 URL
 
@@ -21,7 +21,9 @@ python3 -m pip install -r requirements-docs.txt
 mkdocs build --strict
 ```
 
-또는 CI에서 docs job이 통과하는지 확인합니다.
+또는 `Deploy Docs` workflow의 build job이 통과하는지 확인합니다.
+
+현재 Pages 배포는 legacy `gh-pages` branch force-push 방식이 아니라 GitHub의 공식 artifact-based Pages deploy 경로를 사용합니다.
 
 ## 배포 후 확인
 
@@ -40,3 +42,5 @@ mkdocs build --strict
 - `requirements-docs.txt` 누락
 - Pages workflow 권한 설정 오류
 - GitHub Pages build source가 GitHub Actions로 인식되는지 여부
+- `actions/configure-pages`, `actions/upload-pages-artifact`, `actions/deploy-pages` 버전 노후화 여부
+- GitHub Actions annotation에 Pages 관련 런타임 경고가 다시 나타나는지 여부

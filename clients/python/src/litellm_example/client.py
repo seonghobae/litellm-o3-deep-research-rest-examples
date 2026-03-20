@@ -1,3 +1,5 @@
+"""LiteLLM 예제 클라이언트의 HTTP 호출과 응답 해석을 담당한다."""
+
 from __future__ import annotations
 
 import json
@@ -37,27 +39,17 @@ DEEP_RESEARCH_FUNCTION_TOOL: Dict[str, Any] = {
 
 
 class LiteLLMError(Exception):
-    """Represents an error response or network failure when talking to LiteLLM."""
+    """LiteLLM 호출 중 발생한 HTTP 또는 네트워크 오류를 나타낸다."""
 
     def __init__(self, status: int, message: str, body: str | None = None) -> None:
+        """상태 코드와 응답 본문을 포함한 예외 객체를 초기화한다."""
         super().__init__(message)
         self.status = status
         self.body = body
 
 
 def _normalize_base_url(raw: str) -> str:
-    """Normalise the configured base URL to a predictable /v1/ API root.
-
-    Accepted forms:
-
-    - https://host:4000
-    - https://host:4000/
-    - https://host:4000/v1
-    - https://host:4000/v1/
-
-    All of these are normalised to ``https://host:4000/v1/``. Other paths are
-    rejected so that the example behaves predictably.
-    """
+    """설정된 기본 URL을 일관된 ``/v1/`` API 루트로 정규화한다."""
 
     parsed = urlparse(raw)
     if not parsed.scheme or not parsed.netloc:
@@ -90,14 +82,30 @@ def _normalize_base_url(raw: str) -> str:
 
 @dataclass
 class ChatMessage:
-    """A single message in a chat conversation."""
+    """채팅 대화의 단일 메시지를 표현한다."""
 
     role: str
     content: str
 
 
+@dataclass
+class ToolCallingResult:
+    """Responses API tool calling 결과와 deep_research 메타데이터를 담는다."""
+
+    final_text: str
+    tool_called: bool
+    response_id: str | None = None
+    previous_response_id: str | None = None
+    response_status: str | None = None
+    tool_name: str | None = None
+    tool_call_id: str | None = None
+    invocation_id: str | None = None
+    upstream_response_id: str | None = None
+    research_summary: str | None = None
+
+
 class LiteLLMClient:
-    """Small wrapper around a LiteLLM chat completions endpoint."""
+    """LiteLLM OpenAI 호환 엔드포인트를 감싸는 작은 클라이언트다."""
 
     def __init__(
         self,
@@ -106,28 +114,26 @@ class LiteLLMClient:
         model: str = "o3-deep-research",
         timeout: float = 30.0,
     ) -> None:
+        """기본 URL, 인증 정보, 모델, 타임아웃으로 클라이언트를 초기화한다."""
         self._base_url = _normalize_base_url(base_url)
         self._api_key = api_key
         self._model = model
         self._timeout = timeout
 
     def _chat_url(self) -> str:
+        """채팅 완성 엔드포인트 URL을 반환한다."""
         return self._base_url.rstrip("/") + "/chat/completions"
 
     def _responses_url(self) -> str:
+        """Responses API 엔드포인트 URL을 반환한다."""
         return self._base_url.rstrip("/") + "/responses"
 
     def _ssl_context(self) -> ssl.SSLContext:
+        """certifi 번들을 사용하는 SSL 컨텍스트를 생성한다."""
         return ssl.create_default_context(cafile=certifi.where())
 
     def create_chat_completion(self, prompt: str) -> str:
-        """Send a minimal chat completion request and return the assistant text.
-
-        This method uses the non-streaming OpenAI-compatible chat completions
-        API and only extracts the first assistant message's content. It raises
-        :class:`LiteLLMError` when the request fails, the response is invalid,
-        or does not contain a usable assistant message.
-        """
+        """최소한의 채팅 완성 요청을 보내고 첫 번째 답변 텍스트를 돌려준다."""
 
         payload = {
             "model": self._model,
@@ -145,18 +151,7 @@ class LiteLLMClient:
         background: bool = False,
         tools: list[Dict[str, Any]] | None = None,
     ) -> str:
-        """Send a minimal OpenAI-compatible responses API request.
-
-        This uses ``POST /v1/responses`` with a small payload that LiteLLM can
-        proxy for the configured model. The first usable text output is returned
-        for foreground execution. When ``background=True`` is set, the raw JSON
-        response is returned so callers can inspect identifiers and status.
-
-        Pass ``tools=[{"type": "web_search_preview"}]`` to enable live web
-        search on models that support it (e.g. ``gpt-4o``).  The LiteLLM Proxy
-        must also have the ``web_search_preview`` tool enabled for the target
-        model.
-        """
+        """Responses API 요청을 보내고 사용 가능한 텍스트 결과를 반환한다."""
 
         payload: Dict[str, Any] = {
             "model": self._model,
@@ -172,51 +167,49 @@ class LiteLLMClient:
             return json.dumps(parsed, ensure_ascii=False)
         return self._extract_response_content(parsed)
 
-    def create_chat_with_tool_calling(
+    def create_response_with_tool_calling(
         self,
         prompt: str,
         relay_base_url: str | None = None,
-    ) -> tuple[str, bool]:
-        """Send a Responses API request with the deep_research function tool.
-
-        Returns ``(answer_text, tool_was_called)``.
-
-        When the model decides to call deep_research, this method:
-
-        1. Sends the first Responses API turn with the ``deep_research``
-           function tool attached.
-        2. If the model returns a ``function_call`` output item for
-           ``deep_research``, calls the relay ``POST /api/v1/tool-invocations``
-           endpoint to execute the research.
-        3. Sends a second Responses API turn using ``previous_response_id`` and
-           a ``function_call_output`` item so the model can synthesise a final
-           natural-language answer.
-        4. Returns ``(final_answer, True)``.
-
-        When the model answers directly (no tool call), returns
-        ``(answer, False)``.
-
-        Parameters
-        ----------
-        prompt:
-            The user message.
-        relay_base_url:
-            Base URL of the relay server (e.g. ``http://127.0.0.1:8080``).
-            Defaults to ``http://127.0.0.1:8080`` when not provided.
-        """
-        # First turn: Responses API with tool schema
+    ) -> ToolCallingResult:
+        """Responses API 표준 function calling으로 deep_research를 실행한다."""
         payload: Dict[str, Any] = {
             "model": self._model,
             "input": prompt,
             "tools": [DEEP_RESEARCH_FUNCTION_TOOL],
         }
         first_response = self._post_json(self._responses_url(), payload)
+        first_response_id = self._maybe_str(first_response.get("id"))
+        first_status = self._maybe_str(first_response.get("status"))
 
-        deep_research_call = self._extract_function_call(first_response)
+        output = first_response.get("output") or []
+        if not isinstance(output, list):
+            raise LiteLLMError(
+                200,
+                "Response did not include any output items.",
+                json.dumps(first_response),
+            )
+
+        deep_research_call = next(
+            (
+                item
+                for item in output
+                if isinstance(item, dict)
+                and item.get("type") == "function_call"
+                and item.get("name") == "deep_research"
+            ),
+            None,
+        )
+
         if deep_research_call is None:
-            return self._extract_response_content(first_response), False
+            return ToolCallingResult(
+                final_text=self._extract_response_content(first_response),
+                tool_called=False,
+                response_id=first_response_id,
+                response_status=first_status,
+            )
 
-        raw_args = deep_research_call.get("arguments", "{}")
+        raw_args = str(deep_research_call.get("arguments", "{}"))
         try:
             tool_args = json.loads(raw_args)
         except json.JSONDecodeError:
@@ -224,9 +217,8 @@ class LiteLLMClient:
 
         research_question = tool_args.get("research_question", prompt)
         deliverable_format = tool_args.get("deliverable_format", "markdown_brief")
-        call_id = str(deep_research_call.get("call_id") or "call_0")
+        tool_call_id = self._maybe_str(deep_research_call.get("call_id")) or "call_0"
 
-        # Call relay /api/v1/tool-invocations to execute the deep research
         relay_url = (relay_base_url or "http://127.0.0.1:8080").rstrip("/")
         relay_tool_url = relay_url + "/api/v1/tool-invocations"
         relay_payload: Dict[str, Any] = {
@@ -234,34 +226,66 @@ class LiteLLMClient:
             "arguments": {
                 "research_question": research_question,
                 "deliverable_format": deliverable_format,
+                "background": False,
+                "stream": False,
             },
         }
-        relay_response = self._post_json(relay_tool_url, relay_payload)
+        relay_response = self._post_json(
+            relay_tool_url, relay_payload, include_auth=False
+        )
         research_summary = (
             relay_response.get("output_text")
-            or relay_response.get("research_summary")
-            or relay_response.get("content")
+            or (
+                (relay_response.get("response") or {}).get("output_text")
+                if isinstance(relay_response.get("response"), dict)
+                else None
+            )
             or ""
         )
 
-        response_id = self._extract_response_id(first_response)
         second_payload: Dict[str, Any] = {
             "model": self._model,
-            "previous_response_id": response_id,
+            "previous_response_id": first_response_id,
             "input": [
                 {
                     "type": "function_call_output",
-                    "call_id": call_id,
+                    "call_id": tool_call_id,
                     "output": research_summary,
                 }
             ],
         }
         second_response = self._post_json(self._responses_url(), second_payload)
+        final_text = research_summary
         try:
-            final_content = self._extract_response_content(second_response)
+            final_text = self._extract_response_content(second_response)
         except LiteLLMError:
-            return research_summary, True
-        return final_content, True
+            final_text = research_summary
+
+        return ToolCallingResult(
+            final_text=final_text,
+            tool_called=True,
+            response_id=self._maybe_str(second_response.get("id")),
+            previous_response_id=first_response_id,
+            response_status=self._maybe_str(second_response.get("status")),
+            tool_name="deep_research",
+            tool_call_id=tool_call_id,
+            invocation_id=self._maybe_str(relay_response.get("invocation_id")),
+            upstream_response_id=self._maybe_str(
+                relay_response.get("upstream_response_id")
+            ),
+            research_summary=research_summary,
+        )
+
+    def create_chat_with_tool_calling(
+        self,
+        prompt: str,
+        relay_base_url: str | None = None,
+    ) -> tuple[str, bool]:
+        """하위 호환을 위해 표준 Responses tool calling 결과를 튜플로 변환한다."""
+        result = self.create_response_with_tool_calling(
+            prompt, relay_base_url=relay_base_url
+        )
+        return result.final_text, result.tool_called
 
     @staticmethod
     def _extract_function_call(payload: Dict[str, Any]) -> Dict[str, Any] | None:
@@ -292,18 +316,22 @@ class LiteLLMClient:
             200, "Response did not include a usable id.", json.dumps(payload)
         )
 
-    def _post_json(self, url: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """POST *payload* as JSON to *url* and return the parsed response dict."""
+    def _post_json(
+        self, url: str, payload: Dict[str, Any], include_auth: bool = True
+    ) -> Dict[str, Any]:
+        """JSON 본문을 POST하고 파싱된 응답 딕셔너리를 반환한다."""
         data = json.dumps(payload).encode("utf-8")
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+        if include_auth:
+            headers["Authorization"] = f"Bearer {self._api_key}"
         req = request.Request(
             url,
             data=data,
             method="POST",
-            headers={
-                "Authorization": f"Bearer {self._api_key}",
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-            },
+            headers=headers,
         )
 
         try:
@@ -343,7 +371,7 @@ class LiteLLMClient:
 
     @staticmethod
     def _extract_error_message(text: str) -> str:
-        """Try to extract a human-readable error message from a JSON error body."""
+        """JSON 오류 본문에서 사람이 읽을 메시지를 추출한다."""
         try:
             data = json.loads(text)
         except json.JSONDecodeError:
@@ -359,7 +387,7 @@ class LiteLLMClient:
 
     @staticmethod
     def _extract_content(payload: Dict[str, Any]) -> str:
-        """Extract the first assistant message text from a chat completions response."""
+        """채팅 완성 응답에서 첫 번째 어시스턴트 텍스트를 추출한다."""
         choices = payload.get("choices") or []
         if not isinstance(choices, list) or not choices:
             raise LiteLLMError(
@@ -402,7 +430,7 @@ class LiteLLMClient:
 
     @staticmethod
     def _extract_response_content(payload: Dict[str, Any]) -> str:
-        """Extract text from a LiteLLM responses API result payload."""
+        """Responses API 결과 페이로드에서 텍스트를 추출한다."""
         output_text = payload.get("output_text")
         if isinstance(output_text, str) and output_text.strip():
             return output_text
@@ -441,3 +469,8 @@ class LiteLLMClient:
             "Response did not include a usable text output.",
             json.dumps(payload),
         )
+
+    @staticmethod
+    def _maybe_str(value: Any) -> str | None:
+        """비어 있지 않은 문자열만 반환하고 나머지는 ``None``으로 바꾼다."""
+        return value if isinstance(value, str) and value else None

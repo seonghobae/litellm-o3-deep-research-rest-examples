@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from litellm_example.__main__ import main
-from litellm_example.client import LiteLLMClient, LiteLLMError
+from litellm_example.client import LiteLLMClient, LiteLLMError, ToolCallingResult
 from litellm_example.config import Settings
 
 
@@ -239,18 +239,18 @@ def test_main_rejects_web_search_without_responses_api(
 # --------------------------------------------------------------------------- #
 
 
-def test_main_auto_tool_call_calls_create_chat_with_tool_calling(
+def test_main_auto_tool_call_calls_create_response_with_tool_calling(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """--auto-tool-call invokes create_chat_with_tool_calling on the client."""
+    """--auto-tool-call invokes create_response_with_tool_calling on the client."""
     captured: dict[str, object] = {}
 
-    def fake_create_chat_with_tool_calling(
+    def fake_create_response_with_tool_calling(
         self: LiteLLMClient, prompt: str, relay_base_url: str | None = None
-    ) -> tuple[str, bool]:
+    ) -> ToolCallingResult:
         captured["prompt"] = prompt
         captured["relay_base_url"] = relay_base_url
-        return "tool answer", False
+        return ToolCallingResult(final_text="tool answer", tool_called=False)
 
     monkeypatch.setattr(
         "litellm_example.__main__.load_settings",
@@ -258,8 +258,8 @@ def test_main_auto_tool_call_calls_create_chat_with_tool_calling(
     )
     monkeypatch.setattr(
         LiteLLMClient,
-        "create_chat_with_tool_calling",
-        fake_create_chat_with_tool_calling,
+        "create_response_with_tool_calling",
+        fake_create_response_with_tool_calling,
     )
 
     exit_code = main(["--auto-tool-call", "my research question"])
@@ -273,10 +273,18 @@ def test_main_auto_tool_call_prints_stderr_when_tool_called(
 ) -> None:
     """When tool_called=True, prints [deep_research was called automatically] to stderr."""
 
-    def fake_create_chat_with_tool_calling(
+    def fake_create_response_with_tool_calling(
         self: LiteLLMClient, prompt: str, relay_base_url: str | None = None
-    ) -> tuple[str, bool]:
-        return "research result", True
+    ) -> ToolCallingResult:
+        return ToolCallingResult(
+            final_text="research result",
+            tool_called=True,
+            response_id="resp_2",
+            previous_response_id="resp_1",
+            tool_call_id="call_1",
+            invocation_id="inv_1",
+            upstream_response_id="up_1",
+        )
 
     monkeypatch.setattr(
         "litellm_example.__main__.load_settings",
@@ -284,8 +292,8 @@ def test_main_auto_tool_call_prints_stderr_when_tool_called(
     )
     monkeypatch.setattr(
         LiteLLMClient,
-        "create_chat_with_tool_calling",
-        fake_create_chat_with_tool_calling,
+        "create_response_with_tool_calling",
+        fake_create_response_with_tool_calling,
     )
 
     exit_code = main(["--auto-tool-call", "what is the history of jjajangmyeon"])
@@ -294,6 +302,7 @@ def test_main_auto_tool_call_prints_stderr_when_tool_called(
     captured = capsys.readouterr()
     assert "research result" in captured.out
     assert "[deep_research was called automatically]" in captured.err
+    assert '"response_id": "resp_2"' in captured.err
 
 
 def test_main_auto_tool_call_no_stderr_when_tool_not_called(
@@ -301,10 +310,10 @@ def test_main_auto_tool_call_no_stderr_when_tool_not_called(
 ) -> None:
     """When tool_called=False, does NOT print to stderr."""
 
-    def fake_create_chat_with_tool_calling(
+    def fake_create_response_with_tool_calling(
         self: LiteLLMClient, prompt: str, relay_base_url: str | None = None
-    ) -> tuple[str, bool]:
-        return "direct answer", False
+    ) -> ToolCallingResult:
+        return ToolCallingResult(final_text="direct answer", tool_called=False)
 
     monkeypatch.setattr(
         "litellm_example.__main__.load_settings",
@@ -312,8 +321,8 @@ def test_main_auto_tool_call_no_stderr_when_tool_not_called(
     )
     monkeypatch.setattr(
         LiteLLMClient,
-        "create_chat_with_tool_calling",
-        fake_create_chat_with_tool_calling,
+        "create_response_with_tool_calling",
+        fake_create_response_with_tool_calling,
     )
 
     exit_code = main(["--auto-tool-call", "simple question"])
@@ -327,14 +336,14 @@ def test_main_auto_tool_call_no_stderr_when_tool_not_called(
 def test_main_auto_tool_call_uses_relay_base_url_env(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """RELAY_BASE_URL env var is passed as relay_base_url to create_chat_with_tool_calling."""
+    """RELAY_BASE_URL env var is passed as relay_base_url to create_response_with_tool_calling."""
     captured: dict[str, object] = {}
 
-    def fake_create_chat_with_tool_calling(
+    def fake_create_response_with_tool_calling(
         self: LiteLLMClient, prompt: str, relay_base_url: str | None = None
-    ) -> tuple[str, bool]:
+    ) -> ToolCallingResult:
         captured["relay_base_url"] = relay_base_url
-        return "ok", False
+        return ToolCallingResult(final_text="ok", tool_called=False)
 
     monkeypatch.setattr(
         "litellm_example.__main__.load_settings",
@@ -342,8 +351,8 @@ def test_main_auto_tool_call_uses_relay_base_url_env(
     )
     monkeypatch.setattr(
         LiteLLMClient,
-        "create_chat_with_tool_calling",
-        fake_create_chat_with_tool_calling,
+        "create_response_with_tool_calling",
+        fake_create_response_with_tool_calling,
     )
     monkeypatch.setenv("RELAY_BASE_URL", "http://relay.internal:9090")
 
@@ -356,11 +365,11 @@ def test_main_auto_tool_call_uses_relay_base_url_env(
 def test_main_auto_tool_call_returns_1_on_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """--auto-tool-call returns exit code 1 when create_chat_with_tool_calling raises."""
+    """--auto-tool-call returns exit code 1 when create_response_with_tool_calling raises."""
 
-    def fake_create_chat_with_tool_calling(
+    def fake_create_response_with_tool_calling(
         self: LiteLLMClient, prompt: str, relay_base_url: str | None = None
-    ) -> tuple[str, bool]:
+    ) -> ToolCallingResult:
         raise LiteLLMError(500, "relay error")
 
     monkeypatch.setattr(
@@ -369,8 +378,8 @@ def test_main_auto_tool_call_returns_1_on_error(
     )
     monkeypatch.setattr(
         LiteLLMClient,
-        "create_chat_with_tool_calling",
-        fake_create_chat_with_tool_calling,
+        "create_response_with_tool_calling",
+        fake_create_response_with_tool_calling,
     )
 
     exit_code = main(["--auto-tool-call", "some query"])

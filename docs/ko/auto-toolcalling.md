@@ -43,7 +43,7 @@ deep research가 실행됐습니다.
 
 ## 3. Approach A — Client-Side Function Calling
 
-클라이언트가 `POST /v1/responses`에 `deep_research` function schema를 붙여서 1차 호출 → `function_call` 감지 → relay `POST /api/v1/tool-invocations` 실행 → `function_call_output`과 `previous_response_id`를 붙인 2차 Responses 호출을 직접 수행합니다.
+클라이언트가 OpenAI 표준 Responses API function calling 패턴을 사용해 1차 `POST /v1/responses` 호출 → `function_call` 감지 → relay `POST /api/v1/tool-invocations`로 실제 deep_research 실행 → `function_call_output` + `previous_response_id`로 2차 `POST /v1/responses` 호출을 직접 수행합니다.
 
 ### 3-1. Python — `--auto-tool-call` 플래그
 
@@ -62,7 +62,7 @@ uv run python -m litellm_example \
   "짜장면의 역사를 자세히 알려줘"
 ```
 
-도구가 호출됐으면 stderr에 `[deep_research was called automatically]`가 출력됩니다.
+도구가 호출됐으면 stderr에 `[deep_research was called automatically]`가 출력되고, `response_id`, `previous_response_id`, `tool_call_id`, `invocation_id`, `upstream_response_id`가 함께 출력됩니다.
 
 코드에서 직접 사용:
 
@@ -70,13 +70,14 @@ uv run python -m litellm_example \
 from litellm_example.client import LiteLLMClient
 
 client = LiteLLMClient(base_url, api_key, model="gpt-4o")
-answer, tool_called = client.create_chat_with_tool_calling(
+result = client.create_response_with_tool_calling(
     "짜장면의 역사를 자세히 알려줘",
     relay_base_url="http://127.0.0.1:8080",
 )
-print(answer)
-if tool_called:
+print(result.final_text)
+if result.tool_called:
     print("[deep_research가 자동으로 호출됐습니다]")
+    print(result.response_id, result.tool_call_id, result.invocation_id)
 ```
 
 ### 3-2. Java — `--auto-tool-call` 플래그
@@ -95,13 +96,14 @@ mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
 
 ```java
 LiteLlmClient client = new LiteLlmClient(baseUrl, apiKey, "gpt-4o");
-String[] result = client.createChatWithToolCalling(
+LiteLlmClient.ToolCallingResult result = client.createResponseWithToolCalling(
     "짜장면의 역사를 자세히 알려줘",
     "http://127.0.0.1:8080"
 );
-System.out.println(result[0]);
-if ("true".equals(result[1])) {
+System.out.println(result.finalText());
+if (result.toolCalled()) {
     System.err.println("[deep_research가 자동으로 호출됐습니다]");
+    System.err.println(result.responseId());
 }
 ```
 
@@ -111,17 +113,25 @@ if ("true".equals(result[1])) {
 클라이언트 → POST /v1/responses
               {model, input, tools: [deep_research schema]}
                     ↓
-모델 응답: output=[{type:"function_call", name:"deep_research", arguments:"..."}]
+모델 응답: output=[{type: "function_call", name: "deep_research", call_id, arguments}]
                     ↓
 클라이언트 → POST /api/v1/tool-invocations (relay)
-              {tool_name:"deep_research", arguments:{research_question,...}}
+              {tool_name: "deep_research", arguments: {...}}
                     ↓
-relay가 실제 deep_research 실행 후 결과 반환
+relay 응답: {invocation_id, upstream_response_id, output_text, status}
                     ↓
-클라이언트 → POST /v1/responses (2nd turn)
-              {previous_response_id, input:[{type:"function_call_output", ...}]}
+클라이언트 → POST /v1/responses
+              {previous_response_id, input:[{type:"function_call_output", call_id, output}]}
                     ↓
 모델이 tool 결과를 읽고 최종 자연어 답변 합성
+
+이 경로에서 클라이언트는 다음 key를 그대로 보존합니다.
+
+- `response_id`: 최종 Responses API 응답 ID
+- `previous_response_id`: 첫 번째 Responses API 응답 ID
+- `tool_call_id`: 모델이 발급한 `function_call` ID
+- `invocation_id`: relay 내부 추적 ID
+- `upstream_response_id`: relay가 deep_research 업스트림에 붙인 응답 ID
 ```
 
 ---
@@ -203,7 +213,86 @@ curl -X POST http://127.0.0.1:8080/api/v1/chat \
 
 `context` 배열은 user 메시지 앞에 붙어서 모델에게 추가 맥락을 제공합니다.
 
-### 4-4. Java relay 클라이언트에서 사용
+### 4-4. system_prompt — deep_research에 페르소나·언어·형식 주입
+
+`system_prompt` 필드는 deep_research 실행 시 Responses API `instructions` 필드로 전달됩니다. 모델이 연구 결과를 생성할 때 페르소나·출력 언어·형식을 강제할 때 사용합니다.
+
+```bash
+# 항상 영어로 답변하도록 강제
+curl -X POST http://127.0.0.1:8080/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "짜장면의 역사를 자세히 알려줘",
+    "auto_tool_call": true,
+    "system_prompt": "Always answer in English only."
+  }'
+```
+
+**응답 예시:**
+```json
+{
+  "content": "The history of Jajangmyeon originates from the late 19th to early 20th centuries...",
+  "tool_called": true,
+  "tool_name": "deep_research",
+  "research_summary": "The history of Jajangmyeon originates from..."
+}
+```
+
+```bash
+# 초등학생 페르소나로 답변 요청
+curl -X POST http://127.0.0.1:8080/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "짜장면의 역사를 알려줘",
+    "auto_tool_call": true,
+    "system_prompt": "당신은 초등학생에게 설명하는 선생님입니다. 쉬운 말로 2문장으로만 답하세요."
+  }'
+```
+
+**응답 예시:**
+```json
+{
+  "content": "옛날 중국에서 먹던 작장면이 한국에 들어와 바뀌며 짜장면이 되었어요. 1900년대 초반 인천 차이나타운에서 처음 만들어졌답니다!",
+  "tool_called": true,
+  "tool_name": "deep_research",
+  "research_summary": "..."
+}
+```
+
+> **주의**: `system_prompt`는 deep_research tool이 실제로 호출될 때만 적용됩니다. 모델이 tool 없이 직접 답변하는 경우에는 영향을 주지 않습니다.
+
+| `system_prompt` 활용 패턴 | 예시 |
+|--------------------------|------|
+| 출력 언어 강제 | `"Always answer in English only."` |
+| 페르소나 주입 | `"당신은 초등학생 선생님입니다. 쉬운 말로 설명하세요."` |
+| 출력 길이 제한 | `"Answer in exactly two sentences."` |
+| 형식 강제 | `"Respond only with a numbered list. No prose."` |
+| 도메인 전문성 | `"You are a Korean food historian. Emphasize cultural context."` |
+
+### 4-5. deliverable_format — 산출물 형식 폴백 지정
+
+`deliverable_format` 필드는 deep_research 실행 시 산출물 형식의 **폴백** 값입니다. 모델이 tool call 인자에서 형식을 직접 지정하면 그 값이 우선됩니다.
+
+```bash
+# 상세 보고서 형식으로 요청
+curl -X POST http://127.0.0.1:8080/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "짜장면의 역사와 사회적 영향을 상세히 알려줘",
+    "auto_tool_call": true,
+    "deliverable_format": "markdown_report"
+  }'
+```
+
+| `deliverable_format` 값 | 설명 |
+|------------------------|------|
+| `"markdown_brief"` (기본값) | 간략한 마크다운 보고서 |
+| `"markdown_report"` | 상세 마크다운 보고서 |
+| `"json_outline"` | JSON 구조의 개요 |
+
+모델이 tool call 인자에서 `deliverable_format`을 지정하면 모델 지정값이 우선됩니다. 지정하지 않으면 이 필드의 값이 폴백으로 사용됩니다.
+
+### 4-6. Java relay 클라이언트에서 사용
 
 ```bash
 RELAY_BASE_URL=http://127.0.0.1:8080 \
@@ -211,7 +300,7 @@ mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
   -Dexec.args="--target relay --timeout 120 짜장면의 역사를 알려줘"
 ```
 
-또는 Java 코드에서 직접:
+또는 Java 코드에서 직접 (기본 2-인자 버전):
 
 ```java
 import example.litellm.relay.RelayClient;
@@ -225,17 +314,30 @@ if (result.toolCalled()) {
 }
 ```
 
-### 4-5. Relay 설정 — chat model과 timeout
+`system_prompt`와 `deliverable_format`을 지정하는 4-인자 버전:
+
+```java
+RelayClient client = new RelayClient("http://127.0.0.1:8080", Duration.ofSeconds(120));
+RelayClient.ChatResult result = client.invokeChat(
+    "짜장면의 역사를 자세히 알려줘",
+    true,                                  // auto_tool_call
+    "Always answer in English only.",      // system_prompt
+    "markdown_report"                      // deliverable_format (폴백)
+);
+System.out.println(result.content());
+```
+
+### 4-7. Relay 설정 — chat model과 timeout
 
 relay의 chat orchestration에 사용하는 모델은 `LITELLM_CHAT_MODEL` 환경변수로 지정합니다 (기본값 `gpt-4o`). deep_research 수행에는 기존 `LITELLM_MODEL`을 사용합니다.
 
 ```bash
-LITELLM_CHAT_MODEL=gpt-4o-mini \  # orchestration용 (function calling 지원 필요)
-LITELLM_MODEL=o3-deep-research \  # 실제 deep research용
+LITELLM_CHAT_MODEL=gpt-4o-mini
+LITELLM_MODEL=o3-deep-research
 uv run python -m litellm_relay
 ```
 
-### 4-6. Timeout 설정 — chat timeout vs research timeout
+### 4-8. Timeout 설정 — chat timeout vs research timeout
 
 `/api/v1/chat` 엔드포인트는 두 가지 단계를 거치므로 timeout이 분리됩니다.
 
@@ -254,7 +356,7 @@ uv run python -m litellm_relay
 
 > **중요**: `RELAY_TIMEOUT_SECONDS`만 늘리면 Responses orchestration turns만 길어지고 deep_research timeout은 여전히 기본 300초입니다. o3-deep-research를 사용할 때는 `RELAY_RESEARCH_TIMEOUT_SECONDS`를 조정하세요.
 
-### 4-7. 에러 처리
+### 4-9. 에러 처리
 
 deep_research 실행 중 오류가 발생하더라도 relay는 HTTP 500 대신 구조화된 `ChatResponse`를 반환합니다. 이때 public 응답에는 raw upstream 예외 문자열을 그대로 넣지 않고, 재시도 가능한 안전한 문구만 노출합니다.
 
@@ -405,3 +507,5 @@ ChatOrchestrator.research_timeout_seconds → deep_research 실행 (300s 기본)
 | tool 호출 여부를 감추고 싶을 때 | Approach C |
 | deep_research가 필요한지 불확실한 대화 | Approach C (auto_tool_call=true) |
 | 항상 deep_research를 쓰고 싶을 때 | 기존 `POST /api/v1/tool-invocations` |
+| 연구 결과의 언어·페르소나를 제어하고 싶을 때 | Approach C + `system_prompt` |
+| 상세 보고서 형식을 원할 때 | Approach C + `deliverable_format="markdown_report"` |

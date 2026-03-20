@@ -693,40 +693,48 @@ def test_responses_api_omits_tools_when_none(
 
 
 # --------------------------------------------------------------------------- #
-# create_chat_with_tool_calling                                               #
+# create_response_with_tool_calling                                           #
 # --------------------------------------------------------------------------- #
 
 
-def test_create_chat_with_tool_calling_no_tool_call():
-    """When Responses API returns text directly, no tool is called."""
+def test_create_response_with_tool_calling_no_tool_call():
+    """Responses API에 function_call이 없으면 직접 답변과 응답 ID를 반환한다."""
     from litellm_example.client import LiteLLMClient
 
     client = LiteLLMClient("https://h:4000", "key", "gpt-4o")
-    client._post_json = lambda url, payload: {
-        "id": "resp_1",
+    client._post_json = lambda url, payload, include_auth=True: {
+        "id": "resp_direct",
+        "status": "completed",
         "output_text": "Direct answer.",
         "output": [],
     }
-    result, tool_called = client.create_chat_with_tool_calling("Hello")
-    assert result == "Direct answer."
-    assert tool_called is False
+
+    result = client.create_response_with_tool_calling("Hello")
+    assert result.final_text == "Direct answer."
+    assert result.tool_called is False
+    assert result.response_id == "resp_direct"
+    assert result.tool_call_id is None
 
 
-def test_create_chat_with_tool_calling_with_tool():
-    """When Responses emits function_call, relay is called and second turn completes."""
+def test_create_response_with_tool_calling_with_tool_and_keys():
+    """Responses API function_call 이후 relay key들을 표준 결과에 담아 반환한다."""
     import json as _json
     from litellm_example.client import LiteLLMClient
 
     call_count = [0]
-    captured = {}
+    urls: list[str] = []
+    payloads: list[dict] = []
+    auth_flags: list[bool] = []
 
-    def fake_post(url, payload):
+    def fake_post(url, payload, include_auth=True):
         call_count[0] += 1
+        urls.append(url)
+        payloads.append(payload)
+        auth_flags.append(include_auth)
         if call_count[0] == 1:
-            captured["first_url"] = url
-            captured["first_payload"] = payload
             return {
-                "id": "resp_first",
+                "id": "resp_1",
+                "status": "completed",
                 "output": [
                     {
                         "type": "function_call",
@@ -741,77 +749,85 @@ def test_create_chat_with_tool_calling_with_tool():
                     }
                 ],
             }
-        elif call_count[0] == 2:
-            captured["relay_url"] = url
-            captured["relay_payload"] = payload
+        if call_count[0] == 2:
             return {
+                "invocation_id": "inv_123",
+                "upstream_response_id": "up_456",
                 "output_text": "요약 내용",
                 "status": "completed",
-                "mode": "foreground",
             }
-        else:
-            captured["second_url"] = url
-            captured["second_payload"] = payload
-            return {"id": "resp_second", "output_text": "최종 답변.", "output": []}
+        return {
+            "id": "resp_2",
+            "status": "completed",
+            "output": [
+                {
+                    "type": "message",
+                    "content": [{"type": "output_text", "text": "최종 답변."}],
+                }
+            ],
+        }
 
     client = LiteLLMClient("https://h:4000", "key", "gpt-4o")
     client._post_json = fake_post
-    result, tool_called = client.create_chat_with_tool_calling(
+    result = client.create_response_with_tool_calling(
         "짜장면의 역사를 알려줘",
         relay_base_url="http://127.0.0.1:8080",
     )
-    assert tool_called is True
-    assert result == "최종 답변."
-    assert call_count[0] == 3
-    assert captured["first_url"].endswith("/responses")
-    assert captured["relay_url"].endswith("/api/v1/tool-invocations")
-    assert (
-        captured["relay_payload"]["arguments"]["deliverable_format"] == "markdown_brief"
-    )
-    assert captured["second_payload"]["previous_response_id"] == "resp_first"
-    assert captured["second_payload"]["input"][0]["type"] == "function_call_output"
+
+    assert result.tool_called is True
+    assert result.final_text == "최종 답변."
+    assert result.response_id == "resp_2"
+    assert result.previous_response_id == "resp_1"
+    assert result.tool_call_id == "call_1"
+    assert result.invocation_id == "inv_123"
+    assert result.upstream_response_id == "up_456"
+    assert result.research_summary == "요약 내용"
+    assert urls[0].endswith("/v1/responses")
+    assert urls[1].endswith("/api/v1/tool-invocations")
+    assert urls[2].endswith("/v1/responses")
+    assert auth_flags == [True, False, True]
+    assert payloads[1]["tool_name"] == "deep_research"
+    assert payloads[2]["previous_response_id"] == "resp_1"
+    assert payloads[2]["input"] == [
+        {"type": "function_call_output", "call_id": "call_1", "output": "요약 내용"}
+    ]
 
 
-def test_create_chat_with_tool_calling_no_choices_raises():
-    """Missing response output raises LiteLLMError."""
+def test_create_response_with_tool_calling_no_output_raises():
+    """Responses API 첫 응답에 output이 없으면 예외를 발생시킨다."""
     from litellm_example.client import LiteLLMClient, LiteLLMError
 
     client = LiteLLMClient("https://h:4000", "key", "gpt-4o")
-    client._post_json = lambda url, payload: {"output": [], "id": None}
+    client._post_json = lambda url, payload, include_auth=True: {"output": []}
     with pytest.raises(LiteLLMError):
-        client.create_chat_with_tool_calling("Hello")
+        client.create_response_with_tool_calling("Hello")
 
 
-def test_create_chat_with_tool_calling_invalid_response_id():
-    """Tool call without a usable response id raises LiteLLMError."""
+def test_create_response_with_tool_calling_non_list_output_raises():
+    """Responses API 첫 응답의 output이 리스트가 아니면 예외를 발생시킨다."""
     from litellm_example.client import LiteLLMClient, LiteLLMError
 
     client = LiteLLMClient("https://h:4000", "key", "gpt-4o")
-    client._post_json = lambda url, payload: {
-        "output": [
-            {
-                "type": "function_call",
-                "name": "deep_research",
-                "call_id": "call_1",
-                "arguments": "{}",
-            }
-        ]
+    client._post_json = lambda url, payload, include_auth=True: {
+        "output": {"bad": True}
     }
     with pytest.raises(LiteLLMError):
-        client.create_chat_with_tool_calling("Hello")
+        client.create_response_with_tool_calling("Hello")
 
 
-def test_create_chat_with_tool_calling_invalid_json_args():
-    """Invalid JSON tool args fallback to prompt as research_question."""
+def test_create_response_with_tool_calling_invalid_json_args():
+    """function_call 인자 JSON이 깨져 있으면 prompt를 research_question으로 사용한다."""
     from litellm_example.client import LiteLLMClient
 
     call_count = [0]
+    relay_payload: dict = {}
 
-    def fake_post(url, payload):
+    def fake_post(url, payload, include_auth=True):
         call_count[0] += 1
         if call_count[0] == 1:
             return {
-                "id": "resp_first",
+                "id": "resp_bad",
+                "status": "completed",
                 "output": [
                     {
                         "type": "function_call",
@@ -821,30 +837,46 @@ def test_create_chat_with_tool_calling_invalid_json_args():
                     }
                 ],
             }
-        elif call_count[0] == 2:
-            return {"output_text": "s"}
-        else:
-            return {"id": "resp_second", "output_text": "done", "output": []}
+        if call_count[0] == 2:
+            relay_payload.update(payload)
+            return {
+                "invocation_id": "inv_bad",
+                "upstream_response_id": "up_bad",
+                "output_text": "summary",
+                "status": "completed",
+            }
+        return {
+            "id": "resp_done",
+            "status": "completed",
+            "output": [
+                {
+                    "type": "message",
+                    "content": [{"type": "output_text", "text": "done"}],
+                }
+            ],
+        }
 
     client = LiteLLMClient("https://h:4000", "key", "gpt-4o")
     client._post_json = fake_post
-    result, tool_called = client.create_chat_with_tool_calling("my question")
-    assert tool_called is True
-    assert result == "done"
+    result = client.create_response_with_tool_calling("my question")
+    assert result.tool_called is True
+    assert result.final_text == "done"
+    assert relay_payload["arguments"]["research_question"] == "my question"
 
 
-def test_create_chat_with_tool_calling_second_turn_no_choices():
-    """When second turn returns no choices, falls back to research_summary."""
+def test_create_response_with_tool_calling_second_turn_no_text_falls_back_to_research_summary():
+    """두 번째 Responses 호출에 텍스트가 없으면 연구 요약으로 폴백한다."""
     import json as _json
     from litellm_example.client import LiteLLMClient
 
     call_count = [0]
 
-    def fake_post(url, payload):
+    def fake_post(url, payload, include_auth=True):
         call_count[0] += 1
         if call_count[0] == 1:
             return {
-                "id": "resp_first",
+                "id": "resp_1",
+                "status": "completed",
                 "output": [
                     {
                         "type": "function_call",
@@ -859,26 +891,78 @@ def test_create_chat_with_tool_calling_second_turn_no_choices():
                     }
                 ],
             }
-        elif call_count[0] == 2:
-            return {"output_text": "fallback summary"}
-        else:
-            return {"id": "resp_second", "output": []}  # second turn no text
+        if call_count[0] == 2:
+            return {
+                "invocation_id": "inv_1",
+                "upstream_response_id": "up_1",
+                "output_text": "fallback summary",
+                "status": "completed",
+            }
+        return {"id": "resp_2", "status": "completed", "output": []}
 
     client = LiteLLMClient("https://h:4000", "key", "gpt-4o")
     client._post_json = fake_post
-    result, tool_called = client.create_chat_with_tool_calling("Q")
-    assert tool_called is True
-    assert result == "fallback summary"
+    result = client.create_response_with_tool_calling("Q")
+    assert result.tool_called is True
+    assert result.final_text == "fallback summary"
+
+
+def test_post_json_can_omit_authorization_header(monkeypatch):
+    """relay 호출처럼 인증이 필요 없는 경로에는 Authorization 헤더를 보내지 않는다."""
+    from litellm_example.client import LiteLLMClient
+
+    captured = {}
+
+    class FakeResponse:
+        def __init__(self, body: bytes, status: int = 200):
+            self._body = body
+            self.status = status
+
+        def read(self):
+            return self._body
+
+        def getcode(self):
+            return self.status
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    def fake_urlopen(req, timeout=None, context=None):  # type: ignore[override]
+        captured["headers"] = dict(req.header_items())
+        return FakeResponse(json.dumps({"ok": True}).encode())
+
+    from litellm_example import client as client_module
+
+    monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
+
+    c = LiteLLMClient("https://example.com", "sk-secret", model="gpt-4o")
+    c._post_json(
+        "https://relay.example/api/v1/tool-invocations",
+        {
+            "tool_name": "deep_research",
+            "arguments": {
+                "research_question": "Q",
+                "deliverable_format": "markdown_brief",
+            },
+        },
+        include_auth=False,
+    )
+
+    lowered = {k.lower(): v for k, v in captured["headers"].items()}
+    assert "authorization" not in lowered
 
 
 def test_create_chat_with_tool_calling_non_deep_research_tool():
-    """Function call for a different tool name is treated as no tool call."""
+    """다른 tool name이면 하위 호환 튜플 API도 no-tool 경로로 처리한다."""
     from litellm_example.client import LiteLLMClient
 
     client = LiteLLMClient("https://h:4000", "key", "gpt-4o")
-    client._post_json = lambda url, payload: {
-        "id": "resp_1",
-        "output_text": "some answer",
+    client._post_json = lambda url, payload, include_auth=True: {
+        "id": "resp_direct",
+        "status": "completed",
         "output": [
             {
                 "type": "function_call",
@@ -887,6 +971,7 @@ def test_create_chat_with_tool_calling_non_deep_research_tool():
                 "arguments": "{}",
             }
         ],
+        "output_text": "some answer",
     }
     result, tool_called = client.create_chat_with_tool_calling("Hello")
     assert tool_called is False
