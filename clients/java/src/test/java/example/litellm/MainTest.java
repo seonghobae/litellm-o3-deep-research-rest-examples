@@ -202,17 +202,16 @@ class MainTest {
         // Exercise the createChatWithToolCalling path via LiteLlmClient directly
         // (same pattern as other routing tests - Main.main env-var coupling
         // cannot be controlled in-process).
-        java.util.concurrent.atomic.AtomicInteger chatCallCount =
+        java.util.concurrent.atomic.AtomicInteger responseCallCount =
                 new java.util.concurrent.atomic.AtomicInteger(0);
 
-        String firstChatJson =
-                "{\"choices\":[{\"finish_reason\":\"stop\",\"message\":"
-                + "{\"role\":\"assistant\",\"content\":\"auto tool answer\",\"tool_calls\":null}}]}";
+        String firstResponseJson =
+                "{\"id\":\"resp_1\",\"output_text\":\"auto tool answer\",\"output\":[]}";
 
-        server.createContext("/v1/chat/completions", exchange -> {
+        server.createContext("/v1/responses", exchange -> {
             exchange.getRequestBody().readAllBytes();
-            chatCallCount.incrementAndGet();
-            writeJson(exchange, 200, firstChatJson);
+            responseCallCount.incrementAndGet();
+            writeJson(exchange, 200, firstResponseJson);
         });
 
         EnvConfig cfg = EnvConfig.load(
@@ -225,7 +224,7 @@ class MainTest {
 
         assertEquals("auto tool answer", result[0]);
         assertEquals("false", result[1]);
-        assertEquals(1, chatCallCount.get());
+        assertEquals(1, responseCallCount.get());
     }
 
     @Test
@@ -233,29 +232,26 @@ class MainTest {
         // Verify that when tool_called=true, the result[1] is "true"
         // (stderr output cannot be captured easily in unit tests, but we verify
         // the logic returns the correct indicator).
-        java.util.concurrent.atomic.AtomicInteger chatCallCount =
+        java.util.concurrent.atomic.AtomicInteger responseCallCount =
                 new java.util.concurrent.atomic.AtomicInteger(0);
+        java.util.concurrent.atomic.AtomicReference<String> relayBody =
+                new java.util.concurrent.atomic.AtomicReference<>("");
 
-        String firstChatJson =
-                "{\"choices\":[{\"finish_reason\":\"tool_calls\",\"message\":"
-                + "{\"role\":\"assistant\",\"content\":null,"
-                + "\"tool_calls\":[{\"id\":\"call_1\",\"type\":\"function\","
-                + "\"function\":{\"name\":\"deep_research\","
-                + "\"arguments\":\"{\\\"research_question\\\":\\\"test\\\","
-                + "\\\"deliverable_format\\\":\\\"markdown_brief\\\"}\"}}]}}]}";
+        String firstResponseJson =
+                "{\"id\":\"resp_1\",\"output\":[{\"type\":\"function_call\",\"name\":\"deep_research\",\"call_id\":\"call_1\","
+                + "\"arguments\":\"{\\\"research_question\\\":\\\"test\\\",\\\"deliverable_format\\\":\\\"markdown_brief\\\"}\"}]}";
         String relayJson =
-                "{\"content\":\"relay\",\"tool_called\":true,\"research_summary\":\"summary\"}";
-        String secondChatJson =
-                "{\"choices\":[{\"finish_reason\":\"stop\",\"message\":"
-                + "{\"role\":\"assistant\",\"content\":\"synthesized answer\",\"tool_calls\":null}}]}";
+                "{\"output_text\":\"summary\",\"status\":\"completed\",\"mode\":\"foreground\"}";
+        String secondResponseJson =
+                "{\"id\":\"resp_2\",\"output_text\":\"synthesized answer\",\"output\":[]}";
 
-        server.createContext("/v1/chat/completions", exchange -> {
+        server.createContext("/v1/responses", exchange -> {
             exchange.getRequestBody().readAllBytes();
-            int call = chatCallCount.incrementAndGet();
-            writeJson(exchange, 200, call == 1 ? firstChatJson : secondChatJson);
+            int call = responseCallCount.incrementAndGet();
+            writeJson(exchange, 200, call == 1 ? firstResponseJson : secondResponseJson);
         });
-        server.createContext("/api/v1/chat", exchange -> {
-            exchange.getRequestBody().readAllBytes();
+        server.createContext("/api/v1/tool-invocations", exchange -> {
+            relayBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
             writeJson(exchange, 200, relayJson);
         });
 
@@ -267,6 +263,8 @@ class MainTest {
 
         assertEquals("synthesized answer", result[0]);
         assertEquals("true", result[1]);
+        assertEquals(true, relayBody.get().contains("\"tool_name\":\"deep_research\""));
+        assertEquals(true, relayBody.get().contains("\"deliverable_format\":\"markdown_brief\""));
     }
 
     // ---------- helper -------------------------------------------------------

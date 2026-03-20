@@ -9,32 +9,29 @@ from urllib.parse import urlparse
 
 import certifi
 
-
 DEEP_RESEARCH_FUNCTION_TOOL: Dict[str, Any] = {
     "type": "function",
-    "function": {
-        "name": "deep_research",
-        "description": (
-            "Conduct in-depth research on a topic and return a detailed report. "
-            "Use this when the user asks for detailed factual information, history, "
-            "analysis, or comprehensive explanations that require research beyond "
-            "general knowledge."
-        ),
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "research_question": {
-                    "type": "string",
-                    "description": "The specific research question or topic to investigate",
-                },
-                "deliverable_format": {
-                    "type": "string",
-                    "enum": ["markdown_brief", "markdown_report", "json_outline"],
-                    "description": "Format of the research output",
-                },
+    "name": "deep_research",
+    "description": (
+        "Conduct in-depth research on a topic and return a detailed report. "
+        "Use this when the user asks for detailed factual information, history, "
+        "analysis, or comprehensive explanations that require research beyond "
+        "general knowledge."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "research_question": {
+                "type": "string",
+                "description": "The specific research question or topic to investigate",
             },
-            "required": ["research_question", "deliverable_format"],
+            "deliverable_format": {
+                "type": "string",
+                "enum": ["markdown_brief", "markdown_report", "json_outline"],
+                "description": "Format of the research output",
+            },
         },
+        "required": ["research_question", "deliverable_format"],
     },
 }
 
@@ -180,19 +177,20 @@ class LiteLLMClient:
         prompt: str,
         relay_base_url: str | None = None,
     ) -> tuple[str, bool]:
-        """Send a chat completions request with the deep_research function tool.
+        """Send a Responses API request with the deep_research function tool.
 
         Returns ``(answer_text, tool_was_called)``.
 
         When the model decides to call deep_research, this method:
 
-        1. Sends the first Chat Completions turn with the ``deep_research``
+        1. Sends the first Responses API turn with the ``deep_research``
            function tool attached.
-        2. If the model returns ``finish_reason == "tool_calls"`` for
-           ``deep_research``, calls the relay ``POST /api/v1/chat`` endpoint to
-           execute the research (the relay handles actual deep research internally).
-        3. Sends a second Chat Completions turn that includes the tool result so
-           the model can synthesise a final natural-language answer.
+        2. If the model returns a ``function_call`` output item for
+           ``deep_research``, calls the relay ``POST /api/v1/tool-invocations``
+           endpoint to execute the research.
+        3. Sends a second Responses API turn using ``previous_response_id`` and
+           a ``function_call_output`` item so the model can synthesise a final
+           natural-language answer.
         4. Returns ``(final_answer, True)``.
 
         When the model answers directly (no tool call), returns
@@ -206,89 +204,93 @@ class LiteLLMClient:
             Base URL of the relay server (e.g. ``http://127.0.0.1:8080``).
             Defaults to ``http://127.0.0.1:8080`` when not provided.
         """
-        # First turn: chat completions with tool schema
+        # First turn: Responses API with tool schema
         payload: Dict[str, Any] = {
             "model": self._model,
-            "messages": [{"role": "user", "content": prompt}],
+            "input": prompt,
             "tools": [DEEP_RESEARCH_FUNCTION_TOOL],
         }
-        first_response = self._post_json(self._chat_url(), payload)
+        first_response = self._post_json(self._responses_url(), payload)
 
-        choices = first_response.get("choices") or []
-        if not choices:
-            raise LiteLLMError(
-                200, "No choices in response.", json.dumps(first_response)
-            )
+        deep_research_call = self._extract_function_call(first_response)
+        if deep_research_call is None:
+            return self._extract_response_content(first_response), False
 
-        first_choice = choices[0]
-        if not isinstance(first_choice, dict):
-            raise LiteLLMError(
-                200, "Unexpected choice format.", json.dumps(first_response)
-            )
-
-        finish_reason = first_choice.get("finish_reason", "stop")
-        first_message = first_choice.get("message") or {}
-        tool_calls = first_message.get("tool_calls") or []
-
-        # Find the deep_research tool call (if any)
-        deep_research_call = next(
-            (
-                tc
-                for tc in tool_calls
-                if isinstance(tc, dict)
-                and tc.get("type") == "function"
-                and (tc.get("function") or {}).get("name") == "deep_research"
-            ),
-            None,
-        )
-
-        if finish_reason != "tool_calls" or deep_research_call is None:
-            # No tool call — return the direct assistant answer
-            content = first_message.get("content") or ""
-            return content, False
-
-        # Extract tool call metadata
-        raw_args = (deep_research_call.get("function") or {}).get("arguments", "{}")
+        raw_args = deep_research_call.get("arguments", "{}")
         try:
             tool_args = json.loads(raw_args)
         except json.JSONDecodeError:
             tool_args = {}
 
         research_question = tool_args.get("research_question", prompt)
-        tool_call_id = deep_research_call.get("id", "call_0")
+        deliverable_format = tool_args.get("deliverable_format", "markdown_brief")
+        call_id = str(deep_research_call.get("call_id") or "call_0")
 
-        # Call relay /api/v1/chat to execute the deep research
+        # Call relay /api/v1/tool-invocations to execute the deep research
         relay_url = (relay_base_url or "http://127.0.0.1:8080").rstrip("/")
-        relay_chat_url = relay_url + "/api/v1/chat"
+        relay_tool_url = relay_url + "/api/v1/tool-invocations"
         relay_payload: Dict[str, Any] = {
-            "message": research_question,
-            "auto_tool_call": True,
+            "tool_name": "deep_research",
+            "arguments": {
+                "research_question": research_question,
+                "deliverable_format": deliverable_format,
+            },
         }
-        relay_response = self._post_json(relay_chat_url, relay_payload)
+        relay_response = self._post_json(relay_tool_url, relay_payload)
         research_summary = (
-            relay_response.get("research_summary")
+            relay_response.get("output_text")
+            or relay_response.get("research_summary")
             or relay_response.get("content")
             or ""
         )
 
-        # Second turn: synthesise final answer with tool result
-        messages_with_result: list[Dict[str, Any]] = [
-            {"role": "user", "content": prompt},
-            {"role": "assistant", "content": None, "tool_calls": [deep_research_call]},
-            {"role": "tool", "tool_call_id": tool_call_id, "content": research_summary},
-        ]
+        response_id = self._extract_response_id(first_response)
         second_payload: Dict[str, Any] = {
             "model": self._model,
-            "messages": messages_with_result,
+            "previous_response_id": response_id,
+            "input": [
+                {
+                    "type": "function_call_output",
+                    "call_id": call_id,
+                    "output": research_summary,
+                }
+            ],
         }
-        second_response = self._post_json(self._chat_url(), second_payload)
-        second_choices = second_response.get("choices") or []
-        if not second_choices:
-            # Fallback: return research summary if second turn produces no choices
+        second_response = self._post_json(self._responses_url(), second_payload)
+        try:
+            final_content = self._extract_response_content(second_response)
+        except LiteLLMError:
             return research_summary, True
-        second_message = (second_choices[0] or {}).get("message") or {}
-        final_content = second_message.get("content") or research_summary
         return final_content, True
+
+    @staticmethod
+    def _extract_function_call(payload: Dict[str, Any]) -> Dict[str, Any] | None:
+        output = payload.get("output") or []
+        if not isinstance(output, list):
+            raise LiteLLMError(
+                200,
+                "Response did not include a usable output array.",
+                json.dumps(payload),
+            )
+
+        for item in output:
+            if not isinstance(item, dict):
+                continue
+            if item.get("type") != "function_call":
+                continue
+            if item.get("name") != "deep_research":
+                continue
+            return item
+        return None
+
+    @staticmethod
+    def _extract_response_id(payload: Dict[str, Any]) -> str:
+        response_id = payload.get("id")
+        if isinstance(response_id, str) and response_id.strip():
+            return response_id
+        raise LiteLLMError(
+            200, "Response did not include a usable id.", json.dumps(payload)
+        )
 
     def _post_json(self, url: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         """POST *payload* as JSON to *url* and return the parsed response dict."""

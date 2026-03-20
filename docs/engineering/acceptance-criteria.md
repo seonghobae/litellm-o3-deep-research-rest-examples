@@ -33,14 +33,14 @@ Work in this repository is complete only when all of the following are true:
 
 ## Auto tool-calling (function calling)
 
-12. Python and Java direct clients support `--auto-tool-call` flag: the client sends a Chat Completions request with the `deep_research` function schema attached; if the model calls it, the client invokes the relay (`POST /api/v1/chat`) to execute the research and then runs a second completions turn.
-13. The relay exposes `POST /api/v1/chat` which internally performs relay-side orchestration: 1st Chat Completions turn → tool call detection → deep_research execution → 2nd completions turn → structured `ChatResponse`. The relay uses `LITELLM_CHAT_MODEL` (default `gpt-4o`) for orchestration turns and `LITELLM_MODEL` for deep research.
-14. The relay `ChatOrchestrator` uses separate timeouts: `RELAY_TIMEOUT_SECONDS` (default 30 s) for Chat Completions turns and `RELAY_RESEARCH_TIMEOUT_SECONDS` (default 300 s) for deep_research execution.
-15. Upstream errors in auto tool-calling are caught and returned as a structured `ChatResponse` (not bare HTTP 500).
+12. Python and Java direct clients support `--auto-tool-call` flag using the Responses API function-calling flow: 1st `POST /v1/responses` with the `deep_research` function schema → relay `POST /api/v1/tool-invocations` execution → 2nd `POST /v1/responses` with `previous_response_id` and `function_call_output`.
+13. The relay exposes `POST /api/v1/chat` which internally performs relay-side orchestration using the Responses API: 1st Responses turn → `function_call` detection → deep_research execution → 2nd Responses turn → structured `ChatResponse`. The relay uses `LITELLM_CHAT_MODEL` (default `gpt-4o`) for orchestration turns and `LITELLM_MODEL` for deep research.
+14. The relay `ChatOrchestrator` uses separate timeouts: `RELAY_TIMEOUT_SECONDS` (default 30 s) for Responses orchestration turns and `RELAY_RESEARCH_TIMEOUT_SECONDS` (default 300 s) for deep_research execution.
+15. Upstream errors in auto tool-calling are caught and returned as a structured `ChatResponse` (not bare HTTP 500), and the public payload does not include raw upstream exception text.
 
 ## Tests and coverage
 
-16. Automated tests cover: configuration loading, request construction, background handling, status polling, SSE text streaming, error handling, `system_prompt` passthrough, `text_format` passthrough, `web_search_preview` passthrough, `auto_tool_call` (no-tool and tool-call paths), `ChatOrchestrator` timeout separation, and Pydantic tool_call normalisation.
+16. Automated tests cover: configuration loading, request construction, background handling, status polling, SSE text streaming, error handling, redacted relay error payloads, `system_prompt` passthrough, `text_format` passthrough, `web_search_preview` passthrough, `auto_tool_call` (no-tool and tool-call paths), `ChatOrchestrator` timeout separation, and Pydantic tool_call normalisation.
 17. Python relay: `uv run pytest --cov=litellm_relay --cov-fail-under=100` passes.
 18. Python client: `uv run pytest --cov=litellm_example --cov-fail-under=100` passes.
 19. Java: `mvn test` → BUILD SUCCESS.

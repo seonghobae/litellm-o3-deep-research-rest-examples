@@ -31,19 +31,19 @@ deep research가 실행됐습니다.
 
 ## 2. 세 가지 접근 방법
 
-이 저장소는 세 가지 방법을 모두 구현하고 평가합니다.
+이 저장소는 세 가지 관점을 설명하지만, **현재 canonical 구현은 Responses API 기반 auto tool calling**입니다.
 
 | 방법 | 누가 tool call을 실행? | 클라이언트 부담 | 투명성 |
 |------|----------------------|----------------|--------|
-| **A: Client-side** (Python/Java) | 클라이언트 직접 | 높음 (3-turn 로직 직접 구현) | 낮음 (구현 필요) |
+| **A: Client-side** (Python/Java) | 클라이언트 직접 | 중간 (2-step Responses loop 구현) | 낮음 (구현 필요) |
 | **C: Relay-side** (`/api/v1/chat`) | relay 서버 | 낮음 (단순 POST) | 높음 (완전 투명) |
-| **B: Responses API** | 모델/LiteLLM | 낮음 | 모델 종속 |
+| **B: Direct Responses API loop** | 모델/LiteLLM | 중간 | 중간 |
 
 ---
 
 ## 3. Approach A — Client-Side Function Calling
 
-클라이언트가 Chat Completions에 `deep_research` function schema를 붙여서 1차 호출 → tool call 감지 → relay 호출 → 2차 완성 호출을 직접 수행합니다.
+클라이언트가 `POST /v1/responses`에 `deep_research` function schema를 붙여서 1차 호출 → `function_call` 감지 → relay `POST /api/v1/tool-invocations` 실행 → `function_call_output`과 `previous_response_id`를 붙인 2차 Responses 호출을 직접 수행합니다.
 
 ### 3-1. Python — `--auto-tool-call` 플래그
 
@@ -108,28 +108,28 @@ if ("true".equals(result[1])) {
 ### 3-3. Approach A 내부 동작
 
 ```
-클라이언트 → POST /v1/chat/completions
-              {model, messages, tools: [deep_research schema]}
+클라이언트 → POST /v1/responses
+              {model, input, tools: [deep_research schema]}
                     ↓
-모델 응답: finish_reason="tool_calls"
-           tool_calls: [{function: {name: "deep_research", arguments: {...}}}]
+모델 응답: output=[{type:"function_call", name:"deep_research", arguments:"..."}]
                     ↓
-클라이언트 → POST /api/v1/chat (relay)
-              {message: "짜장면의 역사", auto_tool_call: true}
+클라이언트 → POST /api/v1/tool-invocations (relay)
+              {tool_name:"deep_research", arguments:{research_question,...}}
                     ↓
 relay가 실제 deep_research 실행 후 결과 반환
                     ↓
-클라이언트 → POST /v1/chat/completions (2nd turn)
-              {messages: [..., tool result]}
+클라이언트 → POST /v1/responses (2nd turn)
+              {previous_response_id, input:[{type:"function_call_output", ...}]}
                     ↓
 모델이 tool 결과를 읽고 최종 자연어 답변 합성
 ```
 
 ---
 
-## 4. Approach C — Relay-Side Orchestration (`POST /api/v1/chat`)
+## 4. Approach C — Relay-Side Orchestration Helper (`POST /api/v1/chat`)
 
 클라이언트는 단순히 chat 메시지 하나만 보내면 됩니다. relay가 내부적으로 모든 orchestration을 처리합니다.
+다만 `POST /api/v1/chat` 자체는 relay 예제 전용 helper이며 OpenAI 표준 endpoint는 아닙니다.
 
 ### 4-1. API 사용법
 
@@ -241,7 +241,7 @@ uv run python -m litellm_relay
 
 | 환경변수 | 기본값 | 적용 대상 |
 |---------|-------|---------|
-| `RELAY_TIMEOUT_SECONDS` | `30` | Chat Completions turns (1차, 2차) |
+| `RELAY_TIMEOUT_SECONDS` | `30` | Responses orchestration turns (1차, 2차) |
 | `RELAY_RESEARCH_TIMEOUT_SECONDS` | `300` | deep_research 실행 (o3-deep-research 호출) |
 
 ```bash
@@ -252,28 +252,28 @@ LITELLM_MODEL=o3-deep-research \
 uv run python -m litellm_relay
 ```
 
-> **중요**: `RELAY_TIMEOUT_SECONDS`만 늘리면 Chat Completions는 빨라지지만 deep_research timeout은 여전히 기본 300초입니다. o3-deep-research를 사용할 때는 `RELAY_RESEARCH_TIMEOUT_SECONDS`를 조정하세요.
+> **중요**: `RELAY_TIMEOUT_SECONDS`만 늘리면 Responses orchestration turns만 길어지고 deep_research timeout은 여전히 기본 300초입니다. o3-deep-research를 사용할 때는 `RELAY_RESEARCH_TIMEOUT_SECONDS`를 조정하세요.
 
 ### 4-7. 에러 처리
 
-deep_research 실행 중 오류가 발생하더라도 relay는 HTTP 500 대신 구조화된 `ChatResponse`를 반환합니다.
+deep_research 실행 중 오류가 발생하더라도 relay는 HTTP 500 대신 구조화된 `ChatResponse`를 반환합니다. 이때 public 응답에는 raw upstream 예외 문자열을 그대로 넣지 않고, 재시도 가능한 안전한 문구만 노출합니다.
 
 ```json
 {
-  "content": "deep_research failed: litellm.Timeout: Connection timed out after 30.0 seconds.",
+  "content": "deep_research failed. Please retry later.",
   "tool_called": true,
   "tool_name": "deep_research",
-  "research_summary": "deep_research failed: ..."
+  "research_summary": "deep_research failed. Please retry later."
 }
 ```
 
-이를 통해 클라이언트가 오류 여부를 `tool_called` + `content` 내용으로 판단할 수 있습니다.
+이를 통해 클라이언트가 오류 여부를 `tool_called` + `content` 내용으로 판단하면서도 upstream 세부 구현이나 내부 오류 문자열은 외부에 노출하지 않을 수 있습니다.
 
 ---
 
-## 5. Approach B — Responses API Function Calling (평가 결과)
+## 5. Responses API Function Calling이 canonical 경로인 이유
 
-`POST /v1/responses`에 `tools=[{type:"function", ...}]`를 붙여 Responses API 레벨에서 function calling을 시도할 수 있습니다.
+현재 저장소의 auto tool calling은 `POST /v1/responses`에 `tools=[{type:"function", ...}]`를 붙여 수행하는 방식으로 정착되었습니다.
 
 ### 5-1. 평가 방법
 
@@ -293,9 +293,9 @@ uv run python scripts/eval_responses_function_calling.py
 |--------|------|
 | `POST /v1/responses` + `tools` (gpt-4o) | ⚠️ LiteLLM Proxy 버전에 따라 다름 |
 | Responses API의 function calling 공식 지원 | gpt-4o: 지원, o3-deep-research: 미지원 |
-| Chat Completions function calling 대비 안정성 | Chat Completions가 더 안정적 |
+| 저장소 canonical 구현 | Responses API (`function_call` / `function_call_output`) |
 
-> **권장**: 자동 tool calling에는 **Approach A** (Chat Completions + function calling) 또는 **Approach C** (relay-side)를 사용하세요. Responses API function calling은 LiteLLM Proxy 버전 및 upstream 모델 설정에 따라 동작이 달라질 수 있습니다.
+> **권장**: 현재 저장소에서는 **Approach A**와 **Approach C** 모두 내부적으로 Responses API function calling을 사용합니다. `o3-deep-research`는 피호출 deep research 실행 모델이고, orchestration 모델은 `gpt-4o` 같은 function-calling 지원 모델을 사용하세요.
 
 ---
 

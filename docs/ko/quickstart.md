@@ -102,7 +102,7 @@ direct Python/Java 예제는 내부적으로 `/v1/` 루트로 정규화합니다
 | 상태 조회 | `GET /api/v1/tool-invocations/{id}` |
 | 동기 대기 | `GET /api/v1/tool-invocations/{id}/wait` |
 | SSE 스트리밍 | `GET /api/v1/tool-invocations/{id}/events` |
-| 자동 tool calling chat | `POST /api/v1/chat` |
+| 자동 tool calling chat | `POST /api/v1/chat` (relay helper, 내부는 Responses API 사용) |
 | System prompt | `arguments.system_prompt` |
 | JSON 강제 출력 | `arguments.text_format` |
 | Background 제출 | `arguments.background: true` |
@@ -113,7 +113,7 @@ direct Python/Java 예제는 내부적으로 `/v1/` 루트로 정규화합니다
 |------|--------|------|
 | `RELAY_HOST` | `127.0.0.1` | 서버 바인딩 주소 |
 | `RELAY_PORT` | `8080` | 서버 포트 |
-| `RELAY_TIMEOUT_SECONDS` | `30` | Chat Completions 타임아웃 |
+| `RELAY_TIMEOUT_SECONDS` | `30` | Responses orchestration 타임아웃 |
 | `RELAY_RESEARCH_TIMEOUT_SECONDS` | `300` | deep_research 실행 타임아웃 |
 | `LITELLM_CHAT_MODEL` | `gpt-4o` | auto tool calling orchestration 모델 |
 

@@ -490,9 +490,9 @@ class LiteLlmClientTest {
     @Test
     void createChatWithToolCalling_no_tool_call_returns_direct_answer() throws Exception {
         String firstJson = """
-                {"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"Direct answer.","tool_calls":null}}]}
+                {"id":"resp_1","output_text":"Direct answer.","output":[]}
                 """;
-        server.createContext("/v1/chat/completions", exchange -> {
+        server.createContext("/v1/responses", exchange -> {
             exchange.getRequestBody().readAllBytes();
             writeJson(exchange, 200, firstJson);
         });
@@ -505,29 +505,26 @@ class LiteLlmClientTest {
 
     @Test
     void createChatWithToolCalling_with_tool_call_executes_research() throws Exception {
-        // Three sequential responses: tool_calls → relay response → second turn
-        // We need separate contexts for chat/completions (called twice) and relay api/v1/chat
-        AtomicInteger chatCallCount = new AtomicInteger(0);
+        AtomicInteger responseCallCount = new AtomicInteger(0);
+        AtomicReference<String> relayBody = new AtomicReference<>("");
 
-        String firstChatJson = """
-                {"choices":[{"finish_reason":"tool_calls","message":{"role":"assistant","content":null,
-                "tool_calls":[{"id":"call_1","type":"function","function":{"name":"deep_research",
-                "arguments":"{\\"research_question\\":\\"test q\\",\\"deliverable_format\\":\\"markdown_brief\\"}"}}]}}]}
-                """;
-        String secondChatJson = """
-                {"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"Final answer.","tool_calls":null}}]}
+        String firstResponseJson =
+                "{\"id\":\"resp_1\",\"output\":[{\"type\":\"function_call\",\"name\":\"deep_research\",\"call_id\":\"call_1\","
+                + "\"arguments\":\"{\\\"research_question\\\":\\\"test q\\\",\\\"deliverable_format\\\":\\\"markdown_brief\\\"}\"}]}";
+        String secondResponseJson = """
+                {"id":"resp_2","output_text":"Final answer.","output":[]}
                 """;
         String relayJson = """
-                {"content":"relay answer","tool_called":true,"tool_name":"deep_research","research_summary":"summary text"}
+                {"output_text":"summary text","status":"completed","mode":"foreground"}
                 """;
 
-        server.createContext("/v1/chat/completions", exchange -> {
+        server.createContext("/v1/responses", exchange -> {
             exchange.getRequestBody().readAllBytes();
-            int call = chatCallCount.incrementAndGet();
-            writeJson(exchange, 200, call == 1 ? firstChatJson : secondChatJson);
+            int call = responseCallCount.incrementAndGet();
+            writeJson(exchange, 200, call == 1 ? firstResponseJson : secondResponseJson);
         });
-        server.createContext("/api/v1/chat", exchange -> {
-            exchange.getRequestBody().readAllBytes();
+        server.createContext("/api/v1/tool-invocations", exchange -> {
+            relayBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
             writeJson(exchange, 200, relayJson);
         });
 
@@ -535,13 +532,14 @@ class LiteLlmClientTest {
         String[] result = client.createChatWithToolCalling("짜장면 역사", baseUrl);
         assertEquals("Final answer.", result[0]);
         assertEquals("true", result[1]);
+        assertEquals(true, relayBody.get().contains("\"tool_name\":\"deep_research\""));
     }
 
     @Test
     void createChatWithToolCalling_no_choices_throws() throws Exception {
-        server.createContext("/v1/chat/completions", exchange -> {
+        server.createContext("/v1/responses", exchange -> {
             exchange.getRequestBody().readAllBytes();
-            writeJson(exchange, 200, "{\"choices\":[]}");
+            writeJson(exchange, 200, "{\"output\":[]}");
         });
 
         LiteLlmClient client = new LiteLlmClient(baseUrl, "key", "gpt-4o");
@@ -550,26 +548,24 @@ class LiteLlmClientTest {
 
     @Test
     void createChatWithToolCalling_second_turn_no_choices_returns_summary() throws Exception {
-        AtomicInteger chatCallCount = new AtomicInteger(0);
+        AtomicInteger responseCallCount = new AtomicInteger(0);
 
-        String firstChatJson = """
-                {"choices":[{"finish_reason":"tool_calls","message":{"role":"assistant","content":null,
-                "tool_calls":[{"id":"call_1","type":"function","function":{"name":"deep_research",
-                "arguments":"{\\"research_question\\":\\"q\\",\\"deliverable_format\\":\\"markdown_brief\\"}"}}]}}]}
-                """;
-        String secondChatJson = """
-                {"choices":[]}
+        String firstResponseJson =
+                "{\"id\":\"resp_1\",\"output\":[{\"type\":\"function_call\",\"name\":\"deep_research\",\"call_id\":\"call_1\","
+                + "\"arguments\":\"{\\\"research_question\\\":\\\"q\\\",\\\"deliverable_format\\\":\\\"markdown_brief\\\"}\"}]}";
+        String secondResponseJson = """
+                {"id":"resp_2","output":[]}
                 """;
         String relayJson = """
-                {"content":"rc","tool_called":true,"research_summary":"summary fallback"}
+                {"output_text":"summary fallback"}
                 """;
 
-        server.createContext("/v1/chat/completions", exchange -> {
+        server.createContext("/v1/responses", exchange -> {
             exchange.getRequestBody().readAllBytes();
-            int call = chatCallCount.incrementAndGet();
-            writeJson(exchange, 200, call == 1 ? firstChatJson : secondChatJson);
+            int call = responseCallCount.incrementAndGet();
+            writeJson(exchange, 200, call == 1 ? firstResponseJson : secondResponseJson);
         });
-        server.createContext("/api/v1/chat", exchange -> {
+        server.createContext("/api/v1/tool-invocations", exchange -> {
             exchange.getRequestBody().readAllBytes();
             writeJson(exchange, 200, relayJson);
         });
@@ -583,10 +579,9 @@ class LiteLlmClientTest {
     @Test
     void createChatWithToolCalling_non_deep_research_tool_treated_as_no_call() throws Exception {
         String firstJson = """
-                {"choices":[{"finish_reason":"tool_calls","message":{"role":"assistant","content":"direct",
-                "tool_calls":[{"id":"call_x","type":"function","function":{"name":"other_tool","arguments":"{}"}}]}}]}
+                {"id":"resp_1","output_text":"direct","output":[{"type":"function_call","name":"other_tool","call_id":"call_x","arguments":"{}"}]}
                 """;
-        server.createContext("/v1/chat/completions", exchange -> {
+        server.createContext("/v1/responses", exchange -> {
             exchange.getRequestBody().readAllBytes();
             writeJson(exchange, 200, firstJson);
         });
@@ -599,26 +594,24 @@ class LiteLlmClientTest {
 
     @Test
     void createChatWithToolCalling_invalid_json_args_falls_back_to_prompt() throws Exception {
-        AtomicInteger chatCallCount = new AtomicInteger(0);
+        AtomicInteger responseCallCount = new AtomicInteger(0);
 
-        String firstChatJson = """
-                {"choices":[{"finish_reason":"tool_calls","message":{"role":"assistant","content":null,
-                "tool_calls":[{"id":"call_1","type":"function","function":{"name":"deep_research",
-                "arguments":"INVALID"}}]}}]}
+        String firstResponseJson = """
+                {"id":"resp_1","output":[{"type":"function_call","name":"deep_research","call_id":"call_1","arguments":"INVALID"}]}
                 """;
-        String secondChatJson = """
-                {"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"done","tool_calls":null}}]}
+        String secondResponseJson = """
+                {"id":"resp_2","output_text":"done","output":[]}
                 """;
         String relayJson = """
-                {"content":"rc","tool_called":true,"research_summary":"s"}
+                {"output_text":"s"}
                 """;
 
-        server.createContext("/v1/chat/completions", exchange -> {
+        server.createContext("/v1/responses", exchange -> {
             exchange.getRequestBody().readAllBytes();
-            int call = chatCallCount.incrementAndGet();
-            writeJson(exchange, 200, call == 1 ? firstChatJson : secondChatJson);
+            int call = responseCallCount.incrementAndGet();
+            writeJson(exchange, 200, call == 1 ? firstResponseJson : secondResponseJson);
         });
-        server.createContext("/api/v1/chat", exchange -> {
+        server.createContext("/api/v1/tool-invocations", exchange -> {
             exchange.getRequestBody().readAllBytes();
             writeJson(exchange, 200, relayJson);
         });

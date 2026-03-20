@@ -115,7 +115,7 @@ mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
 
 ### 5-3. Relay-Side (POST /api/v1/chat)
 
-relay가 모든 orchestration을 내부에서 처리합니다. 클라이언트는 단순 chat 메시지만 보내면 됩니다.
+relay가 모든 orchestration을 내부에서 처리합니다. 내부 구현은 Responses API의 `function_call` -> `function_call_output` 2-step 루프이며, 클라이언트는 단순 chat 메시지만 보내면 됩니다.
 
 ```bash
 curl -X POST http://127.0.0.1:8080/api/v1/chat \

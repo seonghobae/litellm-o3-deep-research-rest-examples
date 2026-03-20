@@ -14,6 +14,8 @@ from .contracts import (
 )
 from .upstream import LiteLLMRelayGateway, UpstreamInvocationResult
 
+SAFE_STREAM_ERROR_MESSAGE = "deep_research stream failed. Please retry later."
+
 
 class InvocationNotFoundError(KeyError):
     """Raised when an invocation id is unknown."""
@@ -132,9 +134,9 @@ class RelayService:
                     ToolInvocationEvent(
                         invocation_id=invocation_id,
                         type="output_text",
-                        status="running"
-                        if stored.status == "running"
-                        else stored.status,
+                        status=(
+                            "running" if stored.status == "running" else stored.status
+                        ),
                         data={"text": chunk},
                     )
                 )
@@ -184,9 +186,9 @@ class RelayService:
                     data={"output_text": stored.output_text},
                 )
             )
-        except Exception as exc:
+        except Exception:
             stored.status = "failed"
-            stored.error_message = str(exc)
+            stored.error_message = SAFE_STREAM_ERROR_MESSAGE
             yield self._to_sse(
                 ToolInvocationEvent(
                     invocation_id=invocation_id,

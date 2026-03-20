@@ -51,6 +51,15 @@ direct Python/Java 예제는 `LITELLM_BASE_URL`을 `https://host:4000` 또는 `h
 
 ## 빠른 시작
 
+### Auto tool calling 기준
+
+- canonical auto tool calling 경로는 OpenAI-compatible `POST /v1/responses` 입니다.
+- Python/Java `--auto-tool-call`은 1차 `responses` 호출에서 `function_call`을 받고,
+  relay `POST /api/v1/tool-invocations`로 실제 `deep_research`를 실행한 뒤,
+  `previous_response_id` + `function_call_output`으로 2차 `responses` 호출을 완료합니다.
+- relay의 `POST /api/v1/chat`은 예제 편의를 위한 helper endpoint이며,
+  표준 OpenAI API surface 자체는 아닙니다.
+
 ### Python 직접 호출
 
 ```bash

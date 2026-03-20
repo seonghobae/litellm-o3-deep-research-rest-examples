@@ -7,4 +7,5 @@ Apply this checklist to both clients and any future API examples:
 3. Send `Content-Type: application/json` and `Accept: application/json`.
 4. Never log or print API keys.
 5. Surface non-2xx status codes with safe, human-readable error messages.
-6. Keep offline tests free of live credentials or captured traffic.
+6. Do not expose raw upstream exception text, hostnames, or SDK/provider internals in relay error payloads or SSE error events.
+7. Keep offline tests free of live credentials or captured traffic.

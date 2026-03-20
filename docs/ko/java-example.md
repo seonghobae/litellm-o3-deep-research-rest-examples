@@ -90,6 +90,8 @@ System.out.println(result);
 
 `--auto-tool-call`은 모델이 스스로 `deep_research` 도구 호출 필요성을 판단하게 합니다.
 
+표준 API surface는 `POST /v1/responses`이고, relay는 실제 tool 실행만 `POST /api/v1/tool-invocations`로 담당합니다.
+
 ```bash
 # 터미널 A: relay 서버 시작
 cd relay && uv run python -m litellm_relay
@@ -152,9 +154,9 @@ mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
 
 지원 값: `markdown_brief` (기본값), `markdown_report`, `json_outline`
 
-## relay invokeChat — /api/v1/chat 직접 호출
+## relay invokeChat — /api/v1/chat 직접 호출 (비표준 helper)
 
-Java에서 relay의 자동 orchestration 엔드포인트를 코드로 직접 호출할 수 있습니다.
+Java에서 relay의 자동 orchestration helper 엔드포인트를 코드로 직접 호출할 수 있습니다. 다만 OpenAI 표준 auto tool calling 경로는 `POST /v1/responses`이며, 이 endpoint는 relay 예제 전용 convenience API입니다.
 
 ```java
 import example.litellm.relay.RelayClient;
@@ -174,7 +176,7 @@ if (result.toolCalled()) {
 - background 모드에서는 원본 JSON 메타데이터를 반환합니다.
 - `--timeout`: 모델 응답 대기 시간 (초). 기본값 30초. 직접 호출과 relay 모두 지원
 - `--web-search`: `gpt-4o` 계열에서 실시간 웹 검색 활성화
-- `--auto-tool-call`: 3-turn function calling 흐름 (relay 서버 필요)
+- `--auto-tool-call`: Responses API function-calling 2-step 흐름 (relay 서버 필요)
 - `--deliverable-format`: relay 호출 시 결과 형식 지정
 - 현재 Java 예제 역시 상시 서비스가 아니라 1회성 CLI입니다.
 - relay를 호출하려면 `--target relay`를 사용하고, 자세한 내용은 [Relay 중계 예제](relay-example.md)를 참고하세요.

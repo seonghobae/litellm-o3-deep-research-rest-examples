@@ -698,22 +698,14 @@ def test_responses_api_omits_tools_when_none(
 
 
 def test_create_chat_with_tool_calling_no_tool_call():
-    """When model returns stop, no tool is called — returns direct answer."""
-    import json as _json
+    """When Responses API returns text directly, no tool is called."""
     from litellm_example.client import LiteLLMClient
 
     client = LiteLLMClient("https://h:4000", "key", "gpt-4o")
     client._post_json = lambda url, payload: {
-        "choices": [
-            {
-                "finish_reason": "stop",
-                "message": {
-                    "role": "assistant",
-                    "content": "Direct answer.",
-                    "tool_calls": None,
-                },
-            }
-        ]
+        "id": "resp_1",
+        "output_text": "Direct answer.",
+        "output": [],
     }
     result, tool_called = client.create_chat_with_tool_calling("Hello")
     assert result == "Direct answer."
@@ -721,64 +713,46 @@ def test_create_chat_with_tool_calling_no_tool_call():
 
 
 def test_create_chat_with_tool_calling_with_tool():
-    """When model returns tool_calls, relay is called and second turn completes."""
+    """When Responses emits function_call, relay is called and second turn completes."""
     import json as _json
     from litellm_example.client import LiteLLMClient
 
     call_count = [0]
+    captured = {}
 
     def fake_post(url, payload):
         call_count[0] += 1
         if call_count[0] == 1:
-            # First chat completions call
+            captured["first_url"] = url
+            captured["first_payload"] = payload
             return {
-                "choices": [
+                "id": "resp_first",
+                "output": [
                     {
-                        "finish_reason": "tool_calls",
-                        "message": {
-                            "role": "assistant",
-                            "content": None,
-                            "tool_calls": [
-                                {
-                                    "id": "call_1",
-                                    "type": "function",
-                                    "function": {
-                                        "name": "deep_research",
-                                        "arguments": _json.dumps(
-                                            {
-                                                "research_question": "짜장면의 역사",
-                                                "deliverable_format": "markdown_brief",
-                                            }
-                                        ),
-                                    },
-                                }
-                            ],
-                        },
+                        "type": "function_call",
+                        "name": "deep_research",
+                        "call_id": "call_1",
+                        "arguments": _json.dumps(
+                            {
+                                "research_question": "짜장면의 역사",
+                                "deliverable_format": "markdown_brief",
+                            }
+                        ),
                     }
-                ]
+                ],
             }
         elif call_count[0] == 2:
-            # Relay /api/v1/chat call
+            captured["relay_url"] = url
+            captured["relay_payload"] = payload
             return {
-                "content": "relay answer",
-                "tool_called": True,
-                "tool_name": "deep_research",
-                "research_summary": "요약 내용",
+                "output_text": "요약 내용",
+                "status": "completed",
+                "mode": "foreground",
             }
         else:
-            # Second chat completions call
-            return {
-                "choices": [
-                    {
-                        "finish_reason": "stop",
-                        "message": {
-                            "role": "assistant",
-                            "content": "최종 답변.",
-                            "tool_calls": None,
-                        },
-                    }
-                ]
-            }
+            captured["second_url"] = url
+            captured["second_payload"] = payload
+            return {"id": "resp_second", "output_text": "최종 답변.", "output": []}
 
     client = LiteLLMClient("https://h:4000", "key", "gpt-4o")
     client._post_json = fake_post
@@ -789,31 +763,46 @@ def test_create_chat_with_tool_calling_with_tool():
     assert tool_called is True
     assert result == "최종 답변."
     assert call_count[0] == 3
+    assert captured["first_url"].endswith("/responses")
+    assert captured["relay_url"].endswith("/api/v1/tool-invocations")
+    assert (
+        captured["relay_payload"]["arguments"]["deliverable_format"] == "markdown_brief"
+    )
+    assert captured["second_payload"]["previous_response_id"] == "resp_first"
+    assert captured["second_payload"]["input"][0]["type"] == "function_call_output"
 
 
 def test_create_chat_with_tool_calling_no_choices_raises():
-    """When first response has no choices, raises LiteLLMError."""
+    """Missing response output raises LiteLLMError."""
     from litellm_example.client import LiteLLMClient, LiteLLMError
 
     client = LiteLLMClient("https://h:4000", "key", "gpt-4o")
-    client._post_json = lambda url, payload: {"choices": []}
+    client._post_json = lambda url, payload: {"output": [], "id": None}
     with pytest.raises(LiteLLMError):
         client.create_chat_with_tool_calling("Hello")
 
 
-def test_create_chat_with_tool_calling_invalid_choice_format():
-    """Non-dict choice raises LiteLLMError."""
+def test_create_chat_with_tool_calling_invalid_response_id():
+    """Tool call without a usable response id raises LiteLLMError."""
     from litellm_example.client import LiteLLMClient, LiteLLMError
 
     client = LiteLLMClient("https://h:4000", "key", "gpt-4o")
-    client._post_json = lambda url, payload: {"choices": ["not_a_dict"]}
+    client._post_json = lambda url, payload: {
+        "output": [
+            {
+                "type": "function_call",
+                "name": "deep_research",
+                "call_id": "call_1",
+                "arguments": "{}",
+            }
+        ]
+    }
     with pytest.raises(LiteLLMError):
         client.create_chat_with_tool_calling("Hello")
 
 
 def test_create_chat_with_tool_calling_invalid_json_args():
     """Invalid JSON tool args fallback to prompt as research_question."""
-    import json as _json
     from litellm_example.client import LiteLLMClient
 
     call_count = [0]
@@ -822,41 +811,20 @@ def test_create_chat_with_tool_calling_invalid_json_args():
         call_count[0] += 1
         if call_count[0] == 1:
             return {
-                "choices": [
+                "id": "resp_first",
+                "output": [
                     {
-                        "finish_reason": "tool_calls",
-                        "message": {
-                            "role": "assistant",
-                            "content": None,
-                            "tool_calls": [
-                                {
-                                    "id": "call_bad",
-                                    "type": "function",
-                                    "function": {
-                                        "name": "deep_research",
-                                        "arguments": "INVALID JSON",
-                                    },
-                                }
-                            ],
-                        },
+                        "type": "function_call",
+                        "name": "deep_research",
+                        "call_id": "call_bad",
+                        "arguments": "INVALID JSON",
                     }
-                ]
+                ],
             }
         elif call_count[0] == 2:
-            return {"content": "ok", "tool_called": True, "research_summary": "s"}
+            return {"output_text": "s"}
         else:
-            return {
-                "choices": [
-                    {
-                        "finish_reason": "stop",
-                        "message": {
-                            "role": "assistant",
-                            "content": "done",
-                            "tool_calls": None,
-                        },
-                    }
-                ]
-            }
+            return {"id": "resp_second", "output_text": "done", "output": []}
 
     client = LiteLLMClient("https://h:4000", "key", "gpt-4o")
     client._post_json = fake_post
@@ -876,35 +844,25 @@ def test_create_chat_with_tool_calling_second_turn_no_choices():
         call_count[0] += 1
         if call_count[0] == 1:
             return {
-                "choices": [
+                "id": "resp_first",
+                "output": [
                     {
-                        "finish_reason": "tool_calls",
-                        "message": {
-                            "role": "assistant",
-                            "content": None,
-                            "tool_calls": [
-                                {
-                                    "id": "call_1",
-                                    "type": "function",
-                                    "function": {
-                                        "name": "deep_research",
-                                        "arguments": _json.dumps(
-                                            {
-                                                "research_question": "Q",
-                                                "deliverable_format": "markdown_brief",
-                                            }
-                                        ),
-                                    },
-                                }
-                            ],
-                        },
+                        "type": "function_call",
+                        "name": "deep_research",
+                        "call_id": "call_1",
+                        "arguments": _json.dumps(
+                            {
+                                "research_question": "Q",
+                                "deliverable_format": "markdown_brief",
+                            }
+                        ),
                     }
-                ]
+                ],
             }
         elif call_count[0] == 2:
-            return {"research_summary": "fallback summary"}
+            return {"output_text": "fallback summary"}
         else:
-            return {"choices": []}  # second turn no choices
+            return {"id": "resp_second", "output": []}  # second turn no text
 
     client = LiteLLMClient("https://h:4000", "key", "gpt-4o")
     client._post_json = fake_post
@@ -914,28 +872,45 @@ def test_create_chat_with_tool_calling_second_turn_no_choices():
 
 
 def test_create_chat_with_tool_calling_non_deep_research_tool():
-    """Tool call for a different function name is treated as no tool call."""
+    """Function call for a different tool name is treated as no tool call."""
     from litellm_example.client import LiteLLMClient
 
     client = LiteLLMClient("https://h:4000", "key", "gpt-4o")
     client._post_json = lambda url, payload: {
-        "choices": [
+        "id": "resp_1",
+        "output_text": "some answer",
+        "output": [
             {
-                "finish_reason": "tool_calls",
-                "message": {
-                    "role": "assistant",
-                    "content": "some answer",
-                    "tool_calls": [
-                        {
-                            "id": "call_x",
-                            "type": "function",
-                            "function": {"name": "other_tool", "arguments": "{}"},
-                        }
-                    ],
-                },
+                "type": "function_call",
+                "name": "other_tool",
+                "call_id": "call_x",
+                "arguments": "{}",
             }
-        ]
+        ],
     }
     result, tool_called = client.create_chat_with_tool_calling("Hello")
     assert tool_called is False
     assert result == "some answer"
+
+
+def test_extract_function_call_requires_output_list():
+    from litellm_example.client import LiteLLMClient, LiteLLMError
+
+    with pytest.raises(LiteLLMError):
+        LiteLLMClient._extract_function_call({"output": "oops"})
+
+
+def test_extract_function_call_skips_non_dict_and_non_function_items():
+    from litellm_example.client import LiteLLMClient
+
+    result = LiteLLMClient._extract_function_call(
+        {
+            "output": [
+                "not-a-dict",
+                {"type": "message", "name": "deep_research"},
+                {"type": "function_call", "name": "other_tool", "call_id": "x"},
+            ]
+        }
+    )
+
+    assert result is None

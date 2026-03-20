@@ -139,27 +139,24 @@ public final class LiteLlmClient {
         params.put("properties", props);
         params.put("required", java.util.List.of("research_question", "deliverable_format"));
 
-        java.util.Map<String, Object> fn = new java.util.LinkedHashMap<>();
-        fn.put("name", "deep_research");
-        fn.put("description", "Conduct in-depth research on a topic and return a detailed report.");
-        fn.put("parameters", params);
-
         java.util.Map<String, Object> tool = new java.util.LinkedHashMap<>();
         tool.put("type", "function");
-        tool.put("function", fn);
+        tool.put("name", "deep_research");
+        tool.put("description", "Conduct in-depth research on a topic and return a detailed report.");
+        tool.put("parameters", params);
 
         DEEP_RESEARCH_TOOL_SCHEMA = java.util.Collections.unmodifiableMap(tool);
     }
 
     /**
-     * Chat completions with automatic deep_research function calling.
+     * Responses API with automatic deep_research function calling.
      *
      * <p>Flow:
      * <ol>
-     *   <li>First Chat Completions turn with the {@code deep_research} tool schema.</li>
-     *   <li>If finish_reason is {@code tool_calls} for {@code deep_research}, calls the
-     *       relay {@code POST /api/v1/chat} to execute the research.</li>
-     *   <li>Second Chat Completions turn synthesises the final answer from the tool result.</li>
+     *   <li>First Responses API turn with the {@code deep_research} tool schema.</li>
+     *   <li>If a {@code function_call} output item is emitted for {@code deep_research}, calls the
+     *       relay {@code POST /api/v1/tool-invocations} endpoint to execute the research.</li>
+     *   <li>Second Responses API turn sends {@code function_call_output} and synthesises the final answer.</li>
      * </ol>
      *
      * @param prompt       the user message
@@ -171,38 +168,18 @@ public final class LiteLlmClient {
         // First turn
         java.util.Map<String, Object> payload = new java.util.LinkedHashMap<>();
         payload.put("model", model);
-        payload.put("messages", java.util.List.of(java.util.Map.of("role", "user", "content", prompt)));
+        payload.put("input", prompt);
         payload.put("tools", java.util.List.of(DEEP_RESEARCH_TOOL_SCHEMA));
 
-        JsonNode first = postJson(baseUrl.resolve("chat/completions"), payload);
-        JsonNode choices = first.path("choices");
-        if (!choices.isArray() || choices.isEmpty()) {
-            throw new ApiException(200, "No choices in response.", first.toString());
-        }
-        JsonNode firstChoice = choices.get(0);
-        String finishReason = firstChoice.path("finish_reason").asText("stop");
-        JsonNode firstMessage = firstChoice.path("message");
-        JsonNode toolCallsNode = firstMessage.path("tool_calls");
-
-        // Locate the deep_research tool call
-        JsonNode deepResearchCall = null;
-        if ("tool_calls".equals(finishReason) && toolCallsNode.isArray()) {
-            for (JsonNode tc : toolCallsNode) {
-                if ("function".equals(tc.path("type").asText())
-                        && "deep_research".equals(tc.path("function").path("name").asText())) {
-                    deepResearchCall = tc;
-                    break;
-                }
-            }
-        }
+        JsonNode first = postJson(baseUrl.resolve("responses"), payload);
+        JsonNode deepResearchCall = extractFunctionCall(first);
 
         if (deepResearchCall == null) {
-            // No tool call — return direct answer
-            return new String[]{firstMessage.path("content").asText(""), "false"};
+            return new String[]{extractResponseText(first), "false"};
         }
 
-        String toolCallId = deepResearchCall.path("id").asText("call_0");
-        String rawArgs = deepResearchCall.path("function").path("arguments").asText("{}");
+        String callId = deepResearchCall.path("call_id").asText("call_0");
+        String rawArgs = deepResearchCall.path("arguments").asText("{}");
         JsonNode argsNode;
         try {
             argsNode = MAPPER.readTree(rawArgs);
@@ -210,46 +187,64 @@ public final class LiteLlmClient {
             argsNode = MAPPER.createObjectNode();
         }
         String researchQuestion = argsNode.path("research_question").asText(prompt);
+        String deliverableFormat = argsNode.path("deliverable_format").asText("markdown_brief");
 
-        // Call relay /api/v1/chat
+        // Call relay /api/v1/tool-invocations
         String relayUrl = relayBaseUrl.endsWith("/") ? relayBaseUrl : relayBaseUrl + "/";
         URI relayUri = URI.create(relayUrl);
         java.util.Map<String, Object> relayBody = new java.util.LinkedHashMap<>();
-        relayBody.put("message", researchQuestion);
-        relayBody.put("auto_tool_call", true);
-        JsonNode relayResp = postJson(relayUri.resolve("api/v1/chat"), relayBody);
-        String researchSummary = relayResp.path("research_summary").isMissingNode() || relayResp.path("research_summary").isNull()
-            ? relayResp.path("content").asText("")
-            : relayResp.path("research_summary").asText("");
+        relayBody.put("tool_name", "deep_research");
+        relayBody.put("arguments", java.util.Map.of(
+                "research_question", researchQuestion,
+                "deliverable_format", deliverableFormat));
+        JsonNode relayResp = postJson(relayUri.resolve("api/v1/tool-invocations"), relayBody);
+        String researchSummary = relayResp.path("output_text").asText("");
+        if (researchSummary.isBlank()) {
+            researchSummary = relayResp.path("research_summary").asText("");
+        }
+        if (researchSummary.isBlank()) {
+            researchSummary = relayResp.path("content").asText("");
+        }
 
         // Second turn
-        java.util.List<java.util.Map<String, Object>> messages2 = java.util.List.of(
-            java.util.Map.of("role", "user", "content", prompt),
-            buildAssistantWithToolCall(toolCallId, rawArgs),
-            java.util.Map.of("role", "tool", "tool_call_id", toolCallId, "content", researchSummary)
-        );
         java.util.Map<String, Object> second = new java.util.LinkedHashMap<>();
         second.put("model", model);
-        second.put("messages", messages2);
-        JsonNode secondResp = postJson(baseUrl.resolve("chat/completions"), second);
-        JsonNode secondChoices = secondResp.path("choices");
-        if (!secondChoices.isArray() || secondChoices.isEmpty()) {
+        second.put("previous_response_id", extractResponseId(first));
+        second.put("input", java.util.List.of(java.util.Map.of(
+                "type", "function_call_output",
+                "call_id", callId,
+                "output", researchSummary)));
+        JsonNode secondResp = postJson(baseUrl.resolve("responses"), second);
+        try {
+            return new String[]{extractResponseText(secondResp), "true"};
+        } catch (ApiException ex) {
             return new String[]{researchSummary, "true"};
         }
-        String finalContent = secondChoices.get(0).path("message").path("content").asText(researchSummary);
-        return new String[]{finalContent, "true"};
     }
 
-    private static java.util.Map<String, Object> buildAssistantWithToolCall(String toolCallId, String rawArgs) {
-        java.util.Map<String, Object> tc = new java.util.LinkedHashMap<>();
-        tc.put("id", toolCallId);
-        tc.put("type", "function");
-        tc.put("function", java.util.Map.of("name", "deep_research", "arguments", rawArgs));
-        java.util.Map<String, Object> msg = new java.util.LinkedHashMap<>();
-        msg.put("role", "assistant");
-        msg.put("content", "");
-        msg.put("tool_calls", java.util.List.of(tc));
-        return msg;
+    private static JsonNode extractFunctionCall(JsonNode payload) {
+        JsonNode output = payload.path("output");
+        if (!output.isArray()) {
+            throw new ApiException(200, "Response did not include any output items.", payload.toString());
+        }
+        for (JsonNode item : output) {
+            if (!"function_call".equals(item.path("type").asText())) {
+                continue;
+            }
+            if (!"deep_research".equals(item.path("name").asText())) {
+                continue;
+            }
+            return item;
+        }
+        return null;
+    }
+
+    private static String extractResponseId(JsonNode payload) {
+        JsonNode responseId = payload.get("id");
+        if (responseId != null && responseId.isTextual() && !responseId.asText().isBlank()) {
+            return responseId.asText();
+        }
+        throw new ApiException(200, "Response did not include a usable id.", payload.toString());
     }
 
     private JsonNode postJson(URI target, Map<String, Object> payload) {
