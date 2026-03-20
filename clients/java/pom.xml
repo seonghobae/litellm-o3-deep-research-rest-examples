@@ -8,6 +8,21 @@
     <version>0.1.0</version>
     <name>litellm-o3-deep-research-java</name>
     <description>Minimal Java client for calling LiteLLM o3-deep-research via REST</description>
+    <url>https://github.com/seonghobae/litellm-o3-deep-research-rest-examples</url>
+
+    <developers>
+        <developer>
+            <name>Seongho Bae</name>
+            <email>me@seonghobae.me</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/seonghobae/litellm-o3-deep-research-rest-examples.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/seonghobae/litellm-o3-deep-research-rest-examples.git</developerConnection>
+        <url>https://github.com/seonghobae/litellm-o3-deep-research-rest-examples</url>
+        <tag>HEAD</tag>
+    </scm>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>

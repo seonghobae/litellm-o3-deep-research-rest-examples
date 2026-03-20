@@ -2,11 +2,20 @@
 name = "litellm-o3-deep-research-python"
 version = "0.1.0"
 description = "Minimal Python example client for calling LiteLLM o3-deep-research via REST"
+readme = "README.md"
 requires-python = ">=3.10"
+authors = [
+    { name = "Seongho Bae", email = "me@seonghobae.me" },
+]
 dependencies = [
     "certifi>=2026.0.0",
     "python-dotenv>=1,<2",
 ]
+
+[project.urls]
+Homepage = "https://github.com/seonghobae/litellm-o3-deep-research-rest-examples"
+Documentation = "https://seonghobae.github.io/litellm-o3-deep-research-rest-examples/"
+Repository = "https://github.com/seonghobae/litellm-o3-deep-research-rest-examples"
 
 [project.optional-dependencies]
 dev = [
