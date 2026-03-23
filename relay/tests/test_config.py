@@ -38,6 +38,8 @@ def test_loads_relay_settings_from_env_and_dotenv(
     assert settings.host == "0.0.0.0"
     assert settings.port == 9090
     assert settings.timeout_seconds == 45.0
+    assert settings.max_invocations == 1024
+    assert settings.max_stream_bytes == 1_000_000
 
 
 def test_environment_values_override_dotenv(
@@ -59,6 +61,8 @@ def test_environment_values_override_dotenv(
     monkeypatch.setenv("RELAY_HOST", "relay.local")
     monkeypatch.setenv("RELAY_PORT", "8181")
     monkeypatch.setenv("RELAY_TIMEOUT_SECONDS", "12.5")
+    monkeypatch.setenv("RELAY_MAX_INVOCATIONS", "77")
+    monkeypatch.setenv("RELAY_MAX_STREAM_BYTES", "2048")
 
     settings = load_settings(dotenv_path=dotenv)
 
@@ -68,6 +72,8 @@ def test_environment_values_override_dotenv(
     assert settings.host == "relay.local"
     assert settings.port == 8181
     assert settings.timeout_seconds == 12.5
+    assert settings.max_invocations == 77
+    assert settings.max_stream_bytes == 2048
 
 
 @pytest.mark.parametrize("var_name", ["LITELLM_BASE_URL", "LITELLM_API_KEY"])
@@ -160,3 +166,25 @@ def test_research_timeout_can_be_overridden(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setenv("RELAY_RESEARCH_TIMEOUT_SECONDS", "600")
     settings = load_settings(env_file=None)
     assert settings.research_timeout_seconds == 600.0
+
+
+def test_memory_limits_default_and_can_be_overridden(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LITELLM_API_KEY", "sk-x")
+    monkeypatch.setenv("LITELLM_BASE_URL", "https://h/v1")
+    monkeypatch.delenv("RELAY_MAX_INVOCATIONS", raising=False)
+    monkeypatch.delenv("RELAY_MAX_STREAM_BYTES", raising=False)
+
+    default_settings = load_settings(env_file=None)
+
+    assert default_settings.max_invocations == 1024
+    assert default_settings.max_stream_bytes == 1_000_000
+
+    monkeypatch.setenv("RELAY_MAX_INVOCATIONS", "12")
+    monkeypatch.setenv("RELAY_MAX_STREAM_BYTES", "4096")
+
+    overridden_settings = load_settings(env_file=None)
+
+    assert overridden_settings.max_invocations == 12
+    assert overridden_settings.max_stream_bytes == 4096

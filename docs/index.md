@@ -71,6 +71,8 @@
 - `RELAY_TIMEOUT_SECONDS` — Chat Completions orchestration timeout (기본 `30`)
 - `RELAY_RESEARCH_TIMEOUT_SECONDS` — deep_research execution timeout (기본 `300`)
 - `LITELLM_CHAT_MODEL` — relay auto tool calling orchestration 모델 (기본 `gpt-4o`)
+- `RELAY_MAX_INVOCATIONS` — 메모리에 유지할 최대 invocation 수 (기본 `1024`)
+- `RELAY_MAX_STREAM_BYTES` — stream invocation 하나가 메모리에 유지할 최대 UTF-8 바이트 수 (기본 `1000000`)
 
 ## 라이브 검증 현황
 

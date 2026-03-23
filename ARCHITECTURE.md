@@ -18,6 +18,7 @@ This repository is intentionally small and split by language under `clients/`.
 - Foreground `responses` calls extract text output for convenience, while background `responses` calls return raw JSON metadata so callers can inspect response identifiers and status.
 - The relay example uses the LiteLLM Python SDK against the upstream LiteLLM Proxy, but it keeps that internal by exposing `POST /api/v1/tool-invocations` plus status/wait/events resources.
 - The relay maps structured deep-research arguments to an internal LiteLLM Responses request and uses Hypercorn as the ASGI runtime.
+- The relay bounds retained invocation state with `RELAY_MAX_INVOCATIONS` and `RELAY_MAX_STREAM_BYTES`, rejects over-capacity submissions with HTTP 503, and preserves replay-safe SSE chunks without re-running upstream streams.
 - The Java example now has a separate relay mode that targets `RELAY_BASE_URL` instead of the upstream LiteLLM Proxy directly.
 - A Korean GitHub Pages documentation site is built from `docs/` with MkDocs Material.
 - Streaming and tool-calling remain intentionally out of scope for the direct Python client, but they are implemented in the relay example as a text-focused SSE flow.

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import asyncio
+
 from fastapi.testclient import TestClient
+import pytest
 
 from litellm_relay.app import create_app
 from litellm_relay.config import RelaySettings
-from litellm_relay.contracts import DeepResearchArguments
-from litellm_relay.service import RelayService
+from litellm_relay.contracts import DeepResearchArguments, ToolInvocationRequest
+from litellm_relay.service import InvocationCapacityError, RelayService
 from litellm_relay.upstream import UpstreamInvocationResult
 
 _DUMMY_SETTINGS = RelaySettings(base_url="https://dummy.test", api_key="sk-dummy")
@@ -128,10 +131,189 @@ def test_events_endpoint_relays_text_deltas_as_sse() -> None:
         replay_body = "".join(replay_response.iter_text())
 
     assert replay_response.status_code == 200
+    assert replay_body.count("event: output_text") == 2
     assert "Hello" in replay_body
     assert "world" in replay_body
     assert "event: completed" in replay_body
     assert gateway.stream_calls == 1
+
+
+def test_events_endpoint_does_not_restart_stream_for_concurrent_subscribers() -> None:
+    class BlockingStreamGateway(LifecycleGateway):
+        def __init__(self) -> None:
+            super().__init__()
+            self.release = asyncio.Event()
+
+        async def stream_deep_research(self, args: DeepResearchArguments):
+            self.stream_calls += 1
+            await self.release.wait()
+            yield "Hello"
+
+    async def consume_events(service: RelayService, invocation_id: str) -> str:
+        frames: list[str] = []
+        async for frame in service.event_stream(invocation_id):
+            frames.append(frame)
+        return "".join(frames)
+
+    gateway = BlockingStreamGateway()
+    service = RelayService(gateway, 30.0)
+    payload = ToolInvocationRequest.model_validate(
+        {
+            "tool_name": "deep_research",
+            "arguments": {
+                "research_question": "Concurrent SSE subscribers.",
+                "deliverable_format": "markdown_brief",
+                "stream": True,
+            },
+        }
+    )
+
+    async def run_scenario() -> tuple[str, str]:
+        _, view = await service.create_invocation(payload)
+        first = asyncio.create_task(consume_events(service, view.invocation_id))
+        second = asyncio.create_task(consume_events(service, view.invocation_id))
+        await asyncio.sleep(0)
+        gateway.release.set()
+        return await asyncio.gather(first, second)
+
+    first_body, second_body = asyncio.run(run_scenario())
+
+    assert gateway.stream_calls == 1
+    assert "event: completed" in first_body
+    assert "Hello" in first_body
+    assert "event: completed" not in second_body
+
+
+@pytest.mark.asyncio
+async def test_create_invocation_reserves_capacity_before_awaiting_upstream() -> None:
+    class BlockingGateway:
+        def __init__(self) -> None:
+            self.calls = 0
+            self.started = asyncio.Event()
+            self.release = asyncio.Event()
+
+        async def invoke_deep_research(
+            self, args: DeepResearchArguments
+        ) -> UpstreamInvocationResult:
+            self.calls += 1
+            self.started.set()
+            await self.release.wait()
+            return UpstreamInvocationResult(
+                mode="foreground",
+                status="completed",
+                output_text="bounded",
+                response={"output_text": "bounded"},
+            )
+
+        async def get_response(self, response_id: str) -> dict[str, object]:
+            return {}
+
+        async def wait_for_response(
+            self, response_id: str, timeout_seconds: float
+        ) -> dict[str, object]:
+            return {}
+
+        async def stream_deep_research(self, args: DeepResearchArguments):
+            return
+            yield  # pragma: no cover
+
+    gateway = BlockingGateway()
+    service = RelayService(gateway, 30.0, max_invocations=1)
+    payload = ToolInvocationRequest.model_validate(
+        {
+            "tool_name": "deep_research",
+            "arguments": {
+                "research_question": "Bound relay memory.",
+                "deliverable_format": "markdown_brief",
+            },
+        }
+    )
+
+    first_task = asyncio.create_task(service.create_invocation(payload))
+    await gateway.started.wait()
+
+    with pytest.raises(InvocationCapacityError):
+        await service.create_invocation(payload)
+
+    gateway.release.set()
+    status_code, view = await first_task
+
+    assert status_code == 200
+    assert view.status == "completed"
+    assert gateway.calls == 1
+    assert len(service._store) == 1
+
+
+@pytest.mark.asyncio
+async def test_create_invocation_removes_placeholder_when_gateway_invoke_fails() -> (
+    None
+):
+    class FailingGateway:
+        async def invoke_deep_research(
+            self, args: DeepResearchArguments
+        ) -> UpstreamInvocationResult:
+            raise RuntimeError("upstream exploded")
+
+        async def get_response(self, response_id: str) -> dict[str, object]:
+            return {}
+
+        async def wait_for_response(
+            self, response_id: str, timeout_seconds: float
+        ) -> dict[str, object]:
+            return {}
+
+        async def stream_deep_research(self, args: DeepResearchArguments):
+            return
+            yield  # pragma: no cover
+
+    service = RelayService(FailingGateway(), 30.0)
+    payload = ToolInvocationRequest.model_validate(
+        {
+            "tool_name": "deep_research",
+            "arguments": {
+                "research_question": "Fail relay admission.",
+                "deliverable_format": "markdown_brief",
+            },
+        }
+    )
+
+    with pytest.raises(RuntimeError, match="upstream exploded"):
+        await service.create_invocation(payload)
+
+    assert service._store == {}
+
+
+@pytest.mark.parametrize(
+    ("mode", "expected_status"),
+    [("background", "queued"), ("foreground", "completed")],
+)
+def test_from_result_maps_mode_to_stored_status(
+    mode: str, expected_status: str
+) -> None:
+    payload = ToolInvocationRequest.model_validate(
+        {
+            "tool_name": "deep_research",
+            "arguments": {
+                "research_question": "Check stored status.",
+                "deliverable_format": "markdown_brief",
+            },
+        }
+    )
+    result = UpstreamInvocationResult(
+        mode=mode,
+        status="ignored-by-helper",
+        upstream_response_id="resp_123",
+        output_text="done",
+        response={"id": "resp_123"},
+    )
+
+    stored = RelayService._from_result(payload, result)
+
+    assert stored.mode == mode
+    assert stored.status == expected_status
+    assert stored.upstream_response_id == "resp_123"
+    assert stored.output_text == "done"
+    assert stored.response == {"id": "resp_123"}
 
 
 def test_events_endpoint_marks_failed_streams() -> None:
@@ -548,7 +730,9 @@ def test_event_stream_replays_error_event_on_re_subscription_to_failed_stream() 
     assert gateway.stream_calls == 1  # not called a second time
 
 
-def test_create_invocation_prunes_completed_entries_when_store_reaches_capacity() -> None:
+def test_create_invocation_prunes_completed_entries_when_store_reaches_capacity() -> (
+    None
+):
     """Completed entries should be evicted before new invocations are rejected."""
 
     class ForegroundGateway:
@@ -690,7 +874,53 @@ def test_events_endpoint_fails_when_stream_output_exceeds_memory_limit() -> None
     assert "event: error" in body
     assert "memory limit" in body
 
+    with client.stream(
+        "GET", f"/api/v1/tool-invocations/{invocation_id}/events"
+    ) as replay_response:
+        replay_body = "".join(replay_response.iter_text())
+
+    assert replay_response.status_code == 200
+    assert replay_body.count("event: output_text") == 1
+    assert "12345" in replay_body
+    assert "67890" not in replay_body
+    assert "event: error" in replay_body
+    assert "memory limit" in replay_body
+
     status_response = client.get(f"/api/v1/tool-invocations/{invocation_id}")
     payload = status_response.json()
     assert payload["status"] == "failed"
     assert payload["output_text"] is None
+
+
+def test_completed_stream_view_reuses_chunk_cache_without_duplicate_output_copy() -> (
+    None
+):
+    service = RelayService(LifecycleGateway(), 30.0)
+    payload = ToolInvocationRequest.model_validate(
+        {
+            "tool_name": "deep_research",
+            "arguments": {
+                "research_question": "Reuse stream cache.",
+                "deliverable_format": "markdown_brief",
+                "stream": True,
+            },
+        }
+    )
+
+    async def run_scenario() -> tuple[str, object, object]:
+        _, view = await service.create_invocation(payload)
+        frames: list[str] = []
+        async for frame in service.event_stream(view.invocation_id):
+            frames.append(frame)
+        stored = service._store[view.invocation_id]
+        current_view = await service.get_invocation(view.invocation_id)
+        return "".join(frames), stored, current_view
+
+    body, stored, current_view = asyncio.run(run_scenario())
+
+    assert "event: completed" in body
+    assert stored.stream_chunks == ["Hello", " world"]
+    assert stored.output_text is None
+    assert stored.response is None
+    assert current_view.output_text == "Hello world"
+    assert current_view.response == {"output_text": "Hello world"}

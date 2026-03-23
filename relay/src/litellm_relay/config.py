@@ -21,6 +21,8 @@ class RelaySettings:
     timeout_seconds: float = 30.0
     research_timeout_seconds: float = 300.0
     chat_model: str = "gpt-4o"
+    max_invocations: int = 1024
+    max_stream_bytes: int = 1_000_000
 
 
 def _is_blank(value: str | None) -> bool:
@@ -59,6 +61,8 @@ def load_settings(
     timeout_seconds = os.getenv("RELAY_TIMEOUT_SECONDS", "30")
     research_timeout_seconds = os.getenv("RELAY_RESEARCH_TIMEOUT_SECONDS", "300")
     chat_model = os.getenv("LITELLM_CHAT_MODEL", "gpt-4o")
+    max_invocations = os.getenv("RELAY_MAX_INVOCATIONS", "1024")
+    max_stream_bytes = os.getenv("RELAY_MAX_STREAM_BYTES", "1000000")
 
     if _is_blank(base_url):
         raise RuntimeError(
@@ -80,4 +84,6 @@ def load_settings(
             (research_timeout_seconds or "").strip() or "300"
         ),
         chat_model=(chat_model or "").strip() or "gpt-4o",
+        max_invocations=int((max_invocations or "").strip() or "1024"),
+        max_stream_bytes=int((max_stream_bytes or "").strip() or "1000000"),
     )

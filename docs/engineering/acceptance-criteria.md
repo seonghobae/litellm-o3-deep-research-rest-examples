@@ -15,7 +15,7 @@ Work in this repository is complete only when all of the following are true:
 
 ## Relay / tool-invocations contract
 
-6. The relay example can load upstream LiteLLM settings (`LITELLM_BASE_URL`, `LITELLM_API_KEY`, `LITELLM_MODEL`) plus relay settings (`RELAY_HOST`, `RELAY_PORT`, `RELAY_TIMEOUT_SECONDS`, `RELAY_RESEARCH_TIMEOUT_SECONDS`, `LITELLM_CHAT_MODEL`), and exposes a structured `tool-invocations` contract over FastAPI + Hypercorn.
+6. The relay example can load upstream LiteLLM settings (`LITELLM_BASE_URL`, `LITELLM_API_KEY`, `LITELLM_MODEL`) plus relay settings (`RELAY_HOST`, `RELAY_PORT`, `RELAY_TIMEOUT_SECONDS`, `RELAY_RESEARCH_TIMEOUT_SECONDS`, `LITELLM_CHAT_MODEL`, `RELAY_MAX_INVOCATIONS`, `RELAY_MAX_STREAM_BYTES`), and exposes a structured `tool-invocations` contract over FastAPI + Hypercorn.
 7. The Java example can call the relay via `RELAY_BASE_URL` in foreground, background, and stream modes without leaking raw upstream `input` payloads in the public contract.
 8. The relay `DeepResearchArguments` contract supports: `research_question`, `context`, `constraints`, `deliverable_format`, `require_citations`, `background`, `stream`, `system_prompt`, and `text_format`.
 
