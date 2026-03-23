@@ -55,6 +55,17 @@ public final class LiteLlmClient {
                         "LITELLM_BASE_URL must include a scheme and host, for example https://localhost:4000 or https://localhost:4000/v1.");
             }
 
+            String scheme = parsed.getScheme().toLowerCase(java.util.Locale.ROOT);
+            if (!"https".equals(scheme) && !"http".equals(scheme)) {
+                throw new IllegalArgumentException("LITELLM_BASE_URL must use https or http.");
+            }
+
+            String host = parsed.getHost();
+            if ("http".equals(scheme) && !"localhost".equalsIgnoreCase(host) && !"127.0.0.1".equals(host)) {
+                throw new IllegalArgumentException(
+                        "For security reasons this example only permits http URLs for localhost. Use https for remote LiteLLM endpoints.");
+            }
+
             String path = parsed.getPath();
             if (path == null || path.isEmpty() || "/".equals(path)) {
                 path = "/v1/";
@@ -65,7 +76,7 @@ public final class LiteLlmClient {
                         "For this example, LITELLM_BASE_URL may only have an empty path or /v1.");
             }
 
-            return new URI(parsed.getScheme(), parsed.getUserInfo(), parsed.getHost(), parsed.getPort(), path, null, null);
+            return new URI(scheme, parsed.getUserInfo(), host, parsed.getPort(), path, null, null);
         } catch (URISyntaxException exception) {
             throw new IllegalArgumentException("LITELLM_BASE_URL is not a valid URI.", exception);
         }
