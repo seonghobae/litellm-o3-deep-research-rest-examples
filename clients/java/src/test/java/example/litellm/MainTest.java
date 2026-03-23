@@ -6,8 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -114,6 +116,24 @@ class MainTest {
     @Test
     void timeoutFlagWithPositiveValueParsesSeconds() {
         assertEquals(java.time.Duration.ofSeconds(30), Main.parseTimeoutSeconds("30"));
+    }
+
+    @Test
+    void helpFlagPrintsUsageAndReturnsWithoutEnvOrNetwork() {
+        PrintStream originalOut = System.out;
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        try {
+            System.setOut(new PrintStream(buffer, true, StandardCharsets.UTF_8));
+
+            Main.main(new String[] {"--help"});
+
+            String output = buffer.toString(StandardCharsets.UTF_8);
+            assertEquals(true, output.contains("Usage: java -jar litellm-o3-deep-research-java-0.1.0.jar"));
+            assertEquals(true, output.contains("--timeout <seconds>"));
+            assertEquals(true, output.contains("--target relay"));
+        } finally {
+            System.setOut(originalOut);
+        }
     }
 
     @Test

@@ -106,7 +106,7 @@ deactivate
 ```bash
 cd clients/java
 mvn -DskipTests package
-java -cp target/litellm-o3-deep-research-java-0.1.0.jar example.litellm.Main --help
+java -jar target/litellm-o3-deep-research-java-0.1.0.jar --help
 ```
 
 ## 장애 시 점검 항목

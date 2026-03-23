@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import argparse
 import asyncio
+import sys
 
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
@@ -18,8 +20,14 @@ def build_hypercorn_config(settings: RelaySettings) -> Config:
     return config
 
 
-def main() -> int:
+def _build_parser() -> argparse.ArgumentParser:
+    """릴레이 CLI 인자 파서를 구성한다."""
+    return argparse.ArgumentParser(description="Run the LiteLLM relay example server.")
+
+
+def main(argv: list[str] | None = None) -> int:
     """릴레이 애플리케이션을 실행하는 CLI 진입점이다."""
+    _build_parser().parse_args(sys.argv[1:] if argv is None else argv)
     settings = load_settings()
     app = create_app(settings=settings)
     config = build_hypercorn_config(settings)
