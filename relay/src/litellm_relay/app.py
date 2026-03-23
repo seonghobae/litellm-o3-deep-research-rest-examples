@@ -11,7 +11,7 @@ from .contracts import (
     ToolInvocationRequest,
     ToolInvocationView,
 )
-from .service import InvocationNotFoundError, RelayService
+from .service import InvocationCapacityError, InvocationNotFoundError, RelayService
 from .upstream import LiteLLMRelayGateway
 
 
@@ -56,7 +56,10 @@ def create_app(
     async def create_tool_invocation(
         payload: ToolInvocationRequest,
     ) -> JSONResponse | ToolInvocationView:
-        status_code, result = await service.create_invocation(payload)
+        try:
+            status_code, result = await service.create_invocation(payload)
+        except InvocationCapacityError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
         if status_code == 200:
             return result
         return JSONResponse(status_code=status_code, content=result.model_dump())

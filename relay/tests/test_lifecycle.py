@@ -539,3 +539,151 @@ def test_event_stream_replays_error_event_on_re_subscription_to_failed_stream() 
 
     assert "event: error" in second_body
     assert gateway.stream_calls == 1  # not called a second time
+
+
+def test_create_invocation_prunes_completed_entries_when_store_reaches_capacity() -> None:
+    """Completed entries should be evicted before new invocations are rejected."""
+
+    class ForegroundGateway:
+        async def invoke_deep_research(
+            self, args: DeepResearchArguments
+        ) -> UpstreamInvocationResult:
+            return UpstreamInvocationResult(
+                mode="foreground",
+                status="completed",
+                output_text="ok",
+                response={"output_text": "ok"},
+            )
+
+        async def get_response(self, response_id: str) -> dict[str, object]:
+            return {}
+
+        async def wait_for_response(
+            self, response_id: str, timeout_seconds: float
+        ) -> dict[str, object]:
+            return {}
+
+        async def stream_deep_research(self, args: DeepResearchArguments):
+            return
+            yield  # pragma: no cover
+
+    client = TestClient(
+        create_app(
+            service=RelayService(ForegroundGateway(), 30.0, max_invocations=1),
+            settings=_DUMMY_SETTINGS,
+        )
+    )
+
+    first = client.post(
+        "/api/v1/tool-invocations",
+        json={
+            "tool_name": "deep_research",
+            "arguments": {
+                "research_question": "first",
+                "deliverable_format": "markdown_brief",
+            },
+        },
+    )
+    second = client.post(
+        "/api/v1/tool-invocations",
+        json={
+            "tool_name": "deep_research",
+            "arguments": {
+                "research_question": "second",
+                "deliverable_format": "markdown_brief",
+            },
+        },
+    )
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert (
+        first.json()["invocation_id"] != second.json()["invocation_id"]
+    )  # completed entry was pruned
+
+
+def test_create_invocation_returns_503_when_active_store_is_full() -> None:
+    """Active entries should not grow the process-wide store past its limit."""
+
+    class StreamOnlyGateway(LifecycleGateway):
+        pass
+
+    client = TestClient(
+        create_app(
+            service=RelayService(StreamOnlyGateway(), 30.0, max_invocations=1),
+            settings=_DUMMY_SETTINGS,
+        )
+    )
+
+    first = client.post(
+        "/api/v1/tool-invocations",
+        json={
+            "tool_name": "deep_research",
+            "arguments": {
+                "research_question": "first stream",
+                "deliverable_format": "markdown_brief",
+                "stream": True,
+            },
+        },
+    )
+    second = client.post(
+        "/api/v1/tool-invocations",
+        json={
+            "tool_name": "deep_research",
+            "arguments": {
+                "research_question": "second stream",
+                "deliverable_format": "markdown_brief",
+                "stream": True,
+            },
+        },
+    )
+
+    assert first.status_code == 202
+    assert second.status_code == 503
+    assert "capacity" in second.json()["detail"]
+
+
+def test_events_endpoint_fails_when_stream_output_exceeds_memory_limit() -> None:
+    """Streaming output should stop once the per-invocation memory cap is exceeded."""
+
+    class LargeStreamGateway(LifecycleGateway):
+        async def stream_deep_research(self, args: DeepResearchArguments):
+            self.stream_calls += 1
+            yield "12345"
+            yield "67890"
+
+    client = TestClient(
+        create_app(
+            service=RelayService(LargeStreamGateway(), 30.0, max_stream_bytes=8),
+            settings=_DUMMY_SETTINGS,
+        )
+    )
+
+    create_response = client.post(
+        "/api/v1/tool-invocations",
+        json={
+            "tool_name": "deep_research",
+            "arguments": {
+                "research_question": "Too much output",
+                "deliverable_format": "markdown_brief",
+                "stream": True,
+            },
+        },
+    )
+    invocation_id = create_response.json()["invocation_id"]
+
+    with client.stream(
+        "GET", f"/api/v1/tool-invocations/{invocation_id}/events"
+    ) as response:
+        body = "".join(response.iter_text())
+
+    assert response.status_code == 200
+    assert "event: output_text" in body
+    assert "12345" in body
+    assert "event: error" in body
+    assert "memory limit" in body
+
+    status_response = client.get(f"/api/v1/tool-invocations/{invocation_id}")
+    payload = status_response.json()
+    assert payload["status"] == "failed"
+    assert payload["output_text"] is None

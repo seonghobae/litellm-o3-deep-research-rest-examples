@@ -19,6 +19,10 @@ class InvocationNotFoundError(KeyError):
     """Raised when an invocation id is unknown."""
 
 
+class InvocationCapacityError(RuntimeError):
+    """Raised when the relay cannot safely retain more invocation state."""
+
+
 @dataclass
 class _StoredInvocation:
     request: ToolInvocationRequest
@@ -30,6 +34,7 @@ class _StoredInvocation:
     error_message: str | None = None
     stream_started: bool = False
     stream_chunks: list[str] = field(default_factory=list)
+    stream_bytes: int = 0
 
 
 class RelayService:
@@ -40,9 +45,18 @@ class RelayService:
     requests can look it up.  The store is per-process and not persistent.
     """
 
-    def __init__(self, gateway: LiteLLMRelayGateway, timeout_seconds: float) -> None:
+    def __init__(
+        self,
+        gateway: LiteLLMRelayGateway,
+        timeout_seconds: float,
+        *,
+        max_invocations: int = 1024,
+        max_stream_bytes: int = 1_000_000,
+    ) -> None:
         self._gateway = gateway
         self._timeout_seconds = timeout_seconds
+        self._max_invocations = max_invocations
+        self._max_stream_bytes = max_stream_bytes
         self._store: dict[str, _StoredInvocation] = {}
 
     async def create_invocation(
@@ -54,6 +68,7 @@ class RelayService:
         synchronous foreground results and 202 for background or stream
         invocations.
         """
+        self._ensure_capacity()
         invocation_id = str(uuid4())
         args = payload.arguments
 
@@ -164,6 +179,26 @@ class RelayService:
             async for chunk in self._gateway.stream_deep_research(
                 stored.request.arguments
             ):
+                chunk_bytes = len(chunk.encode("utf-8"))
+                if stored.stream_bytes + chunk_bytes > self._max_stream_bytes:
+                    stored.status = "failed"
+                    stored.error_message = (
+                        "stream output exceeded relay memory limit"
+                    )
+                    stored.stream_chunks.clear()
+                    stored.stream_bytes = 0
+                    stored.output_text = None
+                    stored.response = None
+                    yield self._to_sse(
+                        ToolInvocationEvent(
+                            invocation_id=invocation_id,
+                            type="error",
+                            status="failed",
+                            data={"message": stored.error_message},
+                        )
+                    )
+                    return
+                stored.stream_bytes += chunk_bytes
                 stored.stream_chunks.append(chunk)
                 yield self._to_sse(
                     ToolInvocationEvent(
@@ -176,6 +211,8 @@ class RelayService:
             stored.status = "completed"
             stored.output_text = "".join(stored.stream_chunks)
             stored.response = {"output_text": stored.output_text}
+            stored.stream_chunks.clear()
+            stored.stream_bytes = 0
             yield self._to_sse(
                 ToolInvocationEvent(
                     invocation_id=invocation_id,
@@ -201,6 +238,22 @@ class RelayService:
         if stored is None:
             raise InvocationNotFoundError(invocation_id)
         return stored
+
+    def _ensure_capacity(self) -> None:
+        while len(self._store) >= self._max_invocations:
+            oldest_terminal_id = next(
+                (
+                    invocation_id
+                    for invocation_id, stored in self._store.items()
+                    if stored.status in {"completed", "failed"}
+                ),
+                None,
+            )
+            if oldest_terminal_id is None:
+                raise InvocationCapacityError(
+                    "relay is at invocation capacity; retry later"
+                )
+            self._store.pop(oldest_terminal_id)
 
     @staticmethod
     def _from_result(
