@@ -62,10 +62,9 @@ class ChatOrchestrator:
 
     Error handling
     --------------
-    Upstream errors during research are caught and returned as a
-    :class:`~litellm_relay.contracts.ChatResponse` with ``tool_called=True``
-    and an ``error_detail`` payload in ``research_summary`` so callers receive
-    a structured response rather than a bare HTTP 500.
+    Upstream errors during research are caught and translated into a
+    generic :class:`~litellm_relay.contracts.ChatResponse` so callers receive
+    a structured failure without exposing raw upstream exception details.
     """
 
     def __init__(
@@ -141,9 +140,12 @@ class ChatOrchestrator:
                 )
             )
             research_summary = research_result.output_text or ""
-        except Exception as exc:  # noqa: BLE001
-            # Surface as structured error rather than HTTP 500
-            error_detail = f"deep_research failed: {exc}"
+        except Exception:  # noqa: BLE001
+            # Surface a structured but sanitised error rather than HTTP 500.
+            error_detail = (
+                "deep_research failed due to an upstream error. "
+                "Retry later or contact the relay operator."
+            )
             return ChatResponse(
                 content=error_detail,
                 tool_called=True,

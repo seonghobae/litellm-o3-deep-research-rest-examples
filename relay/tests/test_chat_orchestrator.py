@@ -431,8 +431,8 @@ async def test_research_timeout_is_separate_from_chat_timeout(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_chat_deep_research_error_returns_structured_response(monkeypatch):
-    """When deep_research raises, returns ChatResponse with error detail instead of 500."""
+async def test_chat_deep_research_error_returns_sanitized_response(monkeypatch):
+    """When deep_research raises, returns a structured but sanitized error response."""
     import json as _json
 
     def fake_completions(**kwargs):
@@ -480,8 +480,12 @@ async def test_chat_deep_research_error_returns_structured_response(monkeypatch)
     result = await orchestrator.chat(ChatRequest(message="will fail"))
     assert result.tool_called is True
     assert result.tool_name == "deep_research"
-    assert "deep_research failed" in result.content
-    assert "upstream timeout" in result.research_summary
+    assert result.content == (
+        "deep_research failed due to an upstream error. "
+        "Retry later or contact the relay operator."
+    )
+    assert result.research_summary == result.content
+    assert "upstream timeout" not in result.content
 
 
 @pytest.mark.asyncio

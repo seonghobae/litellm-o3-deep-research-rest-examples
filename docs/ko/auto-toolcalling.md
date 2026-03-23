@@ -256,18 +256,18 @@ uv run python -m litellm_relay
 
 ### 4-7. 에러 처리
 
-deep_research 실행 중 오류가 발생하더라도 relay는 HTTP 500 대신 구조화된 `ChatResponse`를 반환합니다.
+deep_research 실행 중 오류가 발생하더라도 relay는 HTTP 500 대신 구조화된 `ChatResponse`를 반환합니다. 이때 upstream 예외 문자열은 그대로 노출하지 않고, 일반화된 안내 문구만 내려줍니다.
 
 ```json
 {
-  "content": "deep_research failed: litellm.Timeout: Connection timed out after 30.0 seconds.",
+  "content": "deep_research failed due to an upstream error. Retry later or contact the relay operator.",
   "tool_called": true,
   "tool_name": "deep_research",
-  "research_summary": "deep_research failed: ..."
+  "research_summary": "deep_research failed due to an upstream error. Retry later or contact the relay operator."
 }
 ```
 
-이를 통해 클라이언트가 오류 여부를 `tool_called` + `content` 내용으로 판단할 수 있습니다.
+이를 통해 클라이언트가 오류 여부를 `tool_called` + `content` 내용으로 판단하면서도 API 키 단편, upstream URL, request ID 같은 내부 오류 세부정보가 외부 호출자에게 노출되지 않도록 합니다.
 
 ---
 
