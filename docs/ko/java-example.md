@@ -49,6 +49,8 @@ mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--api respon
 
 기본 타임아웃은 30초입니다. `o3-deep-research`처럼 응답 시간이 긴 모델을 사용할 때는 `--timeout <초>`로 늘리세요.
 
+`--timeout`은 양의 정수 초만 허용합니다. 값이 없거나, 숫자가 아니거나, `0` 이하이면 Java CLI가 네트워크 호출 전에 즉시 명확한 오류 메시지와 함께 실패합니다.
+
 ```bash
 mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
   -Dexec.args="--timeout 300 짜장면의 역사를 상세히 조사해줘"

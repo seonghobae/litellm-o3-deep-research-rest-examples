@@ -1,6 +1,7 @@
 package example.litellm;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -79,8 +80,40 @@ class MainTest {
 
     @Test
     void timeoutFlagWithoutValueFailsFast() {
-        assertThrows(IllegalArgumentException.class,
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
                 () -> Main.main(new String[] {"--timeout"}));
+        assertEquals("--timeout requires a value", ex.getMessage());
+    }
+
+    @Test
+    void timeoutFlagWithNonNumericValueFailsFast() {
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> Main.parseTimeoutSeconds("abc"));
+        assertEquals("--timeout must be a positive integer number of seconds: abc", ex.getMessage());
+        assertTrue(ex.getCause() instanceof NumberFormatException);
+    }
+
+    @Test
+    void timeoutFlagWithZeroValueFailsFast() {
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> Main.parseTimeoutSeconds("0"));
+        assertEquals("--timeout must be greater than 0 seconds: 0", ex.getMessage());
+    }
+
+    @Test
+    void timeoutFlagWithNegativeValueFailsFast() {
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> Main.parseTimeoutSeconds("-5"));
+        assertEquals("--timeout must be greater than 0 seconds: -5", ex.getMessage());
+    }
+
+    @Test
+    void timeoutFlagWithPositiveValueParsesSeconds() {
+        assertEquals(java.time.Duration.ofSeconds(30), Main.parseTimeoutSeconds("30"));
     }
 
     @Test
