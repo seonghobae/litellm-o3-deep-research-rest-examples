@@ -37,8 +37,8 @@ Work in this repository is complete only when all of the following are true:
 13. The relay exposes `POST /api/v1/chat` which internally performs relay-side orchestration: 1st Responses turn → tool call detection → deep_research execution → 2nd Responses turn → structured `ChatResponse`. The relay uses `LITELLM_CHAT_MODEL` (default `gpt-4o`) for orchestration turns and `LITELLM_MODEL` for deep research.
 14. The relay `ChatOrchestrator` uses separate timeouts: `RELAY_TIMEOUT_SECONDS` (default 30 s) for Responses orchestration turns and `RELAY_RESEARCH_TIMEOUT_SECONDS` (default 300 s) for deep_research execution.
 15. Upstream errors in auto tool-calling are caught and returned as a structured `ChatResponse` (not bare HTTP 500), and the public payload does not include raw upstream exception text.
-16. Direct auto tool-calling surfaces the relevant identifiers to callers: final `response_id`, initial `previous_response_id` when a tool was called, `tool_call_id`, relay `invocation_id`, and relay `upstream_response_id`.
-17. Direct clients do not forward the upstream `LITELLM_API_KEY` bearer token to relay `POST /api/v1/tool-invocations`; relay tool execution uses a no-auth local relay request path.
+16. Direct auto tool-calling surfaces the relevant identifiers to callers: final `response_id`, initial `previous_response_id` when a tool was called, `tool_call_id`, relay `invocation_id`, relay `invocation_token`, and relay `upstream_response_id`.
+17. Direct clients do not forward the upstream `LITELLM_API_KEY` bearer token to relay `POST /api/v1/tool-invocations`; relay tool execution uses a no-auth local relay request path, while relay read endpoints (`GET`, `/wait`, `/events`) require `X-Invocation-Token`.
 
 ## ChatRequest enhanced contract
 
@@ -48,7 +48,7 @@ Work in this repository is complete only when all of the following are true:
 
 ## Tests and coverage
 
-21. Automated tests cover: configuration loading, request construction, background handling, status polling, SSE text streaming, error handling, redacted relay error payloads, `system_prompt` passthrough, `text_format` passthrough, `web_search_preview` passthrough, `auto_tool_call` (no-tool and tool-call paths), standard Responses API `function_call_output` continuation, no-auth relay execution for direct auto-tool-calling, `ChatOrchestrator` timeout separation, Pydantic tool_call normalisation, and `ChatRequest.system_prompt` / `ChatRequest.deliverable_format` propagation to `DeepResearchArguments`.
+21. Automated tests cover: configuration loading, request construction, background handling, status polling, SSE text streaming, error handling, redacted relay error payloads, `system_prompt` passthrough, `text_format` passthrough, `web_search_preview` passthrough, `auto_tool_call` (no-tool and tool-call paths), standard Responses API `function_call_output` continuation, no-auth relay execution for direct auto-tool-calling, token-protected relay read endpoints, `ChatOrchestrator` timeout separation, Pydantic tool_call normalisation, and `ChatRequest.system_prompt` / `ChatRequest.deliverable_format` propagation to `DeepResearchArguments`.
 22. Python relay: `uv run pytest --cov=litellm_relay --cov-fail-under=100` passes.
 23. Python client: `uv run pytest --cov=litellm_example --cov-fail-under=100` passes.
 24. Java: `mvn test` → BUILD SUCCESS.
@@ -72,7 +72,7 @@ Work in this repository is complete only when all of the following are true:
     - Relay `--auto-tool-call` / `/api/v1/chat` with tool-calling topic (tool_called=true)
     - Relay `/api/v1/chat` with non-research topic (tool_called=false)
     - Python `--web-search` (web search result returned)
-    - Python `--auto-tool-call` with Responses API function-calling path and returned IDs (`response_id`, `tool_call_id`, `invocation_id`, `upstream_response_id`)
-    - Java `--auto-tool-call` with Responses API function-calling path and returned IDs (`response_id`, `tool_call_id`, `invocation_id`, `upstream_response_id`)
+    - Python `--auto-tool-call` with Responses API function-calling path and returned IDs (`response_id`, `tool_call_id`, `invocation_id`, `invocation_token`, `upstream_response_id`)
+    - Java `--auto-tool-call` with Responses API function-calling path and returned IDs (`response_id`, `tool_call_id`, `invocation_id`, `invocation_token`, `upstream_response_id`)
     - Relay `/api/v1/chat` with `system_prompt` (persona applied to deep_research result)
     - Relay `/api/v1/chat` with `deliverable_format="markdown_report"` (format used as fallback)

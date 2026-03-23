@@ -169,6 +169,7 @@ public final class LiteLlmClient {
             String toolName,
             String toolCallId,
             String invocationId,
+            String invocationToken,
             String upstreamResponseId,
             String researchSummary) {}
 
@@ -209,6 +210,7 @@ public final class LiteLlmClient {
                     firstResponseId,
                     null,
                     firstStatus,
+                    null,
                     null,
                     null,
                     null,
@@ -270,6 +272,7 @@ public final class LiteLlmClient {
                 "deep_research",
                 toolCallId,
                 textOrNull(relayResp.get("invocation_id")),
+                textOrNull(relayResp.get("invocation_token")),
                 textOrNull(relayResp.get("upstream_response_id")),
                 researchSummary);
     }

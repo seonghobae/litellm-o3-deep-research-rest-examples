@@ -519,7 +519,7 @@ class LiteLlmClientTest {
                 {"id":"resp_2","status":"completed","output":[{"type":"message","content":[{"type":"output_text","text":"Final answer."}]}]}
                 """;
         String relayJson = """
-                {"invocation_id":"inv_123","upstream_response_id":"up_456","status":"completed","output_text":"summary text"}
+                {"invocation_id":"inv_123","invocation_token":"tok_123","upstream_response_id":"up_456","status":"completed","output_text":"summary text"}
                 """;
 
         server.createContext("/v1/responses", exchange -> {
@@ -542,6 +542,7 @@ class LiteLlmClientTest {
         assertEquals("resp_1", result.previousResponseId());
         assertEquals("call_1", result.toolCallId());
         assertEquals("inv_123", result.invocationId());
+        assertEquals("tok_123", result.invocationToken());
         assertEquals("up_456", result.upstreamResponseId());
         assertEquals("summary text", result.researchSummary());
         assertNull(relayAuthorization.get());
@@ -570,7 +571,7 @@ class LiteLlmClientTest {
                 {"id":"resp_2","status":"completed","output":[]}
                 """;
         String relayJson = """
-                {"invocation_id":"inv_1","upstream_response_id":"up_1","status":"completed","output_text":"summary fallback"}
+                {"invocation_id":"inv_1","invocation_token":"tok_1","upstream_response_id":"up_1","status":"completed","output_text":"summary fallback"}
                 """;
 
         server.createContext("/v1/responses", exchange -> {
@@ -616,7 +617,7 @@ class LiteLlmClientTest {
                 {"id":"resp_2","status":"completed","output":[{"type":"message","content":[{"type":"output_text","text":"Final answer."}]}]}
                 """;
         String relayJson = """
-                {"invocation_id":"inv_1","upstream_response_id":"up_1","status":"completed","output_text":"summary text"}
+                {"invocation_id":"inv_1","invocation_token":"tok_1","upstream_response_id":"up_1","status":"completed","output_text":"summary text"}
                 """;
 
         server.createContext("/v1/responses", exchange -> {
@@ -657,7 +658,7 @@ class LiteLlmClientTest {
                 {"id":"resp_2","status":"completed","output":[]}
                 """;
         String relayJson = """
-                {"invocation_id":"inv_1","upstream_response_id":"up_1","status":"completed","output_text":"summary fallback"}
+                {"invocation_id":"inv_1","invocation_token":"tok_1","upstream_response_id":"up_1","status":"completed","output_text":"summary fallback"}
                 """;
 
         server.createContext("/v1/responses", exchange -> {
@@ -704,7 +705,7 @@ class LiteLlmClientTest {
                 {"id":"resp_2","status":"completed","output":[{"type":"message","content":[{"type":"output_text","text":"done"}]}]}
                 """;
         String relayJson = """
-                {"invocation_id":"inv_1","upstream_response_id":"up_1","status":"completed","output_text":"s"}
+                {"invocation_id":"inv_1","invocation_token":"tok_1","upstream_response_id":"up_1","status":"completed","output_text":"s"}
                 """;
 
         server.createContext("/v1/responses", exchange -> {

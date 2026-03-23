@@ -752,6 +752,7 @@ def test_create_response_with_tool_calling_with_tool_and_keys():
         if call_count[0] == 2:
             return {
                 "invocation_id": "inv_123",
+                "invocation_token": "tok_123",
                 "upstream_response_id": "up_456",
                 "output_text": "요약 내용",
                 "status": "completed",
@@ -780,6 +781,7 @@ def test_create_response_with_tool_calling_with_tool_and_keys():
     assert result.previous_response_id == "resp_1"
     assert result.tool_call_id == "call_1"
     assert result.invocation_id == "inv_123"
+    assert result.invocation_token == "tok_123"
     assert result.upstream_response_id == "up_456"
     assert result.research_summary == "요약 내용"
     assert urls[0].endswith("/v1/responses")
@@ -858,6 +860,7 @@ def test_create_response_with_tool_calling_invalid_json_args():
             relay_payload.update(payload)
             return {
                 "invocation_id": "inv_bad",
+                "invocation_token": "tok_bad",
                 "upstream_response_id": "up_bad",
                 "output_text": "summary",
                 "status": "completed",
@@ -907,6 +910,7 @@ def test_create_response_with_tool_calling_non_object_json_args_fall_back():
             relay_payload.update(payload)
             return {
                 "invocation_id": "inv_bad",
+                "invocation_token": "tok_bad",
                 "upstream_response_id": "up_bad",
                 "output_text": "summary",
                 "status": "completed",
@@ -988,6 +992,7 @@ def test_create_response_with_tool_calling_second_turn_no_text_falls_back_to_res
         if call_count[0] == 2:
             return {
                 "invocation_id": "inv_1",
+                "invocation_token": "tok_1",
                 "upstream_response_id": "up_1",
                 "output_text": "fallback summary",
                 "status": "completed",

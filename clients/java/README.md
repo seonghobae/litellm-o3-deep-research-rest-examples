@@ -100,4 +100,7 @@ mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--auto-tool-
 - `previous_response_id`
 - `tool_call_id`
 - `invocation_id`
+- `invocation_token`
 - `upstream_response_id`
+
+relay의 `GET /api/v1/tool-invocations/{invocation_id}`, `/wait`, `/events`를 읽을 때는 `X-Invocation-Token: <invocation_token>` 헤더를 함께 보내야 합니다.

@@ -220,7 +220,7 @@ class MainTest {
         String firstResponsesJson =
                 "{\"id\":\"resp_1\",\"status\":\"completed\",\"output\":[{\"type\":\"function_call\",\"name\":\"deep_research\",\"call_id\":\"call_1\",\"arguments\":\"{\\\"research_question\\\":\\\"test\\\",\\\"deliverable_format\\\":\\\"markdown_brief\\\"}\"}]}";
         String relayJson =
-                "{\"invocation_id\":\"inv_1\",\"upstream_response_id\":\"up_1\",\"status\":\"completed\",\"output_text\":\"summary\"}";
+                "{\"invocation_id\":\"inv_1\",\"invocation_token\":\"tok_1\",\"upstream_response_id\":\"up_1\",\"status\":\"completed\",\"output_text\":\"summary\"}";
         String secondResponsesJson =
                 "{\"id\":\"resp_2\",\"status\":\"completed\",\"output\":[{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"synthesized answer\"}]}]}";
 
@@ -247,6 +247,7 @@ class MainTest {
         assertEquals("resp_1", result.previousResponseId());
         assertEquals("call_1", result.toolCallId());
         assertEquals("inv_1", result.invocationId());
+        assertEquals("tok_1", result.invocationToken());
         assertEquals("up_1", result.upstreamResponseId());
         assertEquals(true, relayBody.get().contains("\"tool_name\":\"deep_research\""));
         assertEquals(true, relayBody.get().contains("\"deliverable_format\":\"markdown_brief\""));

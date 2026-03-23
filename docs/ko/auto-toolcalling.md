@@ -62,7 +62,7 @@ uv run python -m litellm_example \
   "짜장면의 역사를 자세히 알려줘"
 ```
 
-도구가 호출됐으면 stderr에 `[deep_research was called automatically]`가 출력되고, `response_id`, `previous_response_id`, `tool_call_id`, `invocation_id`, `upstream_response_id`가 함께 출력됩니다.
+도구가 호출됐으면 stderr에 `[deep_research was called automatically]`가 출력되고, `response_id`, `previous_response_id`, `tool_call_id`, `invocation_id`, `invocation_token`, `upstream_response_id`가 함께 출력됩니다.
 
 코드에서 직접 사용:
 
@@ -77,7 +77,7 @@ result = client.create_response_with_tool_calling(
 print(result.final_text)
 if result.tool_called:
     print("[deep_research가 자동으로 호출됐습니다]")
-    print(result.response_id, result.tool_call_id, result.invocation_id)
+    print(result.response_id, result.tool_call_id, result.invocation_id, result.invocation_token)
 ```
 
 ### 3-2. Java — `--auto-tool-call` 플래그
@@ -118,7 +118,7 @@ if (result.toolCalled()) {
 클라이언트 → POST /api/v1/tool-invocations (relay)
               {tool_name: "deep_research", arguments: {...}}
                     ↓
-relay 응답: {invocation_id, upstream_response_id, output_text, status}
+relay 응답: {invocation_id, invocation_token, upstream_response_id, output_text, status}
                     ↓
 클라이언트 → POST /v1/responses
               {previous_response_id, input:[{type:"function_call_output", call_id, output}]}
@@ -131,6 +131,7 @@ relay 응답: {invocation_id, upstream_response_id, output_text, status}
 - `previous_response_id`: 첫 번째 Responses API 응답 ID
 - `tool_call_id`: 모델이 발급한 `function_call` ID
 - `invocation_id`: relay 내부 추적 ID
+- `invocation_token`: relay read endpoint 조회용 토큰 (`X-Invocation-Token` 헤더)
 - `upstream_response_id`: relay가 deep_research 업스트림에 붙인 응답 ID
 ```
 

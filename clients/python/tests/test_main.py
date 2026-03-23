@@ -283,6 +283,7 @@ def test_main_auto_tool_call_prints_stderr_when_tool_called(
             previous_response_id="resp_1",
             tool_call_id="call_1",
             invocation_id="inv_1",
+            invocation_token="tok_1",
             upstream_response_id="up_1",
         )
 
@@ -303,6 +304,7 @@ def test_main_auto_tool_call_prints_stderr_when_tool_called(
     assert "research result" in captured.out
     assert "[deep_research was called automatically]" in captured.err
     assert '"response_id": "resp_2"' in captured.err
+    assert '"invocation_token": "tok_1"' in captured.err
 
 
 def test_main_auto_tool_call_no_stderr_when_tool_not_called(

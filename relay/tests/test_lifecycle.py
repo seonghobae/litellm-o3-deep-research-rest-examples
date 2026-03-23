@@ -14,6 +14,10 @@ from litellm_relay.upstream import UpstreamInvocationResult
 _DUMMY_SETTINGS = RelaySettings(base_url="https://dummy.test", api_key="sk-dummy")
 
 
+def _token_headers(payload: dict[str, object]) -> dict[str, str]:
+    return {"X-Invocation-Token": str(payload["invocation_token"])}
+
+
 class LifecycleGateway:
     def __init__(self) -> None:
         self.stream_calls = 0
@@ -84,8 +88,12 @@ def test_wait_endpoint_polls_upstream_until_completed() -> None:
         },
     )
 
-    invocation_id = create_response.json()["invocation_id"]
-    wait_response = client.get(f"/api/v1/tool-invocations/{invocation_id}/wait")
+    create_payload = create_response.json()
+    invocation_id = create_payload["invocation_id"]
+    wait_response = client.get(
+        f"/api/v1/tool-invocations/{invocation_id}/wait",
+        headers=_token_headers(create_payload),
+    )
 
     assert wait_response.status_code == 200
     payload = wait_response.json()
@@ -111,10 +119,13 @@ def test_events_endpoint_relays_text_deltas_as_sse() -> None:
         },
     )
 
-    invocation_id = create_response.json()["invocation_id"]
+    create_payload = create_response.json()
+    invocation_id = create_payload["invocation_id"]
 
     with client.stream(
-        "GET", f"/api/v1/tool-invocations/{invocation_id}/events"
+        "GET",
+        f"/api/v1/tool-invocations/{invocation_id}/events",
+        headers=_token_headers(create_payload),
     ) as response:
         body = "".join(response.iter_text())
 
@@ -126,7 +137,9 @@ def test_events_endpoint_relays_text_deltas_as_sse() -> None:
     assert gateway.stream_calls == 1
 
     with client.stream(
-        "GET", f"/api/v1/tool-invocations/{invocation_id}/events"
+        "GET",
+        f"/api/v1/tool-invocations/{invocation_id}/events",
+        headers=_token_headers(create_payload),
     ) as replay_response:
         replay_body = "".join(replay_response.iter_text())
 
@@ -335,17 +348,23 @@ def test_events_endpoint_marks_failed_streams() -> None:
             },
         },
     )
-    invocation_id = create_response.json()["invocation_id"]
+    create_payload = create_response.json()
+    invocation_id = create_payload["invocation_id"]
 
     with client.stream(
-        "GET", f"/api/v1/tool-invocations/{invocation_id}/events"
+        "GET",
+        f"/api/v1/tool-invocations/{invocation_id}/events",
+        headers=_token_headers(create_payload),
     ) as response:
         body = "".join(response.iter_text())
 
     assert response.status_code == 200
     assert "event: error" in body
 
-    status_response = client.get(f"/api/v1/tool-invocations/{invocation_id}")
+    status_response = client.get(
+        f"/api/v1/tool-invocations/{invocation_id}",
+        headers=_token_headers(create_payload),
+    )
     assert status_response.json()["status"] == "failed"
 
 
@@ -405,8 +424,12 @@ def test_get_invocation_returns_view_for_foreground_mode_without_calling_gateway
     )
     assert create_response.status_code == 200
 
-    invocation_id = create_response.json()["invocation_id"]
-    get_response = client.get(f"/api/v1/tool-invocations/{invocation_id}")
+    create_payload = create_response.json()
+    invocation_id = create_payload["invocation_id"]
+    get_response = client.get(
+        f"/api/v1/tool-invocations/{invocation_id}",
+        headers=_token_headers(create_payload),
+    )
 
     assert get_response.status_code == 200
     payload = get_response.json()
@@ -466,10 +489,13 @@ def test_event_stream_for_foreground_invocation_with_no_output_text_terminates_c
             },
         },
     )
-    invocation_id = create_response.json()["invocation_id"]
+    create_payload = create_response.json()
+    invocation_id = create_payload["invocation_id"]
 
     with client.stream(
-        "GET", f"/api/v1/tool-invocations/{invocation_id}/events"
+        "GET",
+        f"/api/v1/tool-invocations/{invocation_id}/events",
+        headers=_token_headers(create_payload),
     ) as response:
         body = "".join(response.iter_text())
 
@@ -522,10 +548,14 @@ def test_apply_upstream_payload_sets_status_to_failed_for_unknown_status() -> No
             },
         },
     )
-    invocation_id = create_response.json()["invocation_id"]
+    create_payload = create_response.json()
+    invocation_id = create_payload["invocation_id"]
 
     # GET should apply the upstream payload and map "cancelled" → "failed"
-    get_response = client.get(f"/api/v1/tool-invocations/{invocation_id}")
+    get_response = client.get(
+        f"/api/v1/tool-invocations/{invocation_id}",
+        headers=_token_headers(create_payload),
+    )
     assert get_response.status_code == 200
     assert get_response.json()["status"] == "failed"
 
@@ -550,14 +580,22 @@ def test_to_view_includes_error_message_when_stream_fails() -> None:
             },
         },
     )
-    invocation_id = create_response.json()["invocation_id"]
+    create_payload = create_response.json()
+    invocation_id = create_payload["invocation_id"]
 
     # Drive the stream to consume the error
-    with client.stream("GET", f"/api/v1/tool-invocations/{invocation_id}/events") as r:
+    with client.stream(
+        "GET",
+        f"/api/v1/tool-invocations/{invocation_id}/events",
+        headers=_token_headers(create_payload),
+    ) as r:
         "".join(r.iter_text())
 
     # Now GET the invocation and assert error_message is populated
-    get_response = client.get(f"/api/v1/tool-invocations/{invocation_id}")
+    get_response = client.get(
+        f"/api/v1/tool-invocations/{invocation_id}",
+        headers=_token_headers(create_payload),
+    )
     payload = get_response.json()
     assert payload["status"] == "failed"
     assert (
@@ -622,14 +660,20 @@ def test_event_stream_emits_completed_event_for_background_invocation_with_outpu
             },
         },
     )
-    invocation_id = create_response.json()["invocation_id"]
+    create_payload = create_response.json()
+    invocation_id = create_payload["invocation_id"]
 
     # Polling GET triggers _apply_upstream_payload with status="completed"
-    client.get(f"/api/v1/tool-invocations/{invocation_id}")
+    client.get(
+        f"/api/v1/tool-invocations/{invocation_id}",
+        headers=_token_headers(create_payload),
+    )
 
     # Now event_stream on a non-stream mode with output_text → completed event
     with client.stream(
-        "GET", f"/api/v1/tool-invocations/{invocation_id}/events"
+        "GET",
+        f"/api/v1/tool-invocations/{invocation_id}/events",
+        headers=_token_headers(create_payload),
     ) as resp:
         body = "".join(resp.iter_text())
 
@@ -684,9 +728,13 @@ def test_apply_upstream_payload_sets_status_to_running_for_running_status() -> N
             },
         },
     )
-    invocation_id = create_response.json()["invocation_id"]
+    create_payload = create_response.json()
+    invocation_id = create_payload["invocation_id"]
 
-    get_response = client.get(f"/api/v1/tool-invocations/{invocation_id}")
+    get_response = client.get(
+        f"/api/v1/tool-invocations/{invocation_id}",
+        headers=_token_headers(create_payload),
+    )
     assert get_response.status_code == 200
     assert get_response.json()["status"] == "running"
 
@@ -709,10 +757,15 @@ def test_event_stream_replays_error_event_on_re_subscription_to_failed_stream() 
             },
         },
     )
-    invocation_id = create_response.json()["invocation_id"]
+    create_payload = create_response.json()
+    invocation_id = create_payload["invocation_id"]
 
     # First subscription drives the stream and captures the failure
-    with client.stream("GET", f"/api/v1/tool-invocations/{invocation_id}/events") as r1:
+    with client.stream(
+        "GET",
+        f"/api/v1/tool-invocations/{invocation_id}/events",
+        headers=_token_headers(create_payload),
+    ) as r1:
         first_body = "".join(r1.iter_text())
 
     assert "event: error" in first_body
@@ -721,7 +774,11 @@ def test_event_stream_replays_error_event_on_re_subscription_to_failed_stream() 
     assert gateway.stream_calls == 1
 
     # Second subscription replays from cached state; gateway must NOT be called again
-    with client.stream("GET", f"/api/v1/tool-invocations/{invocation_id}/events") as r2:
+    with client.stream(
+        "GET",
+        f"/api/v1/tool-invocations/{invocation_id}/events",
+        headers=_token_headers(create_payload),
+    ) as r2:
         second_body = "".join(r2.iter_text())
 
     assert "event: error" in second_body
@@ -861,10 +918,13 @@ def test_events_endpoint_fails_when_stream_output_exceeds_memory_limit() -> None
             },
         },
     )
-    invocation_id = create_response.json()["invocation_id"]
+    create_payload = create_response.json()
+    invocation_id = create_payload["invocation_id"]
 
     with client.stream(
-        "GET", f"/api/v1/tool-invocations/{invocation_id}/events"
+        "GET",
+        f"/api/v1/tool-invocations/{invocation_id}/events",
+        headers=_token_headers(create_payload),
     ) as response:
         body = "".join(response.iter_text())
 
@@ -875,7 +935,9 @@ def test_events_endpoint_fails_when_stream_output_exceeds_memory_limit() -> None
     assert "memory limit" in body
 
     with client.stream(
-        "GET", f"/api/v1/tool-invocations/{invocation_id}/events"
+        "GET",
+        f"/api/v1/tool-invocations/{invocation_id}/events",
+        headers=_token_headers(create_payload),
     ) as replay_response:
         replay_body = "".join(replay_response.iter_text())
 
@@ -886,7 +948,10 @@ def test_events_endpoint_fails_when_stream_output_exceeds_memory_limit() -> None
     assert "event: error" in replay_body
     assert "memory limit" in replay_body
 
-    status_response = client.get(f"/api/v1/tool-invocations/{invocation_id}")
+    status_response = client.get(
+        f"/api/v1/tool-invocations/{invocation_id}",
+        headers=_token_headers(create_payload),
+    )
     payload = status_response.json()
     assert payload["status"] == "failed"
     assert payload["output_text"] is None

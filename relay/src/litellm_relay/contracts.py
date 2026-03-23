@@ -96,6 +96,7 @@ class ToolInvocationView(BaseModel):
     mode: InvocationMode
     status: InvocationStatus
     deliverable_format: DeliverableFormat
+    invocation_token: str | None = None
     upstream_response_id: str | None = None
     output_text: str | None = None
     response: dict[str, Any] | None = None

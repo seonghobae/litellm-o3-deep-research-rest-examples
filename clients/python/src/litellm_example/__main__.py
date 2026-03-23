@@ -92,6 +92,7 @@ def main(argv: list[str] | None = None) -> int:
                     "previous_response_id": result.previous_response_id,
                     "tool_call_id": result.tool_call_id,
                     "invocation_id": result.invocation_id,
+                    "invocation_token": result.invocation_token,
                     "upstream_response_id": result.upstream_response_id,
                 }
                 print(json.dumps(debug, ensure_ascii=False), file=sys.stderr)

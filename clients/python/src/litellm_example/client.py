@@ -102,6 +102,7 @@ class ToolCallingResult:
     tool_name: str | None = None
     tool_call_id: str | None = None
     invocation_id: str | None = None
+    invocation_token: str | None = None
     upstream_response_id: str | None = None
     research_summary: str | None = None
 
@@ -282,6 +283,7 @@ class LiteLLMClient:
             tool_name="deep_research",
             tool_call_id=tool_call_id,
             invocation_id=self._maybe_str(relay_response.get("invocation_id")),
+            invocation_token=self._maybe_str(relay_response.get("invocation_token")),
             upstream_response_id=self._maybe_str(
                 relay_response.get("upstream_response_id")
             ),
