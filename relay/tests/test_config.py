@@ -130,10 +130,24 @@ def test_main_starts_hypercorn_and_returns_zero(
 
     with patch("litellm_relay.__main__.serve", serve_mock):
         with patch("litellm_relay.__main__.asyncio.run") as run_mock:
-            result = main()
+            result = main([])
 
     assert result == 0
     run_mock.assert_called_once()
+
+
+def test_main_help_exits_cleanly_without_starting_server(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with patch("litellm_relay.__main__.serve") as serve_mock:
+        with patch("litellm_relay.__main__.asyncio.run") as run_mock:
+            with pytest.raises(SystemExit) as excinfo:
+                main(["--help"])
+
+    assert excinfo.value.code == 0
+    assert "Run the LiteLLM relay example server." in capsys.readouterr().out
+    serve_mock.assert_not_called()
+    run_mock.assert_not_called()
 
 
 def test_chat_model_defaults_to_gpt_4o(monkeypatch: pytest.MonkeyPatch) -> None:

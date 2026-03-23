@@ -19,6 +19,10 @@ public final class Main {
         java.util.List<String> promptParts = new java.util.ArrayList<>();
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
+                case "--help", "-h" -> {
+                    printHelp();
+                    return;
+                }
                 case "--target" -> target = requireOptionValue(args, ++i, "--target");
                 case "--api" -> api = requireOptionValue(args, ++i, "--api");
                 case "--background" -> background = true;
@@ -111,5 +115,19 @@ public final class Main {
                     "--timeout must be greater than 0 seconds: " + raw);
         }
         return Duration.ofSeconds(seconds);
+    }
+
+    private static void printHelp() {
+        System.out.println("Usage: java -jar litellm-o3-deep-research-java-0.1.0.jar [options] [prompt]");
+        System.out.println("Options:");
+        System.out.println("  --help, -h                 Show this help message and exit.");
+        System.out.println("  --api <chat|responses>    Which OpenAI-compatible endpoint to use.");
+        System.out.println("  --background              Request server-side background processing for responses.");
+        System.out.println("  --web-search              Attach web_search_preview to a responses call.");
+        System.out.println("  --auto-tool-call          Use Responses function calling with deep_research.");
+        System.out.println("  --timeout <seconds>       Positive integer request timeout in seconds.");
+        System.out.println("  --target relay            Call the relay example instead of direct LiteLLM.");
+        System.out.println("  --stream                  Use relay SSE streaming mode.");
+        System.out.println("  --deliverable-format <format>  Set relay deliverable format.");
     }
 }
