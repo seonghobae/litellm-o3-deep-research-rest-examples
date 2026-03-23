@@ -103,7 +103,7 @@ mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
   -Dexec.args="--auto-tool-call --timeout 300 짜장면의 역사와 기원에 대해 상세히 조사해줘"
 ```
 
-deep_research가 자동으로 호출됐을 때 stderr에 `[deep_research was called automatically]`와 함께 `response_id`, `previous_response_id`, `tool_call_id`, `invocation_id`, `upstream_response_id`가 출력됩니다.
+deep_research가 자동으로 호출됐을 때 stderr에 `[deep_research was called automatically]`와 함께 `response_id`, `previous_response_id`, `tool_call_id`, `invocation_id`, `invocation_token`, `upstream_response_id`가 출력됩니다.
 
 코드에서 직접 사용:
 
@@ -117,8 +117,11 @@ System.out.println(result.finalText());
 if (result.toolCalled()) {
     System.err.println("[deep_research가 자동으로 호출됐습니다]");
     System.err.println(result.responseId());
+    System.err.println(result.invocationToken());
 }
 ```
+
+relay의 `GET /api/v1/tool-invocations/{invocation_id}`, `/wait`, `/events`를 직접 읽을 때는 `X-Invocation-Token: <invocation_token>` 헤더를 함께 보내야 합니다.
 
 > **주의:** `--auto-tool-call`은 `--target relay`와 함께 쓸 수 없습니다.
 

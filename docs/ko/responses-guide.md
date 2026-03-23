@@ -37,9 +37,9 @@ mvn -q exec:java ... -Dexec.args="--api responses --background 조사 요청"
 |-|-------------------|-------|
 | 실행 방식 | 1회성 CLI 프로세스 | FastAPI + Hypercorn 장기 서버 |
 | background 의미 | 서버 측 비동기 큐잉 | 동일 |
-| background 결과 | 원본 JSON 메타데이터 출력 | `upstream_response_id`, `status` 반환 |
-| 후속 폴링 | 직접 구현 필요 | `GET /api/v1/tool-invocations/{id}/wait` |
-| SSE 스트리밍 | 미지원 | `GET /api/v1/tool-invocations/{id}/events` |
+| background 결과 | 원본 JSON 메타데이터 출력 | `invocation_token`, `upstream_response_id`, `status` 반환 |
+| 후속 폴링 | 직접 구현 필요 | `GET /api/v1/tool-invocations/{id}/wait` + `X-Invocation-Token` |
+| SSE 스트리밍 | 미지원 | `GET /api/v1/tool-invocations/{id}/events` + `X-Invocation-Token` |
 
 ## 4. web_search_preview — 일반 모델에 웹 검색 추가
 
@@ -109,6 +109,7 @@ deep_research 자동 실행 (o3-deep-research)
 - `previous_response_id`
 - `tool_call_id`
 - `invocation_id`
+- `invocation_token`
 - `upstream_response_id`
 
 ```bash

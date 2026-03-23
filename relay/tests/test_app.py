@@ -62,6 +62,10 @@ def _client() -> TestClient:
     )
 
 
+def _token_headers(payload: dict[str, object]) -> dict[str, str]:
+    return {"X-Invocation-Token": str(payload["invocation_token"])}
+
+
 def test_post_tool_invocations_returns_completed_result() -> None:
     client = _client()
 
@@ -121,13 +125,79 @@ def test_get_tool_invocations_by_id_returns_latest_status() -> None:
     )
 
     invocation_id = create_response.json()["invocation_id"]
-    fetch_response = client.get(f"/api/v1/tool-invocations/{invocation_id}")
+    fetch_response = client.get(
+        f"/api/v1/tool-invocations/{invocation_id}",
+        headers=_token_headers(create_response.json()),
+    )
 
     assert fetch_response.status_code == 200
     payload = fetch_response.json()
     assert payload["invocation_id"] == invocation_id
     assert payload["status"] == "completed"
     assert payload["output_text"] == "done"
+
+
+def test_get_tool_invocations_requires_invocation_token() -> None:
+    client = _client()
+
+    create_response = client.post(
+        "/api/v1/tool-invocations",
+        json={
+            "tool_name": "deep_research",
+            "arguments": {
+                "research_question": "Queue relay architecture.",
+                "deliverable_format": "markdown_brief",
+                "background": True,
+            },
+        },
+    )
+
+    invocation_id = create_response.json()["invocation_id"]
+    fetch_response = client.get(f"/api/v1/tool-invocations/{invocation_id}")
+
+    assert fetch_response.status_code == 403
+
+
+def test_wait_tool_invocations_requires_invocation_token() -> None:
+    client = _client()
+
+    create_response = client.post(
+        "/api/v1/tool-invocations",
+        json={
+            "tool_name": "deep_research",
+            "arguments": {
+                "research_question": "Queue relay architecture.",
+                "deliverable_format": "markdown_brief",
+                "background": True,
+            },
+        },
+    )
+
+    invocation_id = create_response.json()["invocation_id"]
+    wait_response = client.get(f"/api/v1/tool-invocations/{invocation_id}/wait")
+
+    assert wait_response.status_code == 403
+
+
+def test_events_tool_invocations_requires_invocation_token() -> None:
+    client = _client()
+
+    create_response = client.post(
+        "/api/v1/tool-invocations",
+        json={
+            "tool_name": "deep_research",
+            "arguments": {
+                "research_question": "Stream relay architecture.",
+                "deliverable_format": "markdown_brief",
+                "stream": True,
+            },
+        },
+    )
+
+    invocation_id = create_response.json()["invocation_id"]
+    events_response = client.get(f"/api/v1/tool-invocations/{invocation_id}/events")
+
+    assert events_response.status_code == 403
 
 
 def test_events_endpoint_returns_404_for_unknown_invocation() -> None:

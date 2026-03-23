@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import secrets
 from dataclasses import dataclass, field
 from typing import Any
 from uuid import uuid4
@@ -30,6 +31,10 @@ class InvocationCapacityError(RuntimeError):
     """릴레이가 더 많은 호출 상태를 안전하게 보관할 수 없을 때 발생한다."""
 
 
+class InvocationUnauthorizedError(PermissionError):
+    """호출 조회 토큰이 없거나 일치하지 않을 때 발생한다."""
+
+
 @dataclass
 class _StoredInvocation:
     """메모리에 유지되는 도구 호출 상태 레코드다."""
@@ -37,6 +42,7 @@ class _StoredInvocation:
     request: ToolInvocationRequest
     mode: InvocationMode
     status: InvocationStatus
+    invocation_token: str
     upstream_response_id: str | None = None
     output_text: str | None = None
     response: dict[str, Any] | None = None
@@ -84,6 +90,7 @@ class RelayService:
                 if args.stream
                 else ("queued" if args.background else "running")
             ),
+            invocation_token=secrets.token_urlsafe(24),
         )
 
         async with self._capacity_lock:
@@ -107,6 +114,17 @@ class RelayService:
         stored.response = result.response
         status_code = 202 if stored.mode == "background" else 200
         return status_code, self._to_view(invocation_id, stored)
+
+    def authorize_invocation(
+        self, invocation_id: str, invocation_token: str | None
+    ) -> _StoredInvocation:
+        """호출 조회용 토큰이 맞는지 확인한다."""
+        stored = self._require(invocation_id)
+        if not invocation_token or not secrets.compare_digest(
+            stored.invocation_token, invocation_token
+        ):
+            raise InvocationUnauthorizedError(invocation_id)
+        return stored
 
     async def get_invocation(self, invocation_id: str) -> ToolInvocationView:
         """필요하면 업스트림 상태를 새로고침한 뒤 현재 호출 뷰를 반환한다."""
@@ -284,6 +302,7 @@ class RelayService:
             request=payload,
             mode=result.mode,
             status=status,
+            invocation_token=secrets.token_urlsafe(24),
             upstream_response_id=result.upstream_response_id,
             output_text=result.output_text,
             response=result.response,
@@ -308,7 +327,12 @@ class RelayService:
         stored.response = payload
 
     @staticmethod
-    def _to_view(invocation_id: str, stored: _StoredInvocation) -> ToolInvocationView:
+    def _to_view(
+        invocation_id: str,
+        stored: _StoredInvocation,
+        *,
+        include_token: bool = True,
+    ) -> ToolInvocationView:
         """내부 저장 상태를 외부 응답 모델로 변환한다."""
         output_text = RelayService._completed_stream_text(stored)
         response = stored.response
@@ -321,6 +345,7 @@ class RelayService:
             mode=stored.mode,
             status=stored.status,
             deliverable_format=stored.request.arguments.deliverable_format,
+            invocation_token=stored.invocation_token if include_token else None,
             upstream_response_id=stored.upstream_response_id,
             output_text=output_text,
             response=response,

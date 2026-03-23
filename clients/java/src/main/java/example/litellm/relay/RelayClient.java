@@ -89,7 +89,9 @@ public final class RelayClient {
                 stream));
 
         if (stream) {
-            return streamInvocation(requiredText(response, "invocation_id"));
+            return streamInvocation(
+                    requiredText(response, "invocation_id"),
+                    requiredText(response, "invocation_token"));
         }
         if (background) {
             return response.toString();
@@ -97,13 +99,18 @@ public final class RelayClient {
         return extractOutputText(response);
     }
 
-    public String waitForInvocation(String invocationId) {
-        JsonNode response = getJson(baseUrl.resolve("api/v1/tool-invocations/" + invocationId + "/wait"));
+    public String waitForInvocation(String invocationId, String invocationToken) {
+        JsonNode response = getJson(
+                baseUrl.resolve("api/v1/tool-invocations/" + invocationId + "/wait"),
+                invocationToken);
         return extractOutputText(response);
     }
 
-    public String streamInvocation(String invocationId) {
-        String body = getText(baseUrl.resolve("api/v1/tool-invocations/" + invocationId + "/events"), "text/event-stream");
+    public String streamInvocation(String invocationId, String invocationToken) {
+        String body = getText(
+                baseUrl.resolve("api/v1/tool-invocations/" + invocationId + "/events"),
+                "text/event-stream",
+                invocationToken);
         StringBuilder builder = new StringBuilder();
         for (String frame : body.split("\\R\\R")) {
             String trimmed = frame.trim();
@@ -166,19 +173,21 @@ public final class RelayClient {
         return sendJson(request);
     }
 
-    private JsonNode getJson(URI target) {
+    private JsonNode getJson(URI target, String invocationToken) {
         HttpRequest request = HttpRequest.newBuilder(target)
                 .timeout(requestTimeout)
                 .header("Accept", "application/json")
+                .header("X-Invocation-Token", invocationToken)
                 .GET()
                 .build();
         return sendJson(request);
     }
 
-    private String getText(URI target, String accept) {
+    private String getText(URI target, String accept, String invocationToken) {
         HttpRequest request = HttpRequest.newBuilder(target)
                 .timeout(requestTimeout)
                 .header("Accept", accept)
+                .header("X-Invocation-Token", invocationToken)
                 .GET()
                 .build();
         HttpResponse<String> response = send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));

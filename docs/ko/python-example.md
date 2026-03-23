@@ -107,7 +107,7 @@ uv run python -m litellm_example \
   "짜장면의 역사와 기원에 대해 상세히 조사해줘"
 ```
 
-deep_research가 자동으로 호출됐을 때 stderr에 `[deep_research was called automatically]`와 함께 `response_id`, `previous_response_id`, `tool_call_id`, `invocation_id`, `upstream_response_id`가 출력됩니다.
+deep_research가 자동으로 호출됐을 때 stderr에 `[deep_research was called automatically]`와 함께 `response_id`, `previous_response_id`, `tool_call_id`, `invocation_id`, `invocation_token`, `upstream_response_id`가 출력됩니다.
 
 **실제 결과:**
 
@@ -129,8 +129,10 @@ result = client.create_response_with_tool_calling(
 print(result.final_text)
 if result.tool_called:
     print("[deep_research가 자동으로 호출됐습니다]", file=sys.stderr)
-    print(result.response_id, result.tool_call_id, result.invocation_id, file=sys.stderr)
+    print(result.response_id, result.tool_call_id, result.invocation_id, result.invocation_token, file=sys.stderr)
 ```
+
+relay의 `GET /api/v1/tool-invocations/{invocation_id}`, `/wait`, `/events`를 직접 읽을 때는 `X-Invocation-Token: <invocation_token>` 헤더를 함께 보내야 합니다.
 
 ## 해석 포인트
 

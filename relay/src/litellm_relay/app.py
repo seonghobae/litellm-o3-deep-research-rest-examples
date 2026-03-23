@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from .chat_orchestrator import ChatOrchestrator
@@ -13,7 +13,12 @@ from .contracts import (
     ToolInvocationRequest,
     ToolInvocationView,
 )
-from .service import InvocationCapacityError, InvocationNotFoundError, RelayService
+from .service import (
+    InvocationCapacityError,
+    InvocationNotFoundError,
+    InvocationUnauthorizedError,
+    RelayService,
+)
 from .upstream import LiteLLMRelayGateway
 
 
@@ -62,31 +67,61 @@ def create_app(
     @app.get(
         "/api/v1/tool-invocations/{invocation_id}", response_model=ToolInvocationView
     )
-    async def get_tool_invocation(invocation_id: str) -> ToolInvocationView:
+    async def get_tool_invocation(
+        invocation_id: str,
+        x_invocation_token: str | None = Header(
+            default=None, alias="X-Invocation-Token"
+        ),
+    ) -> ToolInvocationView:
         """현재 도구 호출 상태를 조회한다."""
         try:
+            service.authorize_invocation(invocation_id, x_invocation_token)
             return await service.get_invocation(invocation_id)
         except InvocationNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Invocation not found") from exc
+        except InvocationUnauthorizedError as exc:
+            raise HTTPException(
+                status_code=403, detail="Invocation token is invalid"
+            ) from exc
 
     @app.get(
         "/api/v1/tool-invocations/{invocation_id}/wait",
         response_model=ToolInvocationView,
     )
-    async def wait_for_tool_invocation(invocation_id: str) -> ToolInvocationView:
+    async def wait_for_tool_invocation(
+        invocation_id: str,
+        x_invocation_token: str | None = Header(
+            default=None, alias="X-Invocation-Token"
+        ),
+    ) -> ToolInvocationView:
         """도구 호출이 끝날 때까지 기다린 뒤 최종 상태를 반환한다."""
         try:
+            service.authorize_invocation(invocation_id, x_invocation_token)
             return await service.wait_for_invocation(invocation_id)
         except InvocationNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Invocation not found") from exc
+        except InvocationUnauthorizedError as exc:
+            raise HTTPException(
+                status_code=403, detail="Invocation token is invalid"
+            ) from exc
 
     @app.get("/api/v1/tool-invocations/{invocation_id}/events")
-    async def stream_tool_invocation_events(invocation_id: str) -> StreamingResponse:
+    async def stream_tool_invocation_events(
+        invocation_id: str,
+        x_invocation_token: str | None = Header(
+            default=None, alias="X-Invocation-Token"
+        ),
+    ) -> StreamingResponse:
         """도구 호출의 SSE 이벤트 스트림을 연다."""
         try:
+            service.authorize_invocation(invocation_id, x_invocation_token)
             await service.get_invocation(invocation_id)
         except InvocationNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Invocation not found") from exc
+        except InvocationUnauthorizedError as exc:
+            raise HTTPException(
+                status_code=403, detail="Invocation token is invalid"
+            ) from exc
         return StreamingResponse(
             service.event_stream(invocation_id),
             media_type="text/event-stream",

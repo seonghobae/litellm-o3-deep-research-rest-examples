@@ -61,6 +61,7 @@ public final class Main {
                 System.err.println("previous_response_id=" + result.previousResponseId());
                 System.err.println("tool_call_id=" + result.toolCallId());
                 System.err.println("invocation_id=" + result.invocationId());
+                System.err.println("invocation_token=" + result.invocationToken());
                 System.err.println("upstream_response_id=" + result.upstreamResponseId());
             }
         } else if ("relay".equals(target)) {

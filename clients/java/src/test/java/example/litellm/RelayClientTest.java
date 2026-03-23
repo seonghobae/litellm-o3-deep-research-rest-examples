@@ -43,7 +43,7 @@ class RelayClientTest {
         server.createContext("/api/v1/tool-invocations", exchange -> {
             requestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
             writeJson(exchange, 200, """
-                    {"invocation_id":"inv_123","mode":"foreground","status":"completed","deliverable_format":"markdown_brief","output_text":"relay completed"}
+                    {"invocation_id":"inv_123","invocation_token":"tok_123","mode":"foreground","status":"completed","deliverable_format":"markdown_brief","output_text":"relay completed"}
                     """);
         });
 
@@ -57,51 +57,61 @@ class RelayClientTest {
 
     @Test
     void reads_completed_text_from_relay_wait_endpoint() throws Exception {
+        AtomicReference<String> tokenHeader = new AtomicReference<>();
         server.createContext("/api/v1/tool-invocations", exchange -> writeJson(exchange, 202, """
-                {"invocation_id":"inv_wait_123","mode":"background","status":"queued","deliverable_format":"markdown_brief","upstream_response_id":"resp_queued_1"}
+                {"invocation_id":"inv_wait_123","invocation_token":"tok_wait_123","mode":"background","status":"queued","deliverable_format":"markdown_brief","upstream_response_id":"resp_queued_1"}
                 """));
-        server.createContext("/api/v1/tool-invocations/inv_wait_123/wait", exchange -> writeJson(exchange, 200, """
-                {"invocation_id":"inv_wait_123","mode":"background","status":"completed","deliverable_format":"markdown_brief","output_text":"relay waited result"}
-                """));
+        server.createContext("/api/v1/tool-invocations/inv_wait_123/wait", exchange -> {
+            tokenHeader.set(exchange.getRequestHeaders().getFirst("X-Invocation-Token"));
+            writeJson(exchange, 200, """
+                    {"invocation_id":"inv_wait_123","mode":"background","status":"completed","deliverable_format":"markdown_brief","output_text":"relay waited result"}
+                    """);
+        });
 
         example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
         String queued = client.invokeDeepResearch("Queue relay mode", "markdown_brief", true, false);
-        String waited = client.waitForInvocation("inv_wait_123");
+        String waited = client.waitForInvocation("inv_wait_123", "tok_wait_123");
 
         assertEquals(true, queued.contains("\"invocation_id\":\"inv_wait_123\""));
         assertEquals("relay waited result", waited);
+        assertEquals("tok_wait_123", tokenHeader.get());
     }
 
     @Test
     void streams_text_from_relay_events_endpoint() throws Exception {
+        AtomicReference<String> tokenHeader = new AtomicReference<>();
         server.createContext("/api/v1/tool-invocations", exchange -> writeJson(exchange, 202, """
-                {"invocation_id":"inv_stream_123","mode":"stream","status":"pending","deliverable_format":"markdown_brief"}
+                {"invocation_id":"inv_stream_123","invocation_token":"tok_stream_123","mode":"stream","status":"pending","deliverable_format":"markdown_brief"}
                 """));
-        server.createContext("/api/v1/tool-invocations/inv_stream_123/events", exchange -> writeText(exchange, 200, "text/event-stream", """
-                event: status
-                data: {"invocation_id":"inv_stream_123","type":"status","status":"pending","data":{"mode":"stream"}}
+        server.createContext("/api/v1/tool-invocations/inv_stream_123/events", exchange -> {
+            tokenHeader.set(exchange.getRequestHeaders().getFirst("X-Invocation-Token"));
+            writeText(exchange, 200, "text/event-stream", """
+                    event: status
+                    data: {"invocation_id":"inv_stream_123","type":"status","status":"pending","data":{"mode":"stream"}}
 
-                event: output_text
-                data: {"invocation_id":"inv_stream_123","type":"output_text","status":"running","data":{"text":"Hello"}}
+                    event: output_text
+                    data: {"invocation_id":"inv_stream_123","type":"output_text","status":"running","data":{"text":"Hello"}}
 
-                event: output_text
-                data: {"invocation_id":"inv_stream_123","type":"output_text","status":"running","data":{"text":" world"}}
+                    event: output_text
+                    data: {"invocation_id":"inv_stream_123","type":"output_text","status":"running","data":{"text":" world"}}
 
-                event: completed
-                data: {"invocation_id":"inv_stream_123","type":"completed","status":"completed","data":{"output_text":"Hello world"}}
+                    event: completed
+                    data: {"invocation_id":"inv_stream_123","type":"completed","status":"completed","data":{"output_text":"Hello world"}}
 
-                """));
+                    """);
+        });
 
         example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
         String streamed = client.invokeDeepResearch("Stream relay mode", "markdown_brief", false, true);
 
         assertEquals("Hello world", streamed);
+        assertEquals("tok_stream_123", tokenHeader.get());
     }
 
     @Test
     void streams_text_ignores_non_output_text_sse_events() throws Exception {
         server.createContext("/api/v1/tool-invocations", exchange -> writeJson(exchange, 202, """
-                {"invocation_id":"inv_ignore_123","mode":"stream","status":"pending","deliverable_format":"markdown_brief"}
+                {"invocation_id":"inv_ignore_123","invocation_token":"tok_ignore_123","mode":"stream","status":"pending","deliverable_format":"markdown_brief"}
                 """));
         server.createContext("/api/v1/tool-invocations/inv_ignore_123/events", exchange -> writeText(exchange, 200, "text/event-stream", """
                 event: status
@@ -125,7 +135,7 @@ class RelayClientTest {
     @Test
     void streams_text_raises_api_exception_on_malformed_json_sse_frame() throws Exception {
         server.createContext("/api/v1/tool-invocations", exchange -> writeJson(exchange, 202, """
-                {"invocation_id":"inv_malformed_123","mode":"stream","status":"pending","deliverable_format":"markdown_brief"}
+                {"invocation_id":"inv_malformed_123","invocation_token":"tok_malformed_123","mode":"stream","status":"pending","deliverable_format":"markdown_brief"}
                 """));
         server.createContext("/api/v1/tool-invocations/inv_malformed_123/events", exchange -> writeText(exchange, 200, "text/event-stream", """
                 event: output_text
@@ -174,8 +184,8 @@ class RelayClientTest {
         // the timeout through correctly by completing a request successfully.
         server.createContext("/api/v1/tool-invocations", exchange -> {
             exchange.getRequestBody().readAllBytes();
-            writeJson(exchange, 200,
-                    "{\"invocation_id\":\"inv_timeout_test\",\"mode\":\"foreground\","
+                    writeJson(exchange, 200,
+                    "{\"invocation_id\":\"inv_timeout_test\",\"invocation_token\":\"tok_timeout\",\"mode\":\"foreground\","
                             + "\"status\":\"completed\",\"deliverable_format\":\"markdown_brief\","
                             + "\"output_text\":\"timeout constructor ok\"}");
         });
@@ -205,7 +215,7 @@ class RelayClientTest {
 
         example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
         ApiException ex = assertThrows(ApiException.class,
-                () -> client.waitForInvocation("missing"));
+                () -> client.waitForInvocation("missing", "tok_missing"));
         assertEquals(404, ex.statusCode());
     }
 
@@ -213,7 +223,7 @@ class RelayClientTest {
     void events_endpoint_non_2xx_raises_api_exception() throws Exception {
         server.createContext("/api/v1/tool-invocations", exchange ->
                 writeJson(exchange, 202,
-                        "{\"invocation_id\":\"inv_err\",\"mode\":\"stream\",\"status\":\"pending\",\"deliverable_format\":\"markdown_brief\"}"));
+                        "{\"invocation_id\":\"inv_err\",\"invocation_token\":\"tok_err\",\"mode\":\"stream\",\"status\":\"pending\",\"deliverable_format\":\"markdown_brief\"}"));
         server.createContext("/api/v1/tool-invocations/inv_err/events", exchange ->
                 writeJson(exchange, 503, "{\"error\":\"service unavailable\"}"));
 
@@ -248,7 +258,7 @@ class RelayClientTest {
                                 + "\"output\":[{\"content\":[{\"type\":\"output_text\",\"text\":\"plain-string-value\"}]}]}"));
 
         example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
-        String result = client.waitForInvocation("inv_plain_str");
+        String result = client.waitForInvocation("inv_plain_str", "tok_plain");
         assertEquals("plain-string-value", result);
     }
 
@@ -261,7 +271,7 @@ class RelayClientTest {
                                 + "\"output\":[{\"content\":[{\"type\":\"reasoning\",\"text\":\"skip\"},{\"type\":\"output_text\",\"text\":\"keep\"}]}]}"));
 
         example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
-        String result = client.waitForInvocation("inv_skip_type");
+        String result = client.waitForInvocation("inv_skip_type", "tok_skip");
         assertEquals("keep", result);
     }
 
@@ -274,7 +284,7 @@ class RelayClientTest {
                                 + "\"output\":[{\"content\":[{\"type\":\"output_text\"},{\"type\":\"output_text\",\"text\":\"has-text\"}]}]}"));
 
         example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
-        String result = client.waitForInvocation("inv_null_text");
+        String result = client.waitForInvocation("inv_null_text", "tok_null");
         assertEquals("has-text", result);
     }
 
@@ -288,7 +298,7 @@ class RelayClientTest {
 
         example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
         ApiException ex = assertThrows(ApiException.class,
-                () -> client.waitForInvocation("inv_all_skip"));
+                () -> client.waitForInvocation("inv_all_skip", "tok_all_skip"));
         assertEquals(true, ex.getMessage().toLowerCase().contains("usable"));
     }
 
@@ -322,7 +332,7 @@ class RelayClientTest {
                 """));
 
         example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
-        String result = client.waitForInvocation("inv_nested");
+        String result = client.waitForInvocation("inv_nested", "tok_nested");
 
         assertEquals("nested answer", result);
     }
@@ -336,7 +346,7 @@ class RelayClientTest {
                 """));
 
         example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
-        String result = client.waitForInvocation("inv_output_array");
+        String result = client.waitForInvocation("inv_output_array", "tok_output_array");
 
         assertEquals("array answer", result);
     }
@@ -354,7 +364,7 @@ class RelayClientTest {
                                 + "\"output\":[{\"content\":[{\"type\":\"output_text\",\"text\":\"fallback answer\"}]}]}"));
 
         example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
-        String result = client.waitForInvocation("inv_blank_top");
+        String result = client.waitForInvocation("inv_blank_top", "tok_blank_top");
         assertEquals("fallback answer", result);
     }
 
@@ -369,7 +379,7 @@ class RelayClientTest {
                                 + "\"output\":[{\"content\":[{\"type\":\"output_text\",\"text\":\"from output array\"}]}]}"));
 
         example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
-        String result = client.waitForInvocation("inv_blank_nested");
+        String result = client.waitForInvocation("inv_blank_nested", "tok_blank_nested");
         assertEquals("from output array", result);
     }
 
@@ -386,7 +396,7 @@ class RelayClientTest {
                                 + "]}]}"));
 
         example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);
-        String result = client.waitForInvocation("inv_null_value");
+        String result = client.waitForInvocation("inv_null_value", "tok_null_value");
         assertEquals("real value", result);
     }
 
@@ -396,7 +406,7 @@ class RelayClientTest {
     void streams_text_skips_empty_sse_frames() throws Exception {
         // Body has an empty frame between two valid frames — trimmed.isEmpty() branch
         server.createContext("/api/v1/tool-invocations", exchange -> writeJson(exchange, 202,
-                "{\"invocation_id\":\"inv_empty_frame\",\"mode\":\"stream\",\"status\":\"pending\",\"deliverable_format\":\"markdown_brief\"}"));
+                "{\"invocation_id\":\"inv_empty_frame\",\"invocation_token\":\"tok_empty\",\"mode\":\"stream\",\"status\":\"pending\",\"deliverable_format\":\"markdown_brief\"}"));
         server.createContext("/api/v1/tool-invocations/inv_empty_frame/events", exchange ->
                 writeText(exchange, 200, "text/event-stream",
                         "event: output_text\n"
@@ -419,7 +429,7 @@ class RelayClientTest {
     void streams_text_skips_non_data_lines_in_sse_frame() throws Exception {
         // Lines not starting with "data:" (e.g. "event:", "id:", ":comment") are skipped
         server.createContext("/api/v1/tool-invocations", exchange -> writeJson(exchange, 202,
-                "{\"invocation_id\":\"inv_non_data\",\"mode\":\"stream\",\"status\":\"pending\",\"deliverable_format\":\"markdown_brief\"}"));
+                "{\"invocation_id\":\"inv_non_data\",\"invocation_token\":\"tok_non_data\",\"mode\":\"stream\",\"status\":\"pending\",\"deliverable_format\":\"markdown_brief\"}"));
         server.createContext("/api/v1/tool-invocations/inv_non_data/events", exchange ->
                 writeText(exchange, 200, "text/event-stream",
                         "event: output_text\n"
@@ -442,7 +452,7 @@ class RelayClientTest {
     void foreground_result_with_blank_invocation_id_raises_api_exception() throws Exception {
         server.createContext("/api/v1/tool-invocations", exchange ->
                 writeJson(exchange, 202,
-                        "{\"invocation_id\":\"   \",\"mode\":\"stream\","
+                        "{\"invocation_id\":\"   \",\"invocation_token\":\"tok_blank\",\"mode\":\"stream\","
                                 + "\"status\":\"pending\",\"deliverable_format\":\"markdown_brief\"}"));
 
         example.litellm.relay.RelayClient client = new example.litellm.relay.RelayClient(baseUrl);

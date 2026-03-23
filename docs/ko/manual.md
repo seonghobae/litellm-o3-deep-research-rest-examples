@@ -222,9 +222,9 @@ uv run python -m litellm_relay
 ### 공개 API
 
 - `POST /api/v1/tool-invocations`
-- `GET /api/v1/tool-invocations/{invocation_id}`
-- `GET /api/v1/tool-invocations/{invocation_id}/wait`
-- `GET /api/v1/tool-invocations/{invocation_id}/events`
+- `GET /api/v1/tool-invocations/{invocation_id}` (`X-Invocation-Token` 필요)
+- `GET /api/v1/tool-invocations/{invocation_id}/wait` (`X-Invocation-Token` 필요)
+- `GET /api/v1/tool-invocations/{invocation_id}/events` (`X-Invocation-Token` 필요)
 - `POST /api/v1/chat`
 
 ### 공개 계약 예시
@@ -257,6 +257,7 @@ relay 내부에서만 위 구조를 LiteLLM Responses 요청으로 변환하며,
 
 - relay는 `POST /api/v1/tool-invocations`로 invocation을 만들고,
 - `GET /api/v1/tool-invocations/{invocation_id}/events`로 `text/event-stream`을 제공합니다.
+- read endpoint를 호출할 때는 생성 시 받은 `invocation_token`을 `X-Invocation-Token` 헤더로 함께 보내야 합니다.
 - 현재 구현은 text delta만 중계하는 **text-focused SSE 예제**입니다.
 
 ## 7. 문제 해결
@@ -858,6 +859,7 @@ mvn -q exec:java -Dexec.mainClass=example.litellm.Main \
 - `previous_response_id`
 - `tool_call_id`
 - `invocation_id`
+- `invocation_token`
 - `upstream_response_id`
 
 ### 13-3. Approach C: Relay-Side (`POST /api/v1/chat`)

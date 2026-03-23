@@ -54,9 +54,9 @@ uv run python -m litellm_relay
 ## 공개 API
 
 - `POST /api/v1/tool-invocations`
-- `GET /api/v1/tool-invocations/{invocation_id}`
-- `GET /api/v1/tool-invocations/{invocation_id}/wait`
-- `GET /api/v1/tool-invocations/{invocation_id}/events`
+- `GET /api/v1/tool-invocations/{invocation_id}` (`X-Invocation-Token` 필요)
+- `GET /api/v1/tool-invocations/{invocation_id}/wait` (`X-Invocation-Token` 필요)
+- `GET /api/v1/tool-invocations/{invocation_id}/events` (`X-Invocation-Token` 필요)
 
 ## 요청 예시
 
@@ -168,7 +168,7 @@ mvn -q exec:java -Dexec.mainClass=example.litellm.Main -Dexec.args="--target rel
 
 - relay 내부에서는 LiteLLM SDK를 `litellm_proxy/<model>` 형태로 사용합니다.
 - foreground invocation은 바로 최종 텍스트를 반환합니다.
-- background invocation은 `invocation_id`, `upstream_response_id`, `status` 중심 메타데이터를 반환합니다.
+- background invocation은 `invocation_id`, `invocation_token`, `upstream_response_id`, `status` 중심 메타데이터를 반환합니다.
 - stream invocation은 `text/event-stream` 형태의 SSE를 반환하며, 현재 예제는 text delta만 중계합니다.
 - chat/SSE 오류 응답은 구조화되어 반환되며, raw upstream 예외 문자열 대신 안전한 public 메시지만 노출합니다.
 
