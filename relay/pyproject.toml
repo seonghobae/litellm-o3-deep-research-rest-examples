@@ -35,6 +35,11 @@ asyncio_default_fixture_loop_scope = "function"
 requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
+[dependency-groups]
+dev = [
+    "pytest-codspeed>=4.3.0",
+]
+
 [project.scripts]
 litellm-relay = "litellm_relay.__main__:main"
 

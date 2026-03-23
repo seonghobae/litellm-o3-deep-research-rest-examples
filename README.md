@@ -1,3 +1,5 @@
+[![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/seonghobae/litellm-o3-deep-research-rest-examples?utm_source=badge)
+
 ## LiteLLM o3-deep-research 예제 저장소
 
 이 저장소는 LiteLLM Proxy를 통해 `o3-deep-research`와 `gpt-4o` 계열 모델을 호출하는 세 가지 예제를 제공합니다.
