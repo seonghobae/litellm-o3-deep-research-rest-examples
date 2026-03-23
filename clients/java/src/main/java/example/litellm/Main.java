@@ -57,11 +57,6 @@ public final class Main {
             content = result.finalText();
             if (result.toolCalled()) {
                 System.err.println("[deep_research was called automatically]");
-                System.err.println("response_id=" + result.responseId());
-                System.err.println("previous_response_id=" + result.previousResponseId());
-                System.err.println("tool_call_id=" + result.toolCallId());
-                System.err.println("invocation_id=" + result.invocationId());
-                System.err.println("upstream_response_id=" + result.upstreamResponseId());
             }
         } else if ("relay".equals(target)) {
             RelayClient client = new RelayClient(RelayClient.defaultBaseUrl(), timeout);

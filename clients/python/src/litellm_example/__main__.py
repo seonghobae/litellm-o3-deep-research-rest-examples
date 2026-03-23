@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
 
@@ -87,14 +86,6 @@ def main(argv: list[str] | None = None) -> int:
             print(result.final_text)
             if result.tool_called:
                 print("[deep_research was called automatically]", file=sys.stderr)
-                debug = {
-                    "response_id": result.response_id,
-                    "previous_response_id": result.previous_response_id,
-                    "tool_call_id": result.tool_call_id,
-                    "invocation_id": result.invocation_id,
-                    "upstream_response_id": result.upstream_response_id,
-                }
-                print(json.dumps(debug, ensure_ascii=False), file=sys.stderr)
             return 0
         elif args.api == "responses":
             tools = [{"type": "web_search_preview"}] if args.web_search else None

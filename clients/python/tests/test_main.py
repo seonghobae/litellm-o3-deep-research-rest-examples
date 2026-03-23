@@ -271,7 +271,7 @@ def test_main_auto_tool_call_calls_create_response_with_tool_calling(
 def test_main_auto_tool_call_prints_stderr_when_tool_called(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
 ) -> None:
-    """When tool_called=True, prints [deep_research was called automatically] to stderr."""
+    """When tool_called=True, prints only a generic stderr notice."""
 
     def fake_create_response_with_tool_calling(
         self: LiteLLMClient, prompt: str, relay_base_url: str | None = None
@@ -302,7 +302,11 @@ def test_main_auto_tool_call_prints_stderr_when_tool_called(
     captured = capsys.readouterr()
     assert "research result" in captured.out
     assert "[deep_research was called automatically]" in captured.err
-    assert '"response_id": "resp_2"' in captured.err
+    assert "resp_2" not in captured.err
+    assert "resp_1" not in captured.err
+    assert "call_1" not in captured.err
+    assert "inv_1" not in captured.err
+    assert "up_1" not in captured.err
 
 
 def test_main_auto_tool_call_no_stderr_when_tool_not_called(
