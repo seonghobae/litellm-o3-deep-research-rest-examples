@@ -26,7 +26,7 @@ public final class Main {
                 case "--web-search" -> webSearch = true;
                 case "--auto-tool-call" -> autoToolCall = true;
                 case "--deliverable-format" -> deliverableFormat = requireOptionValue(args, ++i, "--deliverable-format");
-                case "--timeout" -> timeout = Duration.ofSeconds(Long.parseLong(requireOptionValue(args, ++i, "--timeout")));
+                case "--timeout" -> timeout = parseTimeoutSeconds(requireOptionValue(args, ++i, "--timeout"));
                 default -> promptParts.add(args[i]);
             }
         }
@@ -95,5 +95,21 @@ public final class Main {
             throw new IllegalArgumentException(optionName + " requires a value");
         }
         return args[index];
+    }
+
+    static Duration parseTimeoutSeconds(String raw) {
+        final long seconds;
+        try {
+            seconds = Long.parseLong(raw);
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException(
+                    "--timeout must be a positive integer number of seconds: " + raw,
+                    exception);
+        }
+        if (seconds <= 0) {
+            throw new IllegalArgumentException(
+                    "--timeout must be greater than 0 seconds: " + raw);
+        }
+        return Duration.ofSeconds(seconds);
     }
 }

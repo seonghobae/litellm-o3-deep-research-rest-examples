@@ -6,7 +6,7 @@ Work in this repository is complete only when all of the following are true:
 
 1. The Python example can load `LITELLM_API_KEY` and `LITELLM_BASE_URL` from the environment or `~/.env` and call `o3-deep-research` via both `chat/completions` and `responses` REST APIs.
 2. The Java example can load the same configuration and call `o3-deep-research` via both APIs.
-3. Both Python and Java direct clients support `--timeout <seconds>` to control request timeout for long-running models.
+3. Both Python and Java direct clients support `--timeout <seconds>` to control request timeout for long-running models, and the Java CLI rejects missing, non-integer, zero, or negative timeout values with clear `IllegalArgumentException` messages before any network call starts.
 
 ## Background and streaming
 
