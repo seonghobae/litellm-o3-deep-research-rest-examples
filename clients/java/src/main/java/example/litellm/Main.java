@@ -26,7 +26,7 @@ public final class Main {
                 case "--web-search" -> webSearch = true;
                 case "--auto-tool-call" -> autoToolCall = true;
                 case "--deliverable-format" -> deliverableFormat = requireOptionValue(args, ++i, "--deliverable-format");
-                case "--timeout" -> timeout = Duration.ofSeconds(Long.parseLong(requireOptionValue(args, ++i, "--timeout")));
+                case "--timeout" -> timeout = parseTimeoutSeconds(requireOptionValue(args, ++i, "--timeout"));
                 default -> promptParts.add(args[i]);
             }
         }
@@ -82,6 +82,21 @@ public final class Main {
         }
 
         System.out.println(content);
+    }
+
+    private static Duration parseTimeoutSeconds(String rawValue) {
+        final long seconds;
+        try {
+            seconds = Long.parseLong(rawValue);
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException("--timeout must be a positive integer number of seconds.", exception);
+        }
+
+        if (seconds <= 0) {
+            throw new IllegalArgumentException("--timeout must be greater than 0 seconds.");
+        }
+
+        return Duration.ofSeconds(seconds);
     }
 
     private static String requireOptionValue(String[] args, int index, String optionName) {

@@ -85,6 +85,24 @@ class MainTest {
     }
 
     @Test
+    void timeoutFlagWithNonNumericValueFailsFast() {
+        assertThrows(IllegalArgumentException.class,
+                () -> Main.main(new String[] {"--timeout", "abc"}));
+    }
+
+    @Test
+    void timeoutFlagWithZeroValueFailsFast() {
+        assertThrows(IllegalArgumentException.class,
+                () -> Main.main(new String[] {"--timeout", "0"}));
+    }
+
+    @Test
+    void timeoutFlagWithNegativeValueFailsFast() {
+        assertThrows(IllegalArgumentException.class,
+                () -> Main.main(new String[] {"--timeout", "-5"}));
+    }
+
+    @Test
     void webSearchFlagRequiresResponsesApi() {
         // --web-search without --api responses must fail fast.
         assertThrows(IllegalArgumentException.class,
