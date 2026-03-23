@@ -593,3 +593,157 @@ async def test_extract_tool_calls_handles_pydantic_objects(monkeypatch):
     result = await orchestrator.chat(ChatRequest(message="pydantic test"))
     assert result.tool_called is True
     assert result.research_summary == "pydantic summary"
+
+
+@pytest.mark.asyncio
+async def test_chat_with_non_string_tool_arguments_falls_back_to_defaults(monkeypatch):
+    """Non-string tool arguments from the model should not crash the request."""
+    calls = []
+
+    def fake_completions(**kwargs):
+        calls.append(kwargs)
+        if len(calls) == 1:
+            return {
+                "choices": [
+                    {
+                        "finish_reason": "tool_calls",
+                        "message": {
+                            "role": "assistant",
+                            "content": None,
+                            "tool_calls": [
+                                {
+                                    "id": "call_bad_args",
+                                    "type": "function",
+                                    "function": {
+                                        "name": "deep_research",
+                                        "arguments": ["not", "json"],
+                                    },
+                                }
+                            ],
+                        },
+                    }
+                ]
+            }
+        return {
+            "choices": [
+                {
+                    "finish_reason": "stop",
+                    "message": {
+                        "role": "assistant",
+                        "content": "fallback answer",
+                        "tool_calls": None,
+                    },
+                }
+            ]
+        }
+
+    monkeypatch.setattr(
+        "litellm_relay.chat_orchestrator.litellm.completion", fake_completions
+    )
+
+    orchestrator = ChatOrchestrator(
+        base_url="https://proxy.example/v1",
+        api_key="sk-test",
+        chat_model="litellm_proxy/gpt-4o",
+        timeout_seconds=10.0,
+    )
+
+    captured = {}
+
+    from litellm_relay.upstream import UpstreamInvocationResult
+
+    async def fake_invoke(args):
+        captured["research_question"] = args.research_question
+        captured["deliverable_format"] = args.deliverable_format
+        return UpstreamInvocationResult(
+            mode="foreground",
+            status="completed",
+            output_text="safe summary",
+        )
+
+    orchestrator._invoke_deep_research = fake_invoke
+
+    result = await orchestrator.chat(ChatRequest(message="원본 질문"))
+
+    assert result.tool_called is True
+    assert captured == {
+        "research_question": "원본 질문",
+        "deliverable_format": "markdown_brief",
+    }
+
+
+@pytest.mark.asyncio
+async def test_chat_with_non_object_json_arguments_falls_back_to_defaults(monkeypatch):
+    """JSON arguments that decode to a non-object should be ignored safely."""
+    calls = []
+
+    def fake_completions(**kwargs):
+        calls.append(kwargs)
+        if len(calls) == 1:
+            return {
+                "choices": [
+                    {
+                        "finish_reason": "tool_calls",
+                        "message": {
+                            "role": "assistant",
+                            "content": None,
+                            "tool_calls": [
+                                {
+                                    "id": "call_list_args",
+                                    "type": "function",
+                                    "function": {
+                                        "name": "deep_research",
+                                        "arguments": '["unexpected", "list"]',
+                                    },
+                                }
+                            ],
+                        },
+                    }
+                ]
+            }
+        return {
+            "choices": [
+                {
+                    "finish_reason": "stop",
+                    "message": {
+                        "role": "assistant",
+                        "content": "fallback answer",
+                        "tool_calls": None,
+                    },
+                }
+            ]
+        }
+
+    monkeypatch.setattr(
+        "litellm_relay.chat_orchestrator.litellm.completion", fake_completions
+    )
+
+    orchestrator = ChatOrchestrator(
+        base_url="https://proxy.example/v1",
+        api_key="sk-test",
+        chat_model="litellm_proxy/gpt-4o",
+        timeout_seconds=10.0,
+    )
+
+    captured = {}
+
+    from litellm_relay.upstream import UpstreamInvocationResult
+
+    async def fake_invoke(args):
+        captured["research_question"] = args.research_question
+        captured["deliverable_format"] = args.deliverable_format
+        return UpstreamInvocationResult(
+            mode="foreground",
+            status="completed",
+            output_text="safe summary",
+        )
+
+    orchestrator._invoke_deep_research = fake_invoke
+
+    result = await orchestrator.chat(ChatRequest(message="리스트 인자 질문"))
+
+    assert result.tool_called is True
+    assert captured == {
+        "research_question": "리스트 인자 질문",
+        "deliverable_format": "markdown_brief",
+    }

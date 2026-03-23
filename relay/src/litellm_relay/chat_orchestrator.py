@@ -125,11 +125,15 @@ class ChatOrchestrator:
             return ChatResponse(content=content, tool_called=False)
 
         raw_args = (deep_research_call.get("function") or {}).get("arguments", "{}")
-        try:
-            tool_args = json.loads(raw_args)
-        except json.JSONDecodeError:
-            tool_args = {}
+        if isinstance(raw_args, (str, bytes, bytearray)):
+            try:
+                parsed_args = json.loads(raw_args)
+            except json.JSONDecodeError:
+                parsed_args = {}
+        else:
+            parsed_args = {}
 
+        tool_args = parsed_args if isinstance(parsed_args, dict) else {}
         research_question = tool_args.get("research_question", request.message)
         deliverable_format = tool_args.get("deliverable_format", "markdown_brief")
 
