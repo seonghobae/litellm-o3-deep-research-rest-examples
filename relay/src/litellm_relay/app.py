@@ -13,7 +13,7 @@ from .contracts import (
     ToolInvocationRequest,
     ToolInvocationView,
 )
-from .service import InvocationNotFoundError, RelayService
+from .service import InvocationCapacityError, InvocationNotFoundError, RelayService
 from .upstream import LiteLLMRelayGateway
 
 
@@ -31,6 +31,8 @@ def create_app(
             timeout_seconds=settings.timeout_seconds,
         ),
         timeout_seconds=settings.timeout_seconds,
+        max_invocations=settings.max_invocations,
+        max_stream_bytes=settings.max_stream_bytes,
     )
 
     orchestrator_instance = ChatOrchestrator(
@@ -49,7 +51,10 @@ def create_app(
         payload: ToolInvocationRequest,
     ) -> JSONResponse | ToolInvocationView:
         """도구 호출을 생성하고 즉시 반환 가능한 상태를 응답한다."""
-        status_code, result = await service.create_invocation(payload)
+        try:
+            status_code, result = await service.create_invocation(payload)
+        except InvocationCapacityError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
         if status_code == 200:
             return result
         return JSONResponse(status_code=status_code, content=result.model_dump())

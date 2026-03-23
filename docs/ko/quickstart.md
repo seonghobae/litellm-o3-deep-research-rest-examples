@@ -138,6 +138,8 @@ direct Python/Java 예제는 내부적으로 `/v1/` 루트로 정규화합니다
 | `RELAY_TIMEOUT_SECONDS` | `30` | Responses orchestration 타임아웃 |
 | `RELAY_RESEARCH_TIMEOUT_SECONDS` | `300` | deep_research 실행 타임아웃 |
 | `LITELLM_CHAT_MODEL` | `gpt-4o` | auto tool calling orchestration 모델 |
+| `RELAY_MAX_INVOCATIONS` | `1024` | 메모리에 유지할 최대 invocation 수 |
+| `RELAY_MAX_STREAM_BYTES` | `1000000` | stream invocation 하나가 메모리에 유지할 최대 UTF-8 바이트 수 |
 
 ### Java relay 클라이언트 모드
 

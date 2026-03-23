@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from dataclasses import dataclass, field
@@ -25,6 +26,10 @@ class InvocationNotFoundError(KeyError):
     """알 수 없는 호출 ID를 조회했을 때 발생한다."""
 
 
+class InvocationCapacityError(RuntimeError):
+    """릴레이가 더 많은 호출 상태를 안전하게 보관할 수 없을 때 발생한다."""
+
+
 @dataclass
 class _StoredInvocation:
     """메모리에 유지되는 도구 호출 상태 레코드다."""
@@ -38,16 +43,28 @@ class _StoredInvocation:
     error_message: str | None = None
     stream_started: bool = False
     stream_chunks: list[str] = field(default_factory=list)
+    stream_bytes: int = 0
+    stream_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
 
 class RelayService:
     """호출 상태를 메모리에 저장하고 게이트웨이 실행을 조율한다."""
 
-    def __init__(self, gateway: LiteLLMRelayGateway, timeout_seconds: float) -> None:
+    def __init__(
+        self,
+        gateway: LiteLLMRelayGateway,
+        timeout_seconds: float,
+        *,
+        max_invocations: int = 1024,
+        max_stream_bytes: int = 1_000_000,
+    ) -> None:
         """게이트웨이와 대기 타임아웃을 보관한다."""
         self._gateway = gateway
         self._timeout_seconds = timeout_seconds
+        self._max_invocations = max_invocations
+        self._max_stream_bytes = max_stream_bytes
         self._store: dict[str, _StoredInvocation] = {}
+        self._capacity_lock = asyncio.Lock()
 
     async def create_invocation(
         self, payload: ToolInvocationRequest
@@ -55,19 +72,39 @@ class RelayService:
         """새 호출을 만들고 적절한 초기 응답 상태를 반환한다."""
         invocation_id = str(uuid4())
         args = payload.arguments
+        stored = _StoredInvocation(
+            request=payload,
+            mode=(
+                "stream"
+                if args.stream
+                else ("background" if args.background else "foreground")
+            ),
+            status=(
+                "pending"
+                if args.stream
+                else ("queued" if args.background else "running")
+            ),
+        )
+
+        async with self._capacity_lock:
+            self._ensure_capacity()
+            self._store[invocation_id] = stored
 
         if args.stream:
-            stored = _StoredInvocation(
-                request=payload,
-                mode="stream",
-                status="pending",
-            )
-            self._store[invocation_id] = stored
             return 202, self._to_view(invocation_id, stored)
 
-        result = await self._gateway.invoke_deep_research(args)
-        stored = self._from_result(payload, result)
-        self._store[invocation_id] = stored
+        try:
+            result = await self._gateway.invoke_deep_research(args)
+        except Exception:
+            async with self._capacity_lock:
+                self._store.pop(invocation_id, None)
+            raise
+
+        stored.mode = result.mode
+        stored.status = "queued" if result.mode == "background" else "completed"
+        stored.upstream_response_id = result.upstream_response_id
+        stored.output_text = result.output_text
+        stored.response = result.response
         status_code = 202 if stored.mode == "background" else 200
         return status_code, self._to_view(invocation_id, stored)
 
@@ -93,6 +130,15 @@ class RelayService:
     async def event_stream(self, invocation_id: str):
         """지정한 호출에 대한 SSE 프레임을 비동기로 생성한다."""
         stored = self._require(invocation_id)
+        if stored.mode == "stream":
+            async with stored.stream_lock:
+                should_start_stream = not stored.stream_started
+                if should_start_stream:
+                    stored.stream_started = True
+                    stored.status = "running"
+        else:
+            should_start_stream = False
+
         yield self._to_sse(
             ToolInvocationEvent(
                 invocation_id=invocation_id,
@@ -114,7 +160,7 @@ class RelayService:
                 )
             return
 
-        if stored.stream_started:
+        if not should_start_stream:
             for chunk in stored.stream_chunks:
                 yield self._to_sse(
                     ToolInvocationEvent(
@@ -132,7 +178,7 @@ class RelayService:
                         invocation_id=invocation_id,
                         type="completed",
                         status="completed",
-                        data={"output_text": stored.output_text or ""},
+                        data={"output_text": self._completed_stream_text(stored) or ""},
                     )
                 )
             elif stored.status == "failed":
@@ -146,12 +192,26 @@ class RelayService:
                 )
             return
 
-        stored.stream_started = True
-        stored.status = "running"
         try:
             async for chunk in self._gateway.stream_deep_research(
                 stored.request.arguments
             ):
+                chunk_bytes = len(chunk.encode("utf-8"))
+                if stored.stream_bytes + chunk_bytes > self._max_stream_bytes:
+                    stored.status = "failed"
+                    stored.error_message = "stream output exceeded relay memory limit"
+                    stored.output_text = None
+                    stored.response = None
+                    yield self._to_sse(
+                        ToolInvocationEvent(
+                            invocation_id=invocation_id,
+                            type="error",
+                            status="failed",
+                            data={"message": stored.error_message},
+                        )
+                    )
+                    return
+                stored.stream_bytes += chunk_bytes
                 stored.stream_chunks.append(chunk)
                 yield self._to_sse(
                     ToolInvocationEvent(
@@ -162,14 +222,12 @@ class RelayService:
                     )
                 )
             stored.status = "completed"
-            stored.output_text = "".join(stored.stream_chunks)
-            stored.response = {"output_text": stored.output_text}
             yield self._to_sse(
                 ToolInvocationEvent(
                     invocation_id=invocation_id,
                     type="completed",
                     status="completed",
-                    data={"output_text": stored.output_text},
+                    data={"output_text": self._completed_stream_text(stored)},
                 )
             )
         except Exception:
@@ -191,6 +249,28 @@ class RelayService:
         if stored is None:
             raise InvocationNotFoundError(invocation_id)
         return stored
+
+    @staticmethod
+    def _completed_stream_text(stored: _StoredInvocation) -> str | None:
+        if stored.mode == "stream" and stored.status == "completed":
+            return "".join(stored.stream_chunks)
+        return stored.output_text
+
+    def _ensure_capacity(self) -> None:
+        while len(self._store) >= self._max_invocations:
+            oldest_terminal_id = next(
+                (
+                    invocation_id
+                    for invocation_id, stored in self._store.items()
+                    if stored.status in {"completed", "failed"}
+                ),
+                None,
+            )
+            if oldest_terminal_id is None:
+                raise InvocationCapacityError(
+                    "relay is at invocation capacity; retry later"
+                )
+            self._store.pop(oldest_terminal_id)
 
     @staticmethod
     def _from_result(
@@ -230,6 +310,11 @@ class RelayService:
     @staticmethod
     def _to_view(invocation_id: str, stored: _StoredInvocation) -> ToolInvocationView:
         """내부 저장 상태를 외부 응답 모델로 변환한다."""
+        output_text = RelayService._completed_stream_text(stored)
+        response = stored.response
+        if stored.mode == "stream" and stored.status == "completed" and output_text:
+            response = {"output_text": output_text}
+
         return ToolInvocationView(
             invocation_id=invocation_id,
             tool_name=stored.request.tool_name,
@@ -237,8 +322,8 @@ class RelayService:
             status=stored.status,
             deliverable_format=stored.request.arguments.deliverable_format,
             upstream_response_id=stored.upstream_response_id,
-            output_text=stored.output_text,
-            response=stored.response,
+            output_text=output_text,
+            response=response,
             error_message=stored.error_message,
         )
 
